@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manger - Rocyinter Services</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="app.js" defer></script>
+<style>
+.filtres{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;max-width:860px;margin:0 auto 20px}
+.filtres button{background:#fff;border:1px solid var(--bordure);padding:9px 16px;border-radius:999px;font-weight:700;font-size:13px}
+.filtres button.actif{background:var(--bleu);color:#fff}
+.badge{display:inline-block;font-size:12px;font-weight:800;padding:4px 10px;border-radius:999px;margin-top:6px}
+.badge-vert{background:#E6F7ED;color:#1A7A3A}
+.badge-jaune{background:#FFF3CD;color:#7A5A00}
+.prix{font-weight:900;color:var(--bleu);font-size:17px;margin-top:6px}
+.recherche{max-width:860px;margin:0 auto 16px}
+.recherche input{width:100%;padding:13px 16px;border-radius:12px;border:1px solid var(--bordure);font-size:15px}
+</style>
+</head>
+<body>
+
+<header id="site-header"></header>
+
+<main class="container">
+
+  <div class="page-title">
+    <h1>Manger</h1>
+    <p>Restaurants, Fast-food, Grillades, Traiteurs. Commandez vos plats préférés et faites-vous livrer rapidement, partout.</p>
+  </div>
+
+  <!-- RECHERCHE -->
+  <div class="recherche">
+    <input type="text" id="rechercheInput" placeholder="🔍 Rechercher un restaurant, un plat, une cuisine..." oninput="filtrer()">
+  </div>
+
+  <!-- FILTRES -->
+  <div class="filtres">
+    <button class="actif" onclick="filtrerCat('tous',this)">Tous</button>
+    <button onclick="filtrerCat('restaurant',this)">Restaurants</button>
+    <button onclick="filtrerCat('fastfood',this)">Fast-food</button>
+    <button onclick="filtrerCat('grillade',this)">Grillades</button>
+    <button onclick="filtrerCat('traiteur',this)">Traiteurs</button>
+  </div>
+
+  <!-- LISTE CLIQUABLE -->
+  <div class="services-liste" id="listeRestaurants">
+
+    <a href="fiche-restaurant.html?id=1" class="service-item" data-cat="restaurant" data-nom="Saveurs du Monde restaurant cuisine africaine">
+      <div class="service-icone">🍲</div>
+      <div class="service-texte">
+        <h3>Saveurs du Monde</h3>
+        <p>Cuisine africaine et internationale. Plats généreux, frais et faits maison. Livraison rapide.</p>
+        <span class="badge badge-vert">● Ouvert • 4.8 ★ (312 avis)</span><br>
+        <div class="prix">À partir de <span data-prix="2500">2 500 FCFA</span></div>
+      </div>
+      <div class="service-fleche">→</div>
+    </a>
+
+    <a href="fiche-restaurant.html?id=2" class="service-item" data-cat="fastfood" data-nom="Burger Express fastfood burger sandwich">
+      <div class="service-icone">🍔</div>
+      <div class="service-texte">
+        <h3>Burger Express</h3>
+        <p>Burgers, Sandwichs, Frites, Boissons. Rapide, chaud et toujours bon. Idéal pour un repas sur le pouce.</p>
+        <span class="badge badge-vert">● Ouvert • 4.6 ★ (208 avis)</span><br>
+        <div class="prix">À partir de <span data-prix="3000">3 000 FCFA</span></div>
+      </div>
+      <div class="service-fleche">→</div>
+    </a>
+
+    <a href="fiche-restaurant.html?id=3" class="service-item" data-cat="grillade" data-nom="Grill Royal grillade viande poisson">
+      <div class="service-icone">🔥</div>
+      <div class="service-texte">
+        <h3>Grill Royal</h3>
+        <p>Viandes grillées, Poissons braisés, Brochettes. Grillades au feu de bois, saveurs authentiques.</p>
+        <span class="badge badge-jaune">● Ouvert • 4.9 ★ (421 avis)</span><br>
+        <div class="prix">À partir de <span data-prix="4000">4 000 FCFA</span></div>
+      </div>
+      <div class="service-fleche">→</div>
+    </a>
+
+    <a href="fiche-restaurant.html?id=4" class="service-item" data-cat="traiteur" data-nom="Traiteur Prestige traiteur evenement mariage">
+      <div class="service-icone">🎉</div>
+      <div class="service-texte">
+        <h3>Traiteur Prestige</h3>
+        <p>Traiteur pour mariages, anniversaires et événements professionnels. Menus sur mesure et service soigné.</p>
+        <span class="badge badge-vert">● Disponible • 5.0 ★ (156 avis)</span><br>
+        <div class="prix">Devis sur mesure • À partir de <span data-prix="15000">15 000 FCFA</span></div>
+      </div>
+      <div class="service-fleche">→</div>
+    </a>
+
+    <a href="fiche-restaurant.html?id=5" class="service-item" data-cat="restaurant" data-nom="Pizza Bella pizza italienne">
+      <div class="service-icone">🍕</div>
+      <div class="service-texte">
+        <h3>Pizza Bella</h3>
+        <p>Pizzas au four, Pâtes, Salades. Cuisine italienne authentique avec des ingrédients frais.</p>
+        <span class="badge badge-vert">● Ouvert • 4.7 ★ (189 avis)</span><br>
+        <div class="prix">À partir de <span data-prix="3500">3 500 FCFA</span></div>
+      </div>
+      <div class="service-fleche">→</div>
+    </a>
+
+  </div>
+
+  <!-- ESCROW MANGER -->
+  <div class="escrow-box">
+    <h2>Paiement 100% Escrow - Manger</h2>
+    <p>Vous payez à Rocyinter. Nous bloquons l'argent. Le restaurant prépare, le livreur livre. Vous validez la réception. Nous libérons l'argent. Si la commande n'arrive pas, l'argent reste bloqué.</p>
+    <div class="btn-centre">
+      <a href="escrow.html" class="btn">Voir mon portefeuille Escrow</a>
+    </div>
+  </div>
+
+  <!-- INFO LIVRAISON -->
+  <div class="section">
+    <h2>Comment fonctionne la livraison ?</h2>
+    <p>Choisissez un restaurant dans la liste ci-dessus, ajoutez vos plats au panier et payez en escrow. Le restaurant prépare votre commande et un livreur vérifié vous la livre. Les frais de livraison varient selon la distance et sont affichés avant le paiement. Vous pouvez suivre votre commande à chaque étape et valider la réception pour libérer le paiement.</p>
+    <p style="margin-top:10px;">En cas de problème, signalez-le depuis votre commande. L'argent reste bloqué tant que le litige n'est pas résolu.</p>
+  </div>
+
+</main>
+
+<footer id="site-footer"></footer>
+
+<script>
+let catActive = 'tous';
+function filtrerCat(cat, btn){
+  catActive = cat;
+  document.querySelectorAll('.filtres button').forEach(b=>b.classList.remove('actif'));
+  if(btn) btn.classList.add('actif');
+  filtrer();
+}
+function filtrer(){
+  const q = (document.getElementById('rechercheInput').value || '').toLowerCase();
+  document.querySelectorAll('#listeRestaurants .service-item').forEach(item=>{
+    const nom = item.getAttribute('data-nom') || '';
+    const cat = item.getAttribute('data-cat') || '';
+    const okCat = catActive==='tous' || cat===catActive;
+    const okTexte = !q || nom.includes(q) || item.textContent.toLowerCase().includes(q);
+    item.style.display = (okCat && okTexte) ? 'flex' : 'none';
+  });
+}
+</script>
+
+</body>
+</html>
