@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fiche Prestataire - Rocyinter Services</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="app.js" defer></script>
+<style>
+.profil-head{background:#fff;border:1px solid var(--bordure);border-radius:var(--radius);padding:24px;max-width:860px;margin:0 auto 16px;box-shadow:var(--ombre);text-align:center}
+.profil-head h1{color:var(--bleu);font-size:26px;margin-top:8px}
+.profil-head p{color:var(--gris);text-align:center;margin-top:8px}
+.avatar{width:90px;height:90px;border-radius:50%;background:var(--bleu);color:#fff;display:flex;align-items:center;justify-content:center;font-size:38px;margin:0 auto}
+.badge{display:inline-block;font-size:12px;font-weight:800;padding:5px 12px;border-radius:999px;margin:10px 4px 0}
+.badge-vert{background:#E6F7ED;color:#1A7A3A}
+.badge-jaune{background:#FFF3CD;color:#7A5A00}
+.badge-bleu{background:#EAF2FF;color:#0A1A33}
+.form-box{background:#fff;border:1px solid var(--bordure);border-radius:var(--radius);padding:20px;max-width:860px;margin:16px auto;box-shadow:var(--ombre)}
+.form-box label{display:block;font-weight:700;font-size:14px;margin:12px 0 6px;color:var(--bleu)}
+.form-box input,.form-box textarea,.form-box select{width:100%;padding:12px;border:1px solid var(--bordure);border-radius:10px;font-size:15px;font-family:inherit}
+.form-box textarea{min-height:90px;resize:vertical}
+.prix-ligne{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dashed var(--bordure);font-size:15px}
+.prix-ligne b{color:var(--bleu)}
+.avis-item{background:#F8FAFF;border-radius:12px;padding:14px;margin-top:10px}
+.avis-item p{text-align:justify}
+</style>
+</head>
+<body>
+
+<header id="site-header"></header>
+
+<main class="container">
+
+  <div class="profil-head">
+    <div class="avatar" id="avatarPro">🧱</div>
+    <h1 id="nomPro">Maçon - Construction & Rénovation</h1>
+    <p id="descPro">Construction, rénovation, carrelage, enduit, fondation. Devis gratuit, travail propre et garanti.</p>
+    <span class="badge badge-vert">✓ Vérifié</span>
+    <span class="badge badge-jaune" id="notePro">4.9 ★ (134 missions)</span>
+    <span class="badge badge-bleu" id="dispoPro">Disponible aujourd'hui</span>
+    <p style="margin-top:12px"><a href="services-domicile.html" style="color:var(--bleu);font-weight:700">← Retour à la liste</a> &nbsp; • &nbsp; <a href="services-pro.html" style="color:var(--bleu);font-weight:700">Voir les professionnels →</a></p>
+  </div>
+
+  <!-- FORMULAIRE DE RESERVATION -->
+  <div class="form-box">
+    <h2 style="text-align:center;color:var(--bleu);font-size:20px">Réserver ce prestataire</h2>
+    <p style="text-align:justify;color:var(--gris);font-size:14px;margin-top:8px">Décrivez votre besoin. Le prix est indicatif. Vous payez en escrow, l'argent est bloqué jusqu'à ce que vous validiez le travail.</p>
+
+    <label for="besoin">Décrivez votre besoin *</label>
+    <textarea id="besoin" placeholder="Ex : Réparer un mur fissuré, 2 jours de travail, matériaux fournis..."></textarea>
+
+    <label for="dateMission">Date souhaitée *</label>
+    <input type="date" id="dateMission">
+
+    <label for="lieuMission">Adresse / Ville *</label>
+    <input type="text" id="lieuMission" placeholder="Ex : Quartier, Ville, Pays">
+
+    <label for="montant">Montant à payer en escrow (en FCFA) *</label>
+    <input type="number" id="montant" value="15000" min="1000" oninput="majCalcul()">
+
+    <div style="margin-top:16px">
+      <div class="prix-ligne"><span>Montant total</span><b id="affTotal">15 000 FCFA</b></div>
+      <div class="prix-ligne"><span>Commission Rocyinter (10%)</span><span id="affCommission">1 500 FCFA</span></div>
+      <div class="prix-ligne"><span>Montant pour le prestataire</span><b id="affPresta" style="color:#1A7A3A">13 500 FCFA</b></div>
+      <div class="prix-ligne" style="border:0"><span>Votre monnaie</span><b id="affDevise">FCFA</b></div>
+    </div>
+
+    <div class="btn-centre" style="margin-top:18px">
+      <button class="btn" style="width:100%" onclick="reserver()">Réserver & Payer en Escrow →</button>
+    </div>
+    <p style="text-align:center;font-size:13px;color:var(--gris);margin-top:10px">🛡️ Argent bloqué. Libéré seulement après votre validation.</p>
+  </div>
+
+  <!-- CE QU'IL FAIT -->
+  <div class="section">
+    <h2>Ce qu'il propose</h2>
+    <p id="servicesPro">Construction complète, rénovation, carrelage, enduit, fondation, murs, dalles. Travail propre, respect des délais, matériaux de qualité. Devis gratuit avant chaque mission.</p>
+    <p style="margin-top:10px">Expérience : <b id="expPro">Plus de 8 ans d'expérience</b> • Missions réalisées : <b id="missionsPro">134 missions</b> • Taux de satisfaction : <b>98%</b></p>
+  </div>
+
+  <!-- AVIS -->
+  <div class="section">
+    <h2>Avis clients</h2>
+    <div class="avis-item"><b>Client A. ★★★★★</b><p>« Travail très propre, respect des délais. Je recommande à 100%. »</p></div>
+    <div class="avis-item"><b>Client B. ★★★★☆</b><p>« Bon professionnel, communication facile, résultat conforme au devis. »</p></div>
+    <div class="avis-item"><b>Client C. ★★★★★</b><p>« Il est venu rapidement, a bien expliqué le travail. Très sérieux. »</p></div>
+  </div>
+
+  <div class="escrow-box">
+    <h2>Comment marche l'escrow ici ?</h2>
+    <p>Vous payez à Rocyinter. Nous bloquons l'argent. Le prestataire fait le travail. Vous validez. Nous libérons l'argent. En cas de désaccord, l'argent reste bloqué et notre équipe tranche.</p>
+  </div>
+
+</main>
+
+<footer id="site-footer"></footer>
+
+<script>
+const PRESTAS = {
+  "macon1": { nom: "Maçon - Construction & Rénovation", desc: "Construction, rénovation, carrelage, enduit, fondation. Devis gratuit, travail propre et garanti.", avatar: "🧱", note: "4.9 ★ (134 missions)", dispo: "Disponible aujourd'hui", prix: 15000, services: "Construction complète, rénovation, carrelage, enduit, fondation, murs, dalles. Travail propre, respect des délais, matériaux de qualité. Devis gratuit avant chaque mission.", exp: "Plus de 8 ans d'expérience", missions: "134 missions" },
+  "elec1": { nom: "Électricien - Installation & Dépannage", desc: "Installation électrique, dépannage, prises, éclairage, tableau électrique. Intervention rapide et sécurisée.", avatar: "⚡", note: "4.8 ★ (98 missions)", dispo: "Disponible aujourd'hui", prix: 8000, services: "Installation complète, dépannage urgent, tableau électrique, éclairage, prises, climatisation. Diagnostic gratuit.", exp: "Plus de 6 ans d'expérience", missions: "98 missions" },
+  "plomb1": { nom: "Plombier - Fuites & Installations", desc: "Réparation de fuites, installation sanitaire, robinetterie, chauffe-eau. Travail propre, sans surprise.", avatar: "🔧", note: "4.7 ★ (87 missions)", dispo: "Disponible demain", prix: 7000, services: "Fuites, robinetterie, toilettes, chauffe-eau, installation sanitaire complète. Intervention propre et rapide.", exp: "Plus de 7 ans d'expérience", missions: "87 missions" },
+  "coiff1": { nom: "Coiffeuse à Domicile - Tresses & Soins", desc: "Tresses, coiffure, maquillage, soins capillaires. Elle vient chez vous avec tout son matériel.", avatar: "💇‍♀️", note: "5.0 ★ (156 missions)", dispo: "Disponible aujourd'hui", prix: 5000, services: "Tresses, coiffure, maquillage, soins capillaires, coiffure de mariage. Déplacement à domicile avec matériel complet.", exp: "Plus de 5 ans d'expérience", missions: "156 missions" },
+  "menage1": { nom: "Ménage & Nettoyage - Maison & Bureau", desc: "Nettoyage complet, repassage, vitres, désinfection. Équipe de confiance, produits fournis.", avatar: "🧹", note: "4.6 ★ (42 missions)", dispo: "Disponible cette semaine", prix: 6000, services: "Nettoyage maison, bureau, vitres, repassage, désinfection. Produits fournis, équipe de confiance.", exp: "Plus de 4 ans d'expérience", missions: "42 missions" },
+  "meca1": { nom: "Mécanicien - Auto & Moto", desc: "Diagnostic, vidange, freins, moteur, dépannage à domicile. Pièces d'origine, garantie 3 mois.", avatar: "🚗", note: "4.8 ★ (112 missions)", dispo: "Disponible aujourd'hui", prix: 10000, services: "Diagnostic, vidange, freins, moteur, dépannage à domicile. Pièces d'origine, garantie 3 mois.", exp: "Plus de 9 ans d'expérience", missions: "112 missions" }
+};
+const params = new URLSearchParams(location.search);
+const id = params.get('id') || 'macon1';
+const p = PRESTAS[id] || PRESTAS['macon1'];
+document.getElementById('nomPro').textContent = p.nom;
+document.getElementById('descPro').textContent = p.desc;
+document.getElementById('avatarPro').textContent = p.avatar;
+document.getElementById('notePro').textContent = p.note;
+document.getElementById('dispoPro').textContent = p.dispo;
+document.getElementById('servicesPro').textContent = p.services;
+document.getElementById('expPro').textContent = p.exp;
+document.getElementById('missionsPro').textContent = p.missions;
+document.getElementById('montant').value = p.prix;
+document.getElementById('dateMission').valueAsDate = new Date();
+
+function majCalcul(){
+  const total = parseInt(document.getElementById('montant').value) || 0;
+  const comm = Math.round(total * 0.10);
+  const pourPresta = total - comm;
+  const fmt = (v) => window.convertirPrix ? convertirPrix(v) : v.toLocaleString('fr-FR') + ' FCFA';
+  document.getElementById('affTotal').textContent = fmt(total);
+  document.getElementById('affCommission').textContent = fmt(comm);
+  document.getElementById('affPresta').textContent = fmt(pourPresta);
+  document.getElementById('affDevise').textContent = (typeof DEVISE !== 'undefined' ? DEVISE : 'FCFA');
+}
+majCalcul();
+setTimeout(majCalcul, 300);
+
+function reserver(){
+  const besoin = document.getElementById('besoin').value.trim();
+  const date = document.getElementById('dateMission').value;
+  const lieu = document.getElementById('lieuMission').value.trim();
+  const montant = parseInt(document.getElementById('montant').value) || 0;
+  if(!besoin){ alert("Décrivez votre besoin"); return; }
+  if(!date){ alert("Choisissez une date"); return; }
+  if(!lieu){ alert("Indiquez l'adresse / ville"); return; }
+  if(montant < 1000){ alert("Montant minimum 1 000 FCFA"); return; }
+  localStorage.setItem('rocy_reservation', JSON.stringify({ prestataire: p.nom, besoin, date, lieu, montant }));
+  window.location.href = "paiement.html?total=" + montant + "&presta=" + encodeURIComponent(p.nom);
+}
+</script>
+
+</body>
+</html>
