@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connexion - Rocyinter Services</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
+body{background:#f6f7f9;color:#111;padding:16px}
+.top{max-width:480px;margin:0 auto}
+.back{color:#64748b;font-size:13px;cursor:pointer}
+h1{font-size:24px;margin:14px 0 4px} h1 span{color:#f59e0b}
+p.sub{color:#64748b;font-size:14px;margin-bottom:16px}
+.card{background:#fff;border-radius:16px;padding:20px;box-shadow:0 4px 20px rgba(0,0,0,.06);display:grid;gap:14px}
+label{font-size:12px;font-weight:700;color:#475569;display:block;margin-bottom:4px}
+input{width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px}
+.btn{background:#f59e0b;color:#000;border:none;padding:14px;border-radius:12px;font-weight:800;cursor:pointer;font-size:15px;width:100%}
+.btn:disabled{opacity:.6}
+.msg{text-align:center;font-size:13px;padding:10px;border-radius:10px;display:none}
+.msg.ok{display:block;background:#dcfce7;color:#166534}
+.msg.err{display:block;background:#fee2e2;color:#991b1b}
+small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10px;line-height:1.5}
+.info{background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:12px;font-size:13px;line-height:1.5;color:#92400e}
+</style>
+</head>
+<body>
+<div class="top">
+<div class="back" onclick="location.href='index.html'">← Retour à l'accueil</div>
+<h1>Bon retour <span>chez Rocyinter</span></h1>
+<p class="sub">Connectez-vous avec votre WhatsApp utilisé à l'inscription.</p>
+
+<div class="card">
+  <div>
+    <label>VOTRE WHATSAPP *</label>
+    <input id="whatsapp" placeholder="Ex: +229 97 00 00 00">
+  </div>
+  <div>
+    <label>VOTRE NOM *</label>
+    <input id="nom" placeholder="Ex: Jean Kouassi">
+  </div>
+
+  <div id="msg" class="msg"></div>
+  <button class="btn" id="btnCo" onclick="connecter()">Se connecter →</button>
+
+  <div class="info">💡 <b>Pas encore de compte ?</b><br>Créez un compte en 1 minute. Pas de mot de passe compliqué. Votre WhatsApp = votre identité.</div>
+
+  <small>Pas de compte ? <a href="inscription.html">Créez-en un ici</a></small>
+</div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
+const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+function showMsg(txt, ok){
+  const m = document.getElementById('msg');
+  m.textContent = txt;
+  m.className = 'msg ' + (ok ? 'ok' : 'err');
+}
+
+async function connecter(){
+  const whatsapp = document.getElementById('whatsapp').value.trim();
+  const nom = document.getElementById('nom').value.trim();
+  const btn = document.getElementById('btnCo');
+  if(!whatsapp || !nom){ showMsg('Remplis WhatsApp + Nom', false); return; }
+
+  btn.disabled = true; btn.textContent = 'Vérification...';
+
+  const {data, error} = await supabase.from('profiles').select('*').eq('whatsapp', whatsapp).ilike('nom', '%'+nom+'%').maybeSingle();
+
+  if(error || !data){
+    showMsg('Compte introuvable. Vérifie ton WhatsApp + Nom, ou crée un compte.', false);
+    btn.disabled = false; btn.textContent = 'Se connecter →';
+    return;
+  }
+
+  localStorage.setItem('rocy_user_id', data.id);
+  localStorage.setItem('rocy_user_nom', data.nom);
+  localStorage.setItem('rocy_user_type', data.type_compte);
+  localStorage.setItem('rocy_user_whatsapp', data.whatsapp);
+  localStorage.setItem('rocy_user_pays', data.pays);
+  localStorage.setItem('rocy_user_ville', data.ville);
+  localStorage.setItem('rocy_user_localite', data.localite);
+
+  showMsg('✅ Bienvenue ' + data.nom + ' ! Redirection...', true);
+  setTimeout(()=>{
+    if(data.type_compte==='prestataire') location.href='dashboard-prestataire.html';
+    else location.href='index.html';
+  }, 1200);
+}
+
+// Si déjà connecté, pré-remplir
+const w = localStorage.getItem('rocy_user_whatsapp');
+const n = localStorage.getItem('rocy_user_nom');
+if(w) document.getElementById('whatsapp').value = w;
+if(n) document.getElementById('nom').value = n;
+</script>
+</body>
+</html>
