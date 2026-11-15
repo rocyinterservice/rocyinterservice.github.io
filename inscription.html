@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inscription - Rocyinter Services</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
+body{background:#f6f7f9;color:#111;padding:16px}
+.top{max-width:480px;margin:0 auto}
+.back{color:#64748b;font-size:13px;cursor:pointer}
+h1{font-size:24px;margin:14px 0 4px} h1 span{color:#f59e0b}
+p.sub{color:#64748b;font-size:14px;margin-bottom:16px}
+.card{background:#fff;border-radius:16px;padding:16px;box-shadow:0 4px 20px rgba(0,0,0,.06);display:grid;gap:12px}
+label{font-size:12px;font-weight:700;color:#475569;display:block;margin-bottom:4px}
+input,select,textarea{width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;background:#fff}
+textarea{min-height:70px;resize:vertical}
+.choix{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.choix button{padding:14px;border:2px solid #e2e8f0;background:#fff;border-radius:12px;cursor:pointer;font-weight:700}
+.choix button.active{border-color:#f59e0b;background:#fffbeb}
+#blocPrestataire{display:none;gap:12px}
+#blocPrestataire.show{display:grid}
+.btn{background:#f59e0b;color:#000;border:none;padding:14px;border-radius:12px;font-weight:800;cursor:pointer;font-size:15px;width:100%}
+.btn:disabled{opacity:.6}
+.msg{text-align:center;font-size:13px;padding:8px;border-radius:10px;display:none}
+.msg.ok{display:block;background:#dcfce7;color:#166534}
+.msg.err{display:block;background:#fee2e2;color:#991b1b}
+small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="top">
+<div class="back" onclick="location.href='index.html'">← Retour à l'accueil</div>
+<h1>Créez votre compte <span>Rocyinter</span></h1>
+<p class="sub">Client ou Prestataire ? En 1 minute, sans faux profil.</p>
+
+<div class="card">
+  <div>
+    <label>VOUS ÊTES ?</label>
+    <div class="choix">
+      <button type="button" id="btnClient" class="active" onclick="setType('client')">🙋‍♂️ Client<br><small>Je cherche un service</small></button>
+      <button type="button" id="btnPresta" onclick="setType('prestataire')">💼 Prestataire<br><small>Je propose un service</small></button>
+    </div>
+  </div>
+
+  <div>
+    <label>NOM COMPLET *</label>
+    <input id="nom" placeholder="Ex: Jean Kouassi">
+  </div>
+  <div>
+    <label>WHATSAPP *</label>
+    <input id="whatsapp" placeholder="Ex: +229 97 00 00 00">
+  </div>
+  <div>
+    <label>EMAIL (optionnel)</label>
+    <input id="email" type="email" placeholder="Ex: jean@gmail.com">
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div>
+      <label>PAYS *</label>
+      <select id="pays">
+        <option value="Bénin">🇧🇯 Bénin</option>
+        <option value="Togo">🇹🇬 Togo</option>
+        <option value="Côte d'Ivoire">🇨🇮 Côte d'Ivoire</option>
+        <option value="Sénégal">🇸🇳 Sénégal</option>
+        <option value="Cameroun">🇨🇲 Cameroun</option>
+        <option value="Nigeria">🇳🇬 Nigeria</option>
+        <option value="Ghana">🇬🇭 Ghana</option>
+        <option value="France">🇫🇷 France</option>
+        <option value="Canada">🇨🇦 Canada</option>
+      </select>
+    </div>
+    <div>
+      <label>VILLE *</label>
+      <input id="ville" placeholder="Ex: Calavi">
+    </div>
+  </div>
+  <div>
+    <label>LOCALITÉ / QUARTIER *</label>
+    <input id="localite" placeholder="Ex: Godomey, Cococodji, Ouèdo...">
+  </div>
+
+  <div id="blocPrestataire">
+    <div>
+      <label>CATÉGORIE DE SERVICE *</label>
+      <select id="categorie">
+        <option value="">Choisir...</option>
+        <optgroup label="🍽️ Se nourrir">
+          <option value="Traiteur">Traiteur</option>
+          <option value="Restaurant">Restaurant / Maquis</option>
+          <option value="Livraison repas">Livraison repas</option>
+        </optgroup>
+        <optgroup label="🏠 Domicile">
+          <option value="Ménage">Ménage / Repassage</option>
+          <option value="Plomberie">Plomberie</option>
+          <option value="Électricité">Électricité</option>
+          <option value="Climatisation">Climatisation</option>
+          <option value="Menuiserie">Menuiserie</option>
+          <option value="Peinture">Peinture</option>
+          <option value="Jardinage">Jardinage</option>
+        </optgroup>
+        <optgroup label="💼 Pro">
+          <option value="Design">Design / Graphisme</option>
+          <option value="Développement">Développement Web</option>
+          <option value="Marketing">Marketing / Réseaux sociaux</option>
+          <option value="Comptabilité">Comptabilité</option>
+          <option value="Traduction">Traduction</option>
+          <option value="Cours">Cours / Coaching</option>
+        </optgroup>
+        <optgroup label="✈️ Séjour">
+          <option value="Hôtel">Hôtel / Appartement</option>
+          <option value="Location voiture">Location voiture</option>
+          <option value="Guide touristique">Guide touristique</option>
+          <option value="Transport">Transport / Moto</option>
+        </optgroup>
+      </select>
+    </div>
+    <div>
+      <label>DÉCRIVEZ VOTRE SERVICE *</label>
+      <textarea id="description" placeholder="Ex: Je suis plombier à Calavi depuis 5 ans. Je répare fuites, robinets, installation..."></textarea>
+    </div>
+    <div>
+      <label>PHOTO DE PROFIL (lien photo - optionnel)</label>
+      <input id="photo" placeholder="Collez un lien photo ou laissez vide">
+    </div>
+  </div>
+
+  <div id="msg" class="msg"></div>
+  <button class="btn" id="btnInscrire" onclick="inscrire()">Créer mon compte →</button>
+  <small>Déjà inscrit ? <a href="connexion.html">Connectez-vous</a><br>En vous inscrivant, vous acceptez les règles Rocyinter : pas de faux profil, paiement sécurisé.</small>
+</div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
+const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let typeCompte = 'client';
+function setType(t){
+  typeCompte = t;
+  document.getElementById('btnClient').classList.toggle('active', t==='client');
+  document.getElementById('btnPresta').classList.toggle('active', t==='prestataire');
+  document.getElementById('blocPrestataire').classList.toggle('show', t==='prestataire');
+}
+
+function showMsg(txt, ok){
+  const m = document.getElementById('msg');
+  m.textContent = txt;
+  m.className = 'msg ' + (ok ? 'ok' : 'err');
+}
+
+async function inscrire(){
+  const nom = document.getElementById('nom').value.trim();
+  const whatsapp = document.getElementById('whatsapp').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const pays = document.getElementById('pays').value;
+  const ville = document.getElementById('ville').value.trim();
+  const localite = document.getElementById('localite').value.trim();
+  const categorie = document.getElementById('categorie').value;
+  const description = document.getElementById('description').value.trim();
+  const photo = document.getElementById('photo').value.trim();
+  const btn = document.getElementById('btnInscrire');
+
+  if(!nom || !whatsapp || !ville || !localite){ showMsg('Remplis Nom + WhatsApp + Ville + Localité', false); return; }
+  if(typeCompte==='prestataire' && (!categorie || !description)){ showMsg('Prestataire : choisis ta catégorie + décris ton service', false); return; }
+
+  btn.disabled = true; btn.textContent = 'Création...';
+
+  const {data, error} = await supabase.from('profiles').insert([{
+    nom, whatsapp, email: email||null, type_compte: typeCompte,
+    pays, ville, localite,
+    description_profil: description||null,
+    photo_profil: photo||null,
+    categorie_prestataire: typeCompte==='prestataire' ? categorie : null,
+    status_prestataire: typeCompte==='prestataire' ? 'en_attente' : null
+  }]).select().single();
+
+  if(error){ showMsg('Erreur : ' + error.message, false); btn.disabled=false; btn.textContent='Créer mon compte →'; return; }
+
+  localStorage.setItem('rocy_user_id', data.id);
+  localStorage.setItem('rocy_user_nom', data.nom);
+  localStorage.setItem('rocy_user_type', data.type_compte);
+  localStorage.setItem('rocy_user_whatsapp', data.whatsapp);
+  localStorage.setItem('rocy_user_pays', data.pays);
+  localStorage.setItem('rocy_user_ville', data.ville);
+  localStorage.setItem('rocy_user_localite', data.localite);
+
+  showMsg('✅ Compte créé ! Redirection...', true);
+  setTimeout(()=>{
+    if(typeCompte==='prestataire') location.href='creer-annonce.html';
+    else location.href='index.html';
+  }, 1200);
+}
+</script>
+</body>
+</html>
