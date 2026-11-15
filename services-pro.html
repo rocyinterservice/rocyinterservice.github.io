@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Services Professionnels - Rocyinter Services</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="app.js" defer></script>
+<style>
+.filtres{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;max-width:860px;margin:0 auto 20px}
+.filtres button{background:#fff;border:1px solid var(--bordure);padding:9px 16px;border-radius:999px;font-weight:700;font-size:13px}
+.filtres button.actif{background:var(--bleu);color:#fff}
+.badge{display:inline-block;font-size:12px;font-weight:800;padding:4px 10px;border-radius:999px;margin-top:6px}
+.badge-vert{background:#E6F7ED;color:#1A7A3A}
+.badge-jaune{background:#FFF3CD;color:#7A5A00}
+.badge-bleu{background:#EAF2FF;color:#0A1A33}
+.prix{font-weight:900;color:var(--bleu);font-size:16px;margin-top:6px}
+.recherche{max-width:860px;margin:0 auto 16px}
+.recherche input{width:100%;padding:13px 16px;border-radius:12px;border:1px solid var(--bordure);font-size:15px}
+.dispo{font-size:13px;color:var(--gris)}
+</style>
+</head>
+<body>
+
+<header id="site-header"></header>
+
+<main class="container">
+
+  <div class="page-title">
+    <h1>Services Professionnels</h1>
+    <p>Expert-comptable, Avocat, Notaire, Architecte, Consultant, Agence. Accédez à des professionnels qualifiés pour sécuriser vos projets. Paiement 100% sécurisé en escrow.</p>
+  </div>
+
+  <div class="recherche">
+    <input type="text" id="rechercheInput" placeholder="🔍 Rechercher : avocat, comptable, notaire, architecte..." oninput="filtrer()">
+  </div>
+
+  <div class="filtres">
+    <button class="actif" onclick="filtrerCat('tous',this)">Tous</button>
+    <button onclick="filtrerCat('juridique',this)">Juridique</button>
+    <button onclick="filtrerCat('finance',this)">Finance</button>
+    <button onclick="filtrerCat('batiment',this)">Bâtiment & Design</button>
+    <button onclick="filtrerCat('conseil',this)">Conseil</button>
+  </div>
+
+  <div class="services-liste" id="listePros">
+
+    <a href="fiche-prestataire.html?id=avocat1" class="service-item" data-cat="juridique" data-nom="avocat droit contrat litige">
+      <div class="service-icone">⚖️</div>
+      <div class="service-texte">
+        <h3>Avocat - Droit, Contrats & Litiges</h3>
+        <p>Consultation juridique, rédaction de contrats, assistance en cas de litige. Confidentialité totale, réponse sous 24h.</p>
+        <span class="badge badge-vert">✓ Vérifié • 4.9 ★ (89 missions)</span><br>
+        <span class="dispo">Consultation en ligne ou en cabinet • Répond en 2h</span><br>
+        <div class="prix">À partir de <span data-prix="25000">25 000 FCFA</span> / consultation</div>
+      </div>
+      <div class="service-fleche">→</div>
+    </a>
+
+    <a href="fiche-prestataire.html?id=compta1" class="service-item" data-cat="finance" data-nom="expert comptable comptabilite fiscalite entreprise">
+      <div class="service-icone">📊</div>
+      <div class="service-texte">
+        <h3>Expert-Comptable - Comptabilité & Fiscalité</h3>
+        <p>Tenue de comptabilité, déclaration fiscale, création d'entreprise, bilan. Pour particuliers et entreprises.</p>
+        <span class="badge badge-vert">✓ Vérifié • 4.8 ★ (142 missions)</span><br>
+        <span class="dispo">Disponible cette semaine • Premier appel gratuit</span><br>
+        <div class="prix">À partir de <span data-prix="20000">20 000 FCFA</span> / mois</div>
+      </div>
+      <div class="service-fleche">→</div>
+    </a>
+
+    <a href="fiche-prestataire.html?id=notaire1" class="service-item" data-cat="juridique" data-nom="notaire acte terrain maison succession">
+      <div class="service-icone">📜</div>
+      <div class="service-texte">
+        <h3>Notaire - Actes, Terrains & Successions</h3>
+        <p>Actes de vente, terrains, maisons, successions, testaments. Accompagnement complet et sécurisé.</p>
+        <span class="badge badge-vert">✓ Vérifié • 5.0 ★ (67 missions)</span><br>
+        <span class="dispo">Sur rendez-vous • Dossier suivi en ligne</span><br>
+        <div class="prix">À partir de <span data-prix="50000">50 000 FCFA</span> / acte</div>
+      </div>
+      <div class="service-fleche">→</div>
+    </a>
+
+    <a href="fiche-prestataire.html?id=archi1" class="service-item" data-cat="batiment" data-nom="architecte plan maison batiment design">
+      <div class="service-icone">🏛️</div>
+      <div class="service-texte">
+        <h3>Architecte - Plans & Design</h3>
+        <p>Plans de maison, design intérieur, suivi de chantier, permis de construire. Plans 2D et 3D sur mesure.</p>
+        <span class="badge badge-vert">✓ Vérifié • 4.9 ★ (78 missions)</span><br>
+        <span class="dispo">Disponible • Devis gratuit en 48h</span><br>
+        <div class="prix">À partir de <span data-prix="75000">75 000 FCFA</span> / plan</div>
+      </div>
+      <div class="service-fleche">→</div>
+    </a>
+
+    <a href="fiche-prestataire.html?id=consult1" class="service-item" data-cat="conseil" data-nom="consultant business marketing strategie">
+      <div class="service-icone">💡</div>
+      <div class="service-texte">
+        <h3>Consultant - Business & Marketing</h3>
+        <p>Stratégie d'entreprise, business plan, marketing digital, étude de marché. Pour lancer ou développer votre activité.</p>
+        <span class="badge badge-jaune">En attente de vérification • 4.7 ★ (54 missions)</span><br>
+        <span class="dispo">Disponible • Appel découverte gratuit</span><br>
+        <div class="prix">À partir de <span data-prix="30000">30 000 FCFA</span> / séance</div>
+      </div>
+      <div class="service-fleche">→</div>
+    </a>
+
+    <a href="fiche-prestataire.html?id=agence1" class="service-item" data-cat="conseil" data-nom="agence communication site web logo">
+      <div class="service-icone">🎨</div>
+      <div class="service-texte">
+        <h3>Agence - Communication & Digital</h3>
+        <p>Logo, site web, réseaux sociaux, publicité. Une équipe complète pour votre image de marque.</p>
+        <span class="badge badge-vert">✓ Vérifié • 4.8 ★ (96 missions)</span><br>
+        <span class="dispo">Disponible • Portfolio sur demande</span><br>
+        <div class="prix">À partir de <span data-prix="45000">45 000 FCFA</span> / projet</div>
+      </div>
+      <div class="service-fleche">→</div>
+    </a>
+
+  </div>
+
+  <div class="escrow-box">
+    <h2>Paiement 100% Escrow - Services Professionnels</h2>
+    <p>Vous payez à Rocyinter. Nous bloquons l'argent. Le professionnel réalise la mission et vous livre les documents. Vous validez. Nous libérons l'argent. Vos documents restent confidentiels.</p>
+    <div class="btn-centre">
+      <a href="escrow.html" class="btn">Voir mon portefeuille Escrow</a>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Pourquoi passer par un professionnel vérifié ?</h2>
+    <p>Tous les professionnels affichés sur cette page sont vérifiés : identité, diplômes et expériences contrôlés. Chaque mission est protégée par l'escrow : l'argent n'est libéré qu'après votre validation. En cas de désaccord, l'argent reste bloqué et notre équipe tranche de façon équitable.</p>
+    <div class="btn-centre">
+      <a href="devenir-prestataire.html" class="btn btn-bleu">Devenir prestataire professionnel →</a>
+    </div>
+  </div>
+
+</main>
+
+<footer id="site-footer"></footer>
+
+<script>
+let catActive = 'tous';
+function filtrerCat(cat, btn){
+  catActive = cat;
+  document.querySelectorAll('.filtres button').forEach(b=>b.classList.remove('actif'));
+  if(btn) btn.classList.add('actif');
+  filtrer();
+}
+function filtrer(){
+  const q = (document.getElementById('rechercheInput').value || '').toLowerCase();
+  document.querySelectorAll('#listePros .service-item').forEach(item=>{
+    const nom = item.getAttribute('data-nom') || '';
+    const cat = item.getAttribute('data-cat') || '';
+    const okCat = catActive==='tous' || cat===catActive;
+    const okTexte = !q || nom.includes(q) || item.textContent.toLowerCase().includes(q);
+    item.style.display = (okCat && okTexte) ? 'flex' : 'none';
+  });
+}
+</script>
+
+</body>
+</html>
