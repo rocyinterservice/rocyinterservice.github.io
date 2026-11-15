@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rocyinter Services - Manger, Se faire servir, Séjourner</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bleu:#0A1A33;--jaune:#FFC107;--blanc:#fff;--bleuclair:#EAF2FF;--vert:#25D366;--rouge:#E53935;--gris:#6b7a90}
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+body{background:var(--bleuclair);color:#111}
+header{background:var(--bleu);color:var(--blanc);padding:12px 16px;position:sticky;top:0;z-index:100}
+.top{display:flex;justify-content:space-between;align-items:center;max-width:1100px;margin:auto}
+.logo{font-weight:900;font-size:24px;letter-spacing:.5px;line-height:1}
+.logo span{color:var(--jaune)}
+.logo small{display:block;font-size:10px;letter-spacing:4px;color:#fff;font-weight:700}
+.top-btns{display:flex;gap:8px}
+.top-btns button{background:#fff;color:#111;border:0;padding:8px 10px;border-radius:999px;font-weight:700;cursor:pointer;font-size:13px}
+.hero{max-width:1100px;margin:18px auto;padding:20px 16px}
+.hero h1{font-size:32px;line-height:1.1;color:var(--bleu)}
+.hero h1 span{color:#b78a00}
+.hero p{margin-top:10px;color:var(--gris);font-size:16px;line-height:1.5}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+@media(max-width:640px){.grid{grid-template-columns:1fr}}
+.card{background:#fff;border-radius:16px;padding:16px;box-shadow:0 4px 14px rgba(10,26,51,.08)}
+.card h3{font-size:18px}
+.card p{font-size:14px;color:var(--gris);margin:8px 0 12px;line-height:1.5}
+.btn{display:block;text-align:center;background:var(--jaune);color:#111;padding:12px;border-radius:12px;font-weight:800;text-decoration:none}
+.btn2{background:var(--bleu);color:#fff}
+.escrow{background:var(--bleu);color:#fff;border-radius:16px;padding:16px;margin-top:12px}
+.escrow b{color:var(--jaune)}
+footer{background:var(--bleu);color:#fff;text-align:center;padding:18px;font-size:13px;margin-top:20px}
+</style>
+</head>
+<body>
+<header>
+<div class="top">
+<div class="logo">ROCY<span>INTER</span><small>SERVICES</small></div>
+<div class="top-btns">
+<button onclick="changerLangue()">🌐 <span id="langLabel">FR</span></button>
+<button onclick="changerMonnaie()">💰 <span id="deviseLabel">FCFA</span></button>
+<button onclick="allerConnexion()">Connexion</button>
+</div>
+</div>
+</header>
+
+<div class="hero">
+<h1>Manger, Se faire servir, <span>Séjourner.</span><br>Partout, depuis chez vous.</h1>
+<p>Abomey-Calavi • Cotonou • Bénin. Commandez un plat, trouvez un maçon, un avocat, un hôtel. Paiement 100% sécurisé en escrow.</p>
+
+<div class="grid">
+<div class="card"><h3>🍔 Manger</h3><p>Restaurants, Fast-food, Grillades, Traiteurs. Livraison rapide.</p><a class="btn" href="manger.html">Voir les restaurants</a></div>
+<div class="card"><h3>🏠 Services à domicile</h3><p>Maçon, Électricien, Plombier, Décorateur, Coiffeuse.</p><a class="btn" href="services-domicile.html">Trouver un prestataire</a></div>
+<div class="card"><h3>💼 Services Professionnels</h3><p>Expert-comptable, Avocat, Notaire, Architecte.</p><a class="btn" href="services-pro.html">Voir les professionnels</a></div>
+<div class="card"><h3>🏨 Séjourner & Immobilier</h3><p>Hôtels, Appartements, Maisons à louer, Parcelles.</p><a class="btn" href="sejourner.html">Réserver un séjour</a></div>
+</div>
+
+<div class="escrow">
+<b>🛡️ PAIEMENT 100% ESCROW</b><br><br>
+Tu payes à Rocyinter. On bloque l'argent. Le prestataire fait le travail. Tu valides. On libère l'argent.
+<br><br><a class="btn" href="escrow.html">Voir mon portefeuille Escrow →</a>
+</div>
+
+<div class="card" style="margin-top:12px">
+<h3>Comment ça marche ?</h3>
+<p>1. Tu choisis • 2. Tu payes en escrow • 3. Le prestataire travaille • 4. Tu valides • 5. On libère l'argent</p>
+<a class="btn btn2" href="comment-ca-marche.html">Comment ça marche</a>
+</div>
+</div>
+
+<footer>© 2026 Rocyinter Services - Rocyinter Commerce Général • Abomey-Calavi, Bénin<br><a href="conditions.html" style="color:#fff">Conditions</a> • <a href="confidentialite.html" style="color:#fff">Confidentialité</a> • <a href="aide.html" style="color:#fff">Aide</a></footer>
+
+<script>
+// CONFIG SUPABASE - TON PROJET
+const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
+const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqPqLKlI9Q_sqzcR6dF";
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// LANGUE + MONNAIE - GLOBAL, LIE A TOUTES LES PAGES
+let langue = localStorage.getItem('rocy_lang') || 'fr';
+let devise = localStorage.getItem('rocy_devise') || 'FCFA';
+document.getElementById('langLabel').textContent = langue.toUpperCase();
+document.getElementById('deviseLabel').textContent = devise;
+
+function changerLangue(){
+  const choix = prompt("Choisis ta langue : fr, en, es, pt, ar, zh, de", langue);
+  if(choix){ langue = choix.toLowerCase(); localStorage.setItem('rocy_lang', langue); location.reload(); }
+}
+function changerMonnaie(){
+  const choix = prompt("Choisis ta monnaie : FCFA, EUR, USD, NGN, GHS", devise);
+  if(choix){ devise = choix.toUpperCase(); localStorage.setItem('rocy_devise', devise); location.reload(); }
+}
+function allerConnexion(){ window.location.href = "connexion.html"; }
+
+// TEST CONNEXION SUPABASE
+async function testSupabase(){
+  const { data, error } = await supabaseClient.from('profiles').select('id').limit(1);
+  console.log("Supabase test:", error ? error.message : "Connecté OK - " + data.length + " profils");
+}
+testSupabase();
+</script>
+</body>
+</html>
