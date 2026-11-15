@@ -51,7 +51,7 @@ footer{text-align:center;padding:20px;color:#94a3b8;font-size:12px}
 <header>
   <b>Rocy<span>inter</span></b>
   <div>
-    <button class="btn btn-white" onclick="location.href='connexion.html'">Connexion</button>
+    <button class="btn btn-white" id="btnConnexion" onclick="location.href='connexion.html'">Connexion</button>
     <button class="btn" onclick="location.href='inscription.html'">Devenir Prestataire</button>
   </div>
 </header>
@@ -101,7 +101,7 @@ footer{text-align:center;padding:20px;color:#94a3b8;font-size:12px}
   <div id="listeAnnonces" class="grid"></div>
 </div>
 
-<footer>Rocyinter Services © 2026 - Paiement sécurisé Escrow - Bénin</footer>
+<footer>Rocyinter Services © 2026 - Paiement sécurisé Escrow - Bénin<br><a href="admin.html" style="color:#94a3b8">Admin</a></footer>
 
 <script>
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
@@ -109,6 +109,15 @@ const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let universActif = "";
+
+// Si déjà connecté, le bouton Connexion devient Mon espace
+const uidConnecte = localStorage.getItem('rocy_user_id');
+const typeConnecte = localStorage.getItem('rocy_user_type');
+if(uidConnecte){
+  const btnC = document.getElementById('btnConnexion');
+  btnC.textContent = 'Mon espace';
+  btnC.onclick = function(){ location.href = typeConnecte==='prestataire' ? 'dashboard-prestataire.html' : 'dashboard-client.html'; };
+}
 
 function setUnivers(u){
   universActif = u;
@@ -158,7 +167,7 @@ async function chargerAnnonces(){
         <div class="price">${prixTxt}</div>
         <div class="card-actions">
           <button class="btn-chat" onclick="allerChat('${a.prestataire_id}','${a.id}')">Discuter</button>
-          <button class="btn-voir" onclick="allerChat('${a.prestataire_id}','${a.id}')">Voir profil</button>
+          <button class="btn-voir" onclick="voirProfil('${a.prestataire_id}')">Voir profil</button>
         </div>
       </div>
     </div>`;
@@ -166,9 +175,16 @@ async function chargerAnnonces(){
 }
 
 function allerChat(prestataireId, annonceId){
+  const uid = localStorage.getItem('rocy_user_id');
+  if(!uid){ location.href='connexion.html'; return; }
   localStorage.setItem('chat_prestataire', prestataireId);
   localStorage.setItem('chat_annonce', annonceId);
   location.href = 'chat.html';
+}
+
+function voirProfil(prestataireId){
+  localStorage.setItem('fiche_prestataire_id', prestataireId);
+  location.href = 'fiche-prestataire.html';
 }
 
 chargerAnnonces();
