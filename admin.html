@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin - Rocyinter</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
+body{background:#0f172a;color:#fff;padding:16px}
+.top{max-width:700px;margin:0 auto}
+header{display:flex;justify-content:space-between;align-items:center}
+header b{font-size:22px} header b span{color:#f59e0b}
+header button{background:#fff;color:#000;border:none;padding:8px 12px;border-radius:999px;cursor:pointer;font-size:12px}
+.login{max-width:400px;margin:60px auto;background:#fff;color:#111;border-radius:16px;padding:20px;display:grid;gap:12px}
+.login input{padding:12px;border:1px solid #e2e8f0;border-radius:10px;width:100%}
+.login button{background:#f59e0b;border:none;padding:12px;border-radius:10px;font-weight:800;cursor:pointer}
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin:16px 0}
+.stat{background:#1e293b;border-radius:14px;padding:12px;text-align:center}
+.stat b{font-size:18px;display:block} .stat small{opacity:.6;font-size:11px}
+.tabs{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.tabs button{background:#1e293b;color:#fff;border:none;padding:10px 14px;border-radius:999px;cursor:pointer;font-size:13px}
+.tabs button.active{background:#f59e0b;color:#000;font-weight:800}
+.card{background:#fff;color:#111;border-radius:16px;padding:14px;margin-bottom:12px}
+.card h3{font-size:15px} .card p{font-size:13px;color:#64748b;margin:6px 0;line-height:1.5}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:700}
+.badge.attente{background:#fef3c7;color:#92400e}
+.badge.valide{background:#dcfce7;color:#166534}
+.badge.rejete{background:#fee2e2;color:#991b1b}
+.actions{display:flex;gap:8px;margin-top:10px}
+.actions button{flex:1;padding:10px;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:13px}
+.btn-val{background:#16a34a;color:#fff} .btn-rej{background:#fee2e2;color:#991b1b} .btn-chat{background:#0f172a;color:#fff}
+.empty{background:#1e293b;border-radius:14px;padding:20px;text-align:center;opacity:.7;font-size:13px}
+#main{display:none}
+</style>
+</head>
+<body>
+<div class="top">
+<header>
+  <b>Rocy<span>inter</span> Admin</b>
+  <button onclick="location.href='index.html'">Voir le site</button>
+</header>
+
+<div class="login" id="loginBox">
+  <h2 style="text-align:center">🔐 Admin Rocyinter</h2>
+  <p style="text-align:center;color:#64748b;font-size:13px">Mot de passe admin pour valider les annonces et voir les commandes.</p>
+  <input id="mdp" type="password" placeholder="Mot de passe admin">
+  <button onclick="loginAdmin()">Entrer</button>
+  <small style="text-align:center;color:#94a3b8">Mot de passe par défaut : <b>rocy2026</b><br>Change-le après dans le code.</small>
+</div>
+
+<div id="main">
+  <div class="stats">
+    <div class="stat"><b id="sAnnonces">0</b><small>Annonces</small></div>
+    <div class="stat"><b id="sCommandes">0</b><small>Commandes</small></div>
+    <div class="stat"><b id="sUsers">0</b><small>Utilisateurs</small></div>
+    <div class="stat"><b id="sCommission">0 F</b><small>Commissions</small></div>
+  </div>
+
+  <div class="tabs">
+    <button id="tab-annonces" class="active" onclick="setTab('annonces')">📋 Annonces en attente</button>
+    <button id="tab-commandes" onclick="setTab('commandes')">💰 Commandes</button>
+    <button id="tab-users" onclick="setTab('users')">👥 Utilisateurs</button>
+    <button id="tab-avis" onclick="setTab('avis')">⭐ Avis</button>
+  </div>
+
+  <div id="contenu"></div>
+</div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
+const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let tabActuel = 'annonces';
+
+function loginAdmin(){
+  const mdp = document.getElementById('mdp').value;
+  if(mdp === 'rocy2026'){
+    localStorage.setItem('rocy_admin', 'ok');
+    document.getElementById('loginBox').style.display='none';
+    document.getElementById('main').style.display='block';
+    chargerTout();
+  } else {
+    alert('Mot de passe incorrect');
+  }
+}
+if(localStorage.getItem('rocy_admin')==='ok'){
+  document.getElementById('loginBox').style.display='none';
+  document.getElementById('main').style.display='block';
+  chargerTout();
+}
+
+function setTab(t){
+  tabActuel = t;
+  ['annonces','commandes','users','avis'].forEach(k=>{
+    document.getElementById('tab-'+k).classList.toggle('active', k===t);
+  });
+  chargerTout();
+}
+
+async function chargerTout(){
+  // Stats
+  const {data: ann} = await supabase.from('annonces').select('*');
+  const {data: cmd} = await supabase.from('commandes').select('*');
+  const {data: users} = await supabase.from('profiles').select('*');
+  let comm = 0; cmd?.forEach(c=> comm += Number(c.commission||0));
+  document.getElementById('sAnnonces').textContent = ann?.length || 0;
+  document.getElementById('sCommandes').textContent = cmd?.length || 0;
+  document.getElementById('sUsers').textContent = users?.length || 0;
+  document.getElementById('sCommission').textContent = comm.toLocaleString() + ' F';
+
+  const box = document.getElementById('contenu');
+
+  if(tabActuel==='annonces'){
+    const {data} = await supabase.from('annonces').select('*, profiles(nom, whatsapp)').eq('status','en_attente').order('created_at',{ascending:false});
+    if(!data || data.length===0){ box.innerHTML = `<div class="empty">✅ Aucune annonce en attente. Tout est validé !</div>`; return; }
+    box.innerHTML = data.map(a=>`
+      <div class="card">
+        <span class="badge attente">⏳ En attente</span>
+        <h3 style="margin-top:8px">${a.titre}</h3>
+        <p><b>Prestataire :</b> ${a.profiles?.nom} • WhatsApp : ${a.profiles?.whatsapp}<br>
+        <b>Catégorie :</b> ${a.categorie} • ${a.univers}<br>
+        <b>Lieu :</b> ${a.localite} - ${a.ville} - ${a.pays}<br>
+        <b>Prix :</b> ${a.prix_fixe ? Number(a.prix_indicatif).toLocaleString()+' FCFA fixe' : 'À discuter'}<br>
+        <b>Description :</b> ${a.description}</p>
+        <div class="actions">
+          <button class="btn-val" onclick="validerAnnonce('${a.id}')">✅ Valider</button>
+          <button class="btn-rej" onclick="rejeterAnnonce('${a.id}')">❌ Rejeter</button>
+        </div>
+      </div>`).join('');
+  }
+
+  if(tabActuel==='commandes'){
+    const {data} = await supabase.from('commandes').select('*').order('created_at',{ascending:false}).limit(50);
+    if(!data || data.length===0){ box.innerHTML = `<div class="empty">Aucune commande pour l'instant.</div>`; return; }
+    box.innerHTML = data.map(c=>`
+      <div class="card">
+        <b>${c.titre}</b> • <span class="badge attente">${c.status}</span>
+        <p>Total : ${Number(c.montant_total).toLocaleString()} FCFA • Commission (12%) : <b>${Number(c.commission).toLocaleString()} FCFA</b> • Prestataire : ${Number(c.montant_prestataire).toLocaleString()} FCFA<br>
+        📍 ${c.localite} - ${c.ville} • ${new Date(c.created_at).toLocaleDateString('fr-FR')}</p>
+      </div>`).join('');
+  }
+
+  if(tabActuel==='users'){
+    const {data} = await supabase.from('profiles').select('*').order('created_at',{ascending:false}).limit(100);
+    if(!data || data.length===0){ box.innerHTML = `<div class="empty">Aucun utilisateur.</div>`; return; }
+    box.innerHTML = data.map(u=>`
+      <div class="card"><b>${u.nom}</b> • ${u.type_compte} ${u.type_compte==='prestataire' ? '• ' + (u.categorie_prestataire||'') : ''}
+      <p>WhatsApp : ${u.whatsapp} • 📍 ${u.localite} - ${u.ville} - ${u.pays}<br>${u.description_profil || ''}</p></div>`).join('');
+  }
+
+  if(tabActuel==='avis'){
+    const {data} = await supabase.from('avis').select('*').order('created_at',{ascending:false}).limit(50);
+    if(!data || data.length===0){ box.innerHTML = `<div class="empty">Aucun avis pour l'instant.</div>`; return; }
+    box.innerHTML = data.map(a=>`<div class="card"><b>${'⭐'.repeat(a.note||5)}</b><p>${a.commentaire || ''}</p></div>`).join('');
+  }
+}
+
+async function validerAnnonce(id){
+  await supabase.from('annonces').update({status:'valide'}).eq('id', id);
+  alert('✅ Annonce validée ! Elle apparaît maintenant sur l’accueil.');
+  chargerTout();
+}
+async function rejeterAnnonce(id){
+  if(!confirm('Rejeter cette annonce ?')) return;
+  await supabase.from('annonces').update({status:'rejete'}).eq('id', id);
+  chargerTout();
+}
+</script>
+</body>
+</html>
