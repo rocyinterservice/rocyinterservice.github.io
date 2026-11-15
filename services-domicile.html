@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Services à Domicile - Rocyinter Services</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="app.js" defer></script>
+<style>
+.filtres{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;max-width:860px;margin:0 auto 20px}
+.filtres button{background:#fff;border:1px solid var(--bordure);padding:9px 16px;border-radius:999px;font-weight:700;font-size:13px}
+.filtres button.actif{background:var(--bleu);color:#fff}
+.badge{display:inline-block;font-size:12px;font-weight:800;padding:4px 10px;border-radius:999px;margin-top:6px}
+.badge-vert{background:#E6F7ED;color:#1A7A3A}
+.badge-jaune{background:#FFF3CD;color:#7A5A00}
+.badge-bleu{background:#EAF2FF;color:#0A1A33}
+.prix{font-weight:900;color:var(--bleu);font-size:16px;margin-top:6px}
+.recherche{max-width:860px;margin:0 auto 16px}
+.recherche input{width:100%;padding:13px 16px;border-radius:12px;border:1px solid var(--bordure);font-size:15px}
+.dispo{font-size:13px;color:var(--gris)}
+</style>
+</head>
+<body>
+
+<header id="site-header"></header>
+
+<main class="container">
+
+  <div class="page-title">
+    <h1>Services à Domicile</h1>
+    <p>Maçon, Électricien, Plombier, Décorateur, Coiffeuse, Mécanicien. Des prestataires vérifiés, près de chez vous, pour chaque besoin du quotidien. Paiement 100% sécurisé en escrow.</p>
+  </div>
+
+  <div class="recherche">
+    <input type="text" id="rechercheInput" placeholder="🔍 Rechercher : maçon, électricien, plombier, coiffeuse..." oninput="filtrer()">
+  </div>
+
+  <div class="filtres">
+    <button class="actif" onclick="filtrerCat('tous',this)">Tous</button>
+    <button onclick="filtrerCat('batiment',this)">Bâtiment</button>
+    <button onclick="filtrerCat('reparation',this)">Réparation</button>
+    <button onclick="filtrerCat('beaute',this)">Beauté</button>
+    <button onclick="filtrerCat('menage',this)">Ménage</button>
+  </div>
+
+  <div class="services-liste" id="listePrestas">
+
+    <a href="fiche-prestataire.html?id=macon1" class="service-item" data-cat="batiment" data-nom="maçon construction maison renovation">
+      <div class="service-icone">🧱</div>
+      <div class="service-texte">
+        <h3>Maçon - Construction & Rénovation</h3>
+        <p>Construction, rénovation, carrelage, enduit, fondation. Devis gratuit, travail propre et garanti.</p>
+        <span class="badge badge-vert">✓ Vérifié • 4.9 ★ (134 missions)</span><br>
+        <span class="dispo">Disponible aujourd'hui • Répond en 15 min</span><br>
+        <div class="prix">À partir de <span data-prix="15000">15 000 FCFA</span> / jour</div>
+      </div>
+      <div class="service-fleche">→</div>
+    </a>
+
+    <a href="fiche-prestataire.html?id=elec1" class="service-item" data-cat="reparation" data-nom="electricien installation panne prise">
+      <div class="service-icone">⚡</div>
+      <div class="service-texte">
+        <h3>Électricien - Installation & Dépannage</h3>
+        <p>Installation électrique, dépannage, prises, éclairage, tableau électrique. Intervention rapide et sécurisée.</p>
+        <span class="badge badge-vert">✓ Vérifié • 4.8 ★ (98 missions)</span><br>
+        <span class="dispo">Disponible aujourd'hui • Urgence possible</span><br>
+        <div class="prix">À partir de <span data-prix="8000">8 000 FCFA</span> / intervention</div>
+      </div>
+      <div class="service-fleche">→</div>
+    </a>
+
+    <a href="fiche-prestataire.html?id=plomb1" class="service-item" data-cat="reparation" data-nom="plombier fuite robinet toilette">
+      <div class="service-icone">🔧</div>
+      <div class="service-texte">
+        <h3>Plombier - Fuites & Installations</h3>
+        <p>Réparation de fuites, installation sanitaire, robinetterie, chauffe-eau. Travail propre, sans surprise.</p>
+        <span class="badge badge-vert">✓ Vérifié • 4.7 ★ (87 missions)</span><br>
+        <span class="dispo">Disponible demain • Devis gratuit</span><br>
+        <div class="prix">À partir de <span data-prix="7000">7 000 FCFA</span> / intervention</div>
+      </div>
+      <div class="service-fleche">→</div>
+    </a>
+
+    <a href="fiche-prestataire.html?id=coiff1" class="service-item" data-cat="beaute" data-nom="coiffeuse coiffure tresse maquillage domicile">
+      <div class="service-icone">💇‍♀️</div>
+      <div class="service-texte">
+        <h3>Coiffeuse à Domicile - Tresses & Soins</h3>
+        <p>Tresses, coiffure, maquillage, soins capillaires. Elle vient chez vous avec tout son matériel.</p>
+        <span class="badge badge-vert">✓ Vérifiée • 5.0 ★ (156 missions)</span><br>
+        <span class="dispo">Disponible aujourd'hui • Réservation en 1 clic</span><br>
+        <div class="prix">À partir de <span data-prix="5000">5 000 FCFA</span> / prestation</div>
+      </div>
+      <div class="service-fleche">→</div>
+    </a>
+
+    <a href="fiche-prestataire.html?id=menage1" class="service-item" data-cat="menage" data-nom="menage nettoyage maison bureau repassage">
+      <div class="service-icone">🧹</div>
+      <div class="service-texte">
+        <h3>Ménage & Nettoyage - Maison & Bureau</h3>
+        <p>Nettoyage complet, repassage, vitres, désinfection. Équipe de confiance, produits fournis.</p>
+        <span class="badge badge-jaune">En attente de vérification • 4.6 ★ (42 missions)</span><br>
+        <span class="dispo">Disponible cette semaine</span><br>
+        <div class="prix">À partir de <span data-prix="6000">6 000 FCFA</span> / séance</div>
+      </div>
+      <div class="service-fleche">→</div>
+    </a>
+
+    <a href="fiche-prestataire.html?id=meca1" class="service-item" data-cat="reparation" data-nom="mecanicien voiture moto reparation">
+      <div class="service-icone">🚗</div>
+      <div class="service-texte">
+        <h3>Mécanicien - Auto & Moto</h3>
+        <p>Diagnostic, vidange, freins, moteur, dépannage à domicile. Pièces d'origine, garantie 3 mois.</p>
+        <span class="badge badge-vert">✓ Vérifié • 4.8 ★ (112 missions)</span><br>
+        <span class="dispo">Disponible aujourd'hui • Dépannage urgent</span><br>
+        <div class="prix">À partir de <span data-prix="10000">10 000 FCFA</span> / intervention</div>
+      </div>
+      <div class="service-fleche">→</div>
+    </a>
+
+  </div>
+
+  <div class="escrow-box">
+    <h2>Paiement 100% Escrow - Services à Domicile</h2>
+    <p>Vous décrivez votre besoin, vous payez en escrow. Le prestataire vient faire le travail. Vous validez. Nous libérons l'argent. Si le travail n'est pas fait, l'argent reste bloqué.</p>
+    <div class="btn-centre">
+      <a href="escrow.html" class="btn">Voir mon portefeuille Escrow</a>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Comment réserver un prestataire ?</h2>
+    <p>Choisissez un prestataire dans la liste ci-dessus, décrivez votre besoin, choisissez la date et payez en escrow. Le prestataire confirme, réalise la mission, et vous validez la fin du travail pour libérer le paiement. En cas de désaccord, signalez-le depuis votre commande, l'argent reste bloqué tant que le litige n'est pas résolu.</p>
+    <div class="btn-centre">
+      <a href="devenir-prestataire.html" class="btn btn-bleu">Devenir prestataire →</a>
+    </div>
+  </div>
+
+</main>
+
+<footer id="site-footer"></footer>
+
+<script>
+let catActive = 'tous';
+function filtrerCat(cat, btn){
+  catActive = cat;
+  document.querySelectorAll('.filtres button').forEach(b=>b.classList.remove('actif'));
+  if(btn) btn.classList.add('actif');
+  filtrer();
+}
+function filtrer(){
+  const q = (document.getElementById('rechercheInput').value || '').toLowerCase();
+  document.querySelectorAll('#listePrestas .service-item').forEach(item=>{
+    const nom = item.getAttribute('data-nom') || '';
+    const cat = item.getAttribute('data-cat') || '';
+    const okCat = catActive==='tous' || cat===catActive;
+    const okTexte = !q || nom.includes(q) || item.textContent.toLowerCase().includes(q);
+    item.style.display = (okCat && okTexte) ? 'flex' : 'none';
+  });
+}
+</script>
+
+</body>
+</html>
