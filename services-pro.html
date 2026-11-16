@@ -26,19 +26,13 @@ input{width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:10px;margin
 <div class="top">
 <div class="back" onclick="location.href='index.html'">← Accueil</div>
 <h1>💼 Services <span>Pro</span></h1>
-<p class="sub">Vrais designers, développeurs, comptables, coachs... validés par Rocyinter.</p>
+<p class="sub">Vrais designers, développeurs, comptables, coachs... validés par Rocyinter. Commission 5 000 FCFA fixe par mission.</p>
 
 <div class="filtres" id="filtres">
-  <button class="active" onclick="setCat('')">Tous</button>
-  <button onclick="setCat('Design / Graphisme')">Design</button>
-  <button onclick="setCat('Développement Web')">Dev Web</button>
-  <button onclick="setCat('Marketing / Réseaux sociaux')">Marketing</button>
-  <button onclick="setCat('Comptabilité')">Compta</button>
-  <button onclick="setCat('Cours / Coaching')">Cours</button>
-  <button onclick="setCat('Rédaction / Traduction')">Rédaction</button>
+  <button class="active" data-cat="" onclick="setCat('')">Tous</button>
 </div>
 
-<input id="search" placeholder="🔍 Chercher : Cotonou, Calavi, Designer..." oninput="charger()">
+<input id="search" placeholder="🔍 Chercher : Cotonou, Calavi, Designer..." oninput="afficher()">
 <div id="liste">Chargement...</div>
 </div>
 
@@ -47,27 +41,39 @@ const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let catActuelle = '';
+let toutesAnnonces = [];
 
 function setCat(c){
   catActuelle = c;
-  document.querySelectorAll('.filtres button').forEach(b=>b.classList.remove('active'));
-  event.target.classList.add('active');
-  charger();
+  document.querySelectorAll('.filtres button').forEach(b=> b.classList.toggle('active', b.dataset.cat === c));
+  afficher();
 }
 
-async function charger(){
+function construireFiltres(){
+  const cats = [...new Set(toutesAnnonces.map(a=>a.categorie).filter(Boolean))].sort();
+  const box = document.getElementById('filtres');
+  box.innerHTML = `<button class="active" data-cat="" onclick="setCat('')">Tous</button>` + cats.map(c=>`<button data-cat="${c}" onclick="setCat('${c.replace(/'/g,"\\'")}')">${c}</button>`).join('');
+  document.querySelectorAll('.filtres button').forEach(b=> b.classList.toggle('active', b.dataset.cat === catActuelle));
+}
+
+function afficher(){
   const q = document.getElementById('search').value.trim().toLowerCase();
-  let query = supabase.from('annonces').select('*, profiles(nom, whatsapp)').eq('univers','pro').eq('status','valide').order('created_at',{ascending:false});
-  if(catActuelle) query = query.eq('categorie', catActuelle);
-  const {data} = await query;
   const box = document.getElementById('liste');
-  let list = data||[];
-  if(q) list = list.filter(a=>(a.titre+' '+a.ville+' '+a.localite+' '+a.categorie+' '+(a.profiles?.nom||'')).toLowerCase().includes(q));
+  let list = toutesAnnonces;
+  if(catActuelle) list = list.filter(a=> a.categorie === catActuelle);
+  if(q) list = list.filter(a=>(a.titre+' '+a.ville+' '+a.localite+' '+a.categorie+' '+(a.profiles?.nom||'')+' '+(a.description||'')).toLowerCase().includes(q));
   if(!list.length){
     box.innerHTML=`<p style="text-align:center;color:#64748b;padding:20px">Aucun service pro validé pour l'instant.<br><button class="btn" onclick="location.href='creer-annonce.html'">Devenir prestataire pro</button></p>`;
     return;
   }
-  box.innerHTML = list.map(a=>`<div class="card"><h3>${a.titre}</h3><p>👤 ${a.profiles?.nom} • ${a.categorie}<br>📍 ${a.localite} - ${a.ville} • ${a.pays}<br>${a.prix_fixe ? Number(a.prix_indicatif).toLocaleString()+' FCFA - Prix fixe' : '💬 Prix à discuter'}<br>${a.description ? a.description.substring(0,120)+'...' : ''}</p><button class="btn" onclick="voirPresta('${a.prestataire_id}')">Voir le prestataire</button><button class="btn btn-dark" onclick="discuter('${a.prestataire_id}','${a.id}')">💬 Discuter</button></div>`).join('');
+  box.innerHTML = list.map(a=>`<div class="card"><h3>${a.titre}</h3><p>👤 ${a.profiles?.nom} • ${a.categorie}<br>📍 ${a.localite} - ${a.ville} • ${a.pays}<br>${a.prix_fixe ? Number(a.prix_indicatif).toLocaleString()+' FCFA - Prix fixe' : (a.prix_indicatif>0 ? 'À partir de '+Number(a.prix_indicatif).toLocaleString()+' FCFA' : '💬 Prix à discuter')}<br>${a.description ? a.description.substring(0,120)+'...' : ''}</p><button class="btn" onclick="voirPresta('${a.prestataire_id}')">Voir le prestataire</button><button class="btn btn-dark" onclick="discuter('${a.prestataire_id}','${a.id}')">💬 Discuter</button></div>`).join('');
+}
+
+async function charger(){
+  const {data} = await supabase.from('annonces').select('*, profiles(nom, whatsapp)').eq('univers','pro').eq('status','valide').order('created_at',{ascending:false});
+  toutesAnnonces = data || [];
+  construireFiltres();
+  afficher();
 }
 
 function voirPresta(id){ localStorage.setItem('fiche_prestataire_id', id); location.href='fiche-prestataire.html'; }
