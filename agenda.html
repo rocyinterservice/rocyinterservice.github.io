@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Agenda - Rocyinter</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
+body{background:#f6f7f9;color:#111;padding:16px}
+.top{max-width:520px;margin:0 auto}
+.back{color:#64748b;font-size:13px;cursor:pointer}
+h1{font-size:22px;margin:14px 0 12px} h1 span{color:#f59e0b}
+.card{background:#fff;border-radius:16px;padding:14px;margin-bottom:12px}
+.card h3{font-size:15px} .card p{font-size:13px;color:#64748b;margin:6px 0}
+.btn{width:100%;background:#f59e0b;border:none;padding:11px;border-radius:10px;font-weight:800;cursor:pointer;margin-top:8px}
+input{width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:10px;margin:6px 0}
+</style></head>
+<body><div class="top">
+<div class="back" onclick="location.href='dashboard-prestataire.html'">← Tableau de bord</div>
+<h1>📅 Mon <span>Agenda</span></h1>
+<input type="date" id="date"><input id="titre" placeholder="Ex : Ménage chez Mme Awa - Godomey 10h"><input id="heure" placeholder="Heure : 10h00">
+<button class="btn" onclick="ajouter()">+ Ajouter un rendez-vous</button>
+<div id="liste" style="margin-top:12px">Chargement...</div>
+</div>
+<script>
+function charger(){const list=JSON.parse(localStorage.getItem('rocy_agenda')||'[]'); document.getElementById('liste').innerHTML = list.length ? list.map((r,i)=>`<div class="card"><h3>${r.titre}</h3><p>📅 ${r.date} • ${r.heure}</p><button class="btn" onclick="supprimer(${i})">Supprimer</button></div>`).join('') : '<p style="text-align:center;color:#64748b;padding:20px;background:#fff;border-radius:16px">Aucun rendez-vous.</p>';}
+function ajouter(){const d=document.getElementById('date').value; const t=document.getElementById('titre').value; const h=document.getElementById('heure').value; if(!d||!t){alert('Mets une date et un titre');return;} let l=JSON.parse(localStorage.getItem('rocy_agenda')||'[]'); l.push({date:d,titre:t,heure:h}); localStorage.setItem('rocy_agenda',JSON.stringify(l)); document.getElementById('titre').value=''; charger();}
+function supprimer(i){let l=JSON.parse(localStorage.getItem('rocy_agenda')||'[]'); l.splice(i,1); localStorage.setItem('rocy_agenda',JSON.stringify(l)); charger();}
+charger();
+</script></body></html>
