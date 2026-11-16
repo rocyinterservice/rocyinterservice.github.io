@@ -7,7 +7,6 @@
   const isConnecte = !!uid;
   const isPresta = typeLocal === 'prestataire' || typeLocal === 'livreur';
 
-  // TA LISTE EXACTE, SANS RIEN ENLEVER
   const LANGUES = [
     {code:'fr', label:'🇫🇷 FR - Français'},
     {code:'en', label:'🇬🇧 EN - English'},
@@ -42,7 +41,13 @@
 
   const BASE_FR = {
     accueil:'Accueil', connexion:'Connexion', devenir:'Devenir Prestataire', espace:'Mon espace', bonjour:'Bonjour', visiteur:'Bienvenue, visiteur', compte:'MON COMPTE', seConnecter:'🔑 Se connecter', creerCompte:'📝 Créer un compte', favoris:'❤️ Mes Favoris', panier:'🛒 Mon Panier', notif:'🔔 Notifications', deconnexion:'🚪 Déconnexion', services:'SERVICES', immobilier:'🏘️ Immobilier', livreurs:'🛵 Livreurs', escrow:'🔒 Mon Escrow', abonnement:'⭐ Abonnement Prestataire', aide:'AIDE', comment:'❓ Comment ça marche ?', faq:'💬 Aide / FAQ', contact:'📞 Contact', tarifs:'💰 Tarifs', cgu:'📄 CGU', conf:'🔐 Confidentialité', fermer:'✕ Fermer', proposer:'➕ Créer une annonce',
-    heroTitre1:'Trouvez un vrai service', heroTitre2:'près de chez vous', heroSous:'Pas de faux produits. Que des vrais prestataires validés, près de vous, avec paiement sécurisé. Regardez ce que fait chaque entreprise, ça vous donnera envie de commander.',
+    heroTitre1:'Trouvez un vrai service', heroTitre2:'près de chez vous',
+    heroSous:'Des prestataires vérifiés près de chez vous. Découvrez leurs services, comparez leurs offres, discutez directement et commandez en toute sécurité avec le paiement Escrow.',
+    bandeauVisiteur:'Découvrez les entreprises et leurs services. Connectez-vous pour discuter et commander.',
+    bandeauClient:'Découvrez les entreprises, discutez, comparez et commandez en toute sécurité avec le paiement Escrow.',
+    bandeauPresta:'Gérez vos activités et vos annonces. Vos services sont visibles par tous les clients et visiteurs.',
+    bandeauAdmin:'Vous contrôlez et validez les annonces et les prestataires.',
+    pasConnexion:'Pas de connexion', erreurConnexion:'Erreur de connexion', reessayer:'Réessayer',
     pays:'PAYS', ville:'VILLE / LOCALITÉ', rechercher:'RECHERCHER UN SERVICE', villePh:'Ex: Calavi, Cotonou, Godomey...', searchPh:'Ex: Plombier, Traiteur, Nettoyage...',
     tous:'Tous', manger:'Se nourrir', domicile:'Domicile', pro:'Services professionnels', sejour:'Séjour', immo:'Immobilier', livreursTitre:'Livreurs',
     proposerTitre:'Proposer un service', annoncesTitre:'Annonces réelles près de vous', aucuneTitre:'Aucune annonce pour le moment', aucuneSous:'Sois le premier à proposer un service dans ta localité.', discuter:'Discuter', voirProfil:'Voir profil', voirEntreprise:"Voir l'entreprise", prixFixe:'Prix fixe', aPartir:'À partir de', prixDiscuter:'Prix à discuter dans le chat', connectePourCommander:'Connecte-toi pour discuter et commander',
