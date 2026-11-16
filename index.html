@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rocyinter Services</title>
+<title>Rocyinter Service</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="pays.js"></script>
 <script src="rocy-layout.js"></script>
@@ -19,7 +19,7 @@ body{background:#f6f7f9;color:#111}
 .univers{display:flex;flex-wrap:wrap;gap:8px;padding:0 16px 16px}
 .card-u{background:#fff;border:1px solid #e2e8f0;border-radius:999px;padding:8px 14px;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,.05)}
 .card-u:active{background:#fffbeb;border-color:#f59e0b}
-.card-u .ico{font-size:16px} .card-u b{font-size:13px} .card-u small{display:none}
+.card-u .ico{font-size:16px} .card-u b{font-size:13px}
 .card-u.proposer{background:#0f172a;color:#fff;border-color:#0f172a}
 .section{padding:0 16px 20px} .section h2{font-size:18px;margin-bottom:10px}
 .grid{display:grid;gap:12px}
@@ -31,8 +31,6 @@ body{background:#f6f7f9;color:#111}
 .card-actions{display:flex;gap:8px;margin-top:10px} .card-actions button{flex:1;padding:10px;border-radius:10px;border:none;font-weight:700;cursor:pointer}
 .btn-chat{background:#0f172a;color:#fff} .btn-voir{background:#f1f5f9}
 .empty{background:#fff;border:1px dashed #cbd5e1;border-radius:16px;padding:24px;text-align:center;color:#64748b} .empty b{color:#111;display:block;margin-bottom:6px}
-.liens{padding:0 16px 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.liens button{background:#fff;border:1px solid #e2e8f0;padding:12px;border-radius:12px;font-weight:700;cursor:pointer;font-size:13px}
 .bandeau-role{margin:0 16px 16px;padding:12px;border-radius:12px;font-size:13px;font-weight:600;text-align:center}
 .bandeau-visiteur{background:#fef3c7;color:#92400e}
 .bandeau-client{background:#dcfce7;color:#166534}
@@ -60,14 +58,6 @@ body{background:#f6f7f9;color:#111}
   <div class="card-u" onclick="location.href='livreurs.html'"><div class="ico">🛵</div><b data-i18n="livreursTitre">Livreurs</b></div>
   <div class="card-u proposer" onclick="rocyProposerService()"><div class="ico">➕</div><b data-i18n="proposerTitre">Proposer un service</b></div>
 </div>
-<div class="liens">
-  <button type="button" onclick="location.href='immobilier.html'" data-i18n="voirImmo">🏠 Voir tout Immobilier</button>
-  <button type="button" onclick="location.href='livreurs.html'" data-i18n="chercherLivreur">🛵 Chercher un livreur</button>
-  <button type="button" onclick="location.href='abonnement.html'" data-i18n="abonnementBtn">⭐ Abonnement Prestataire - 1er mois offert*</button>
-  <button type="button" onclick="location.href='comment-ca-marche.html'" data-i18n="commentBtn">❓ Comment ça marche ?</button>
-  <button type="button" onclick="location.href='escrow.html'" data-i18n="escrowBtn">🔒 Mon Escrow</button>
-  <button type="button" onclick="location.href='favoris.html'" data-i18n="favorisBtn">❤️ Mes Favoris</button>
-</div>
 <div class="section" id="sectionAnnonces">
   <h2 id="titreSection" data-i18n="annoncesTitre">Annonces réelles près de vous</h2>
   <div id="listeAnnonces" class="grid"></div>
@@ -78,14 +68,11 @@ const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 let supabase = null;
 try{ supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); }catch(e){}
 if(window.rocyRemplirPays) rocyRemplirPays('filtrePays');
-
-// BANDEAU SELON ROLE : VISITEUR / CLIENT / FOURNISSEUR / ADMIN
 function afficherBandeauRole(){
   const box = document.getElementById('bandeauRole');
   if(!box) return;
   const uid = localStorage.getItem('rocy_user_id');
   const type = localStorage.getItem('rocy_user_type') || localStorage.getItem('rocy_role') || '';
-  const t = window.rocyT || (k=>k);
   if(!uid) box.innerHTML = `<div class="bandeau-role bandeau-visiteur">👁️ Vous êtes visiteur : vous pouvez voir toutes les entreprises, c'est une publicité pour elles. Pour discuter et commander, connectez-vous.</div>`;
   else if(type==='prestataire' || type==='livreur') box.innerHTML = `<div class="bandeau-role bandeau-presta">🛠️ Vous êtes fournisseur : vous pouvez voir les autres entreprises, et aussi créer vos annonces sur vos activités. <a href="creer-annonce.html" style="color:#1e40af">Créer une annonce →</a></div>`;
   else if(type==='admin') box.innerHTML = `<div class="bandeau-role bandeau-presta">🛡️ Vous êtes admin : vous contrôlez, vous validez. <a href="admin.html" style="color:#1e40af">Panel Admin →</a></div>`;
@@ -117,8 +104,6 @@ async function chargerAnnonces(){
       const lieu = [a.localite, a.ville, a.pays].filter(Boolean).join(' - ');
       const t = window.rocyT || (k=>k);
       const prixTxt = a.prix_fixe ? `${window.rocyFormatPrix ? window.rocyFormatPrix(a.prix_indicatif) : a.prix_indicatif+' FCFA'} - ${t('prixFixe')}` : (a.prix_indicatif>0 ? `${t('aPartir')} ${window.rocyFormatPrix ? window.rocyFormatPrix(a.prix_indicatif) : a.prix_indicatif+' FCFA'}` : t('prixDiscuter'));
-      // TOUT LE MONDE VOIT L'ENTREPRISE - C'EST UNE PUBLICITE POUR ELLE
-      // SEUL LE VISITEUR NE PEUT PAS DISCUTER / COMMANDER
       return `<div class="card">
         <img src="${img}" onclick="voirProfil('${a.prestataire_id}')" style="cursor:pointer" onerror="this.src='https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&q=80'">
         <div class="card-body">
@@ -141,7 +126,6 @@ async function chargerAnnonces(){
 function allerChat(prestataireId, annonceId){
   const uid = localStorage.getItem('rocy_user_id');
   const t = window.rocyT || (k=>k);
-  // VISITEUR : il voit, mais il ne peut pas commander sans se connecter
   if(!uid){ alert(t('connectePourCommander')); location.href='connexion.html'; return; }
   localStorage.setItem('chat_prestataire', prestataireId);
   localStorage.setItem('chat_annonce', annonceId);
