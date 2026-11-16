@@ -1,4 +1,5 @@
-// rocy-layout.js - HEADER + LANGUE + MONNAIE - VERSION FINALE
+// rocy-layout.js - HEADER + TRADUCTION AUTO POUR TOUTES LES PAGES + MONNAIE + ROLES
+// PAS DE GOOGLE TRANSLATE. Traduction automatique par connexion, pour toutes les pages.
 (function(){
   const uid = localStorage.getItem('rocy_user_id');
   const typeLocal = localStorage.getItem('rocy_user_type') || localStorage.getItem('rocy_role') || '';
@@ -6,69 +7,134 @@
   const isConnecte = !!uid;
   const isPresta = typeLocal === 'prestataire' || typeLocal === 'livreur';
 
+  // TA LISTE EXACTE, SANS RIEN ENLEVER
   const LANGUES = [
-    {code:'fr', label:'🇫🇷 FR'}, {code:'en', label:'🇬🇧 EN'}, {code:'es', label:'🇪🇸 ES'},
-    {code:'pt', label:'🇵🇹 PT'}, {code:'ar', label:'🇸🇦 AR'}, {code:'de', label:'🇩🇪 DE'}
+    {code:'fr', label:'🇫🇷 FR - Français'},
+    {code:'en', label:'🇬🇧 EN - English'},
+    {code:'yo', label:'🇳🇬 YO - Yoruba'},
+    {code:'ig', label:'🇳🇬 IG - Igbo'},
+    {code:'ha', label:'🇳🇬 HA - Hausa'},
+    {code:'fon', label:'🇧🇯 FON - Fon / Fongbe'},
+    {code:'wo', label:'🇸🇳 WO - Wolof'},
+    {code:'bm', label:'🇲🇱 BM - Bambara'},
+    {code:'ee', label:'🇹🇬 EE - Ewe'},
+    {code:'tw', label:'🇬🇭 TW - Twi'},
+    {code:'ln', label:'🇨🇩 LN - Lingala'},
+    {code:'sw', label:'🇹🇿 SW - Kiswahili'},
+    {code:'am', label:'🇪🇹 AM - Amharic'},
+    {code:'so', label:'🇸🇴 SO - Somali'},
+    {code:'es', label:'🇪🇸 ES - Español'},
+    {code:'pt', label:'🇵🇹 PT - Português'},
+    {code:'ar', label:'🇸🇦 AR - العربية'},
+    {code:'de', label:'🇩🇪 DE - Deutsch'},
+    {code:'it', label:'🇮🇹 IT - Italiano'},
+    {code:'nl', label:'🇳🇱 NL - Nederlands'},
+    {code:'ru', label:'🇷🇺 RU - Русский'},
+    {code:'tr', label:'🇹🇷 TR - Türkçe'},
+    {code:'zh', label:'🇨🇳 ZH - 中文'},
+    {code:'ja', label:'🇯🇵 JA - 日本語'},
+    {code:'ko', label:'🇰🇷 KO - 한국어'},
+    {code:'hi', label:'🇮🇳 HI - हिन्दी'}
   ];
-  let langue = localStorage.getItem('rocy_langue');
-  if(!langue){ langue = (navigator.language||'fr').startsWith('en') ? 'en' : 'fr'; localStorage.setItem('rocy_langue', langue); }
 
-  const TRAD = {
-    fr: {
-      accueil:'Accueil', connexion:'Connexion', devenir:'Devenir Prestataire', espace:'Mon espace', bonjour:'Bonjour', visiteur:'Bienvenue, visiteur', compte:'MON COMPTE', seConnecter:'🔑 Se connecter', creerCompte:'📝 Créer un compte', favoris:'❤️ Mes Favoris', panier:'🛒 Mon Panier', notif:'🔔 Notifications', deconnexion:'🚪 Déconnexion', services:'SERVICES', immobilier:'🏘️ Immobilier', livreurs:'🛵 Livreurs', escrow:'🔒 Mon Escrow', abonnement:'⭐ Abonnement Prestataire', aide:'AIDE', comment:'❓ Comment ça marche ?', faq:'💬 Aide / FAQ', contact:'📞 Contact', tarifs:'💰 Tarifs', cgu:'📄 CGU', conf:'🔐 Confidentialité', fermer:'✕ Fermer', proposer:'➕ Créer une annonce',
-      heroTitre1:'Trouvez un vrai service', heroTitre2:'près de chez vous', heroSous:'Pas de faux produits. Que des vrais prestataires validés, près de vous, avec paiement sécurisé.',
-      pays:'PAYS', ville:'VILLE / LOCALITÉ', rechercher:'RECHERCHER UN SERVICE', tousPays:'Tous les pays', villePh:'Ex: Calavi, Cotonou, Godomey...', searchPh:'Ex: Plombier, Traiteur, Nettoyage...',
-      tous:'Tous', tousSous:'Tous les services réels', manger:'Se nourrir', mangerSous:'Traiteur, Restaurant, Livraison', domicile:'Domicile', domicileSous:'Nettoyage, Ménage, Plomberie, Électricité', pro:'Services professionnels', proSous:'Design, Dev, Marketing, Compta', sejour:'Séjour', sejourSous:'Hôtel, Location, Guide, Transport', immo:'Immobilier', immoSous:'Location, Vente, Chambre, Visite', livreursTitre:'Livreurs', livreursSous:'Prix à discuter - Choix, pas obligatoire', proposerTitre:'Proposer un service', proposerSous:"Gagnez de l'argent - Si ta catégorie n'existe pas, tu l'écris toi-même",
-      voirImmo:'🏠 Voir tout Immobilier', chercherLivreur:'🛵 Chercher un livreur', abonnementBtn:'⭐ Abonnement Prestataire - 1er mois offert*', commentBtn:'❓ Comment ça marche ?', escrowBtn:'🔒 Mon Escrow', favorisBtn:'❤️ Mes Favoris',
-      annoncesTitre:'Annonces réelles près de vous', aucuneTitre:'Aucune annonce pour le moment', aucuneSous:'Sois le premier à proposer un service dans ta localité.', discuter:'Discuter', voirProfil:'Voir profil', prixFixe:'Prix fixe', aPartir:'À partir de', prixDiscuter:'Prix à discuter dans le chat'
-    },
-    en: {
-      accueil:'Home', connexion:'Login', devenir:'Become Provider', espace:'My space', bonjour:'Hello', visiteur:'Welcome, visitor', compte:'MY ACCOUNT', seConnecter:'🔑 Login', creerCompte:'📝 Create account', favoris:'❤️ My Favorites', panier:'🛒 My Cart', notif:'🔔 Notifications', deconnexion:'🚪 Logout', services:'SERVICES', immobilier:'🏘️ Real Estate', livreurs:'🛵 Couriers', escrow:'🔒 My Escrow', abonnement:'⭐ Provider Subscription', aide:'HELP', comment:'❓ How does it work?', faq:'💬 Help / FAQ', contact:'📞 Contact', tarifs:'💰 Prices', cgu:'📄 Terms', conf:'🔐 Privacy', fermer:'✕ Close', proposer:'➕ Create an ad',
-      heroTitre1:'Find a real service', heroTitre2:'near you', heroSous:'No fake products. Only real validated providers, near you, with secure payment.',
-      pays:'COUNTRY', ville:'CITY / AREA', rechercher:'SEARCH A SERVICE', tousPays:'All countries', villePh:'Ex: Calavi, Cotonou, Godomey...', searchPh:'Ex: Plumber, Caterer, Cleaning...',
-      tous:'All', tousSous:'All real services', manger:'Food', mangerSous:'Caterer, Restaurant, Delivery', domicile:'Home', domicileSous:'Cleaning, Housekeeping, Plumbing, Electricity', pro:'Professional Services', proSous:'Design, Dev, Marketing, Accounting', sejour:'Stay', sejourSous:'Hotel, Rental, Guide, Transport', immo:'Real Estate', immoSous:'Rental, Sale, Room, Visit', livreursTitre:'Couriers', livreursSous:'Price to discuss - Optional choice', proposerTitre:'Offer a service', proposerSous:'Earn money - If your category does not exist, write it yourself',
-      voirImmo:'🏠 See all Real Estate', chercherLivreur:'🛵 Find a courier', abonnementBtn:'⭐ Provider Subscription - 1st month free*', commentBtn:'❓ How does it work?', escrowBtn:'🔒 My Escrow', favorisBtn:'❤️ My Favorites',
-      annoncesTitre:'Real ads near you', aucuneTitre:'No ads for now', aucuneSous:'Be the first to offer a service in your area.', discuter:'Chat', voirProfil:'View profile', prixFixe:'Fixed price', aPartir:'From', prixDiscuter:'Price to discuss in chat'
-    },
-    es: {
-      accueil:'Inicio', connexion:'Iniciar sesión', devenir:'Ser Proveedor', espace:'Mi espacio', bonjour:'Hola', visiteur:'Bienvenido, visitante', compte:'MI CUENTA', seConnecter:'🔑 Iniciar sesión', creerCompte:'📝 Crear cuenta', favoris:'❤️ Mis Favoritos', panier:'🛒 Mi Carrito', notif:'🔔 Notificaciones', deconnexion:'🚪 Cerrar sesión', services:'SERVICIOS', immobilier:'🏘️ Inmobiliario', livreurs:'🛵 Repartidores', escrow:'🔒 Mi Escrow', abonnement:'⭐ Suscripción', aide:'AYUDA', comment:'❓ ¿Cómo funciona?', faq:'💬 Ayuda / FAQ', contact:'📞 Contacto', tarifs:'💰 Precios', cgu:'📄 Términos', conf:'🔐 Privacidad', fermer:'✕ Cerrar', proposer:'➕ Crear anuncio',
-      heroTitre1:'Encuentra un servicio real', heroTitre2:'cerca de ti', heroSous:'Sin productos falsos. Solo proveedores reales validados, cerca de ti, con pago seguro.',
-      pays:'PAÍS', ville:'CIUDAD / ZONA', rechercher:'BUSCAR UN SERVICIO', tousPays:'Todos los países', villePh:'Ej: Calavi, Cotonou...', searchPh:'Ej: Fontanero, Catering, Limpieza...',
-      tous:'Todos', tousSous:'Todos los servicios reales', manger:'Comida', mangerSous:'Catering, Restaurante, Entrega', domicile:'Hogar', domicileSous:'Limpieza, Fontanería, Electricidad', pro:'Servicios profesionales', proSous:'Diseño, Desarrollo, Marketing', sejour:'Estancia', sejourSous:'Hotel, Alquiler, Guía, Transporte', immo:'Inmobiliario', immoSous:'Alquiler, Venta, Habitación, Visita', livreursTitre:'Repartidores', livreursSous:'Precio a discutir', proposerTitre:'Ofrecer un servicio', proposerSous:'Gana dinero - Si tu categoría no existe, escríbela',
-      voirImmo:'🏠 Ver todo Inmobiliario', chercherLivreur:'🛵 Buscar repartidor', abonnementBtn:'⭐ Suscripción - 1er mes gratis*', commentBtn:'❓ ¿Cómo funciona?', escrowBtn:'🔒 Mi Escrow', favorisBtn:'❤️ Mis Favoritos',
-      annoncesTitre:'Anuncios reales cerca de ti', aucuneTitre:'Sin anuncios por ahora', aucuneSous:'Sé el primero en ofrecer un servicio en tu zona.', discuter:'Chatear', voirProfil:'Ver perfil', prixFixe:'Precio fijo', aPartir:'Desde', prixDiscuter:'Precio a discutir en el chat'
-    },
-    pt: {
-      accueil:'Início', connexion:'Entrar', devenir:'Ser Prestador', espace:'Meu espaço', bonjour:'Olá', visiteur:'Bem-vindo, visitante', compte:'MINHA CONTA', seConnecter:'🔑 Entrar', creerCompte:'📝 Criar conta', favoris:'❤️ Meus Favoritos', panier:'🛒 Meu Carrinho', notif:'🔔 Notificações', deconnexion:'🚪 Sair', services:'SERVIÇOS', immobilier:'🏘️ Imobiliário', livreurs:'🛵 Entregadores', escrow:'🔒 Meu Escrow', abonnement:'⭐ Assinatura', aide:'AJUDA', comment:'❓ Como funciona?', faq:'💬 Ajuda / FAQ', contact:'📞 Contato', tarifs:'💰 Preços', cgu:'📄 Termos', conf:'🔐 Privacidade', fermer:'✕ Fechar', proposer:'➕ Criar anúncio',
-      heroTitre1:'Encontre um serviço real', heroTitre2:'perto de você', heroSous:'Sem produtos falsos. Apenas prestadores reais validados, perto de você, com pagamento seguro.',
-      pays:'PAÍS', ville:'CIDADE / LOCAL', rechercher:'PESQUISAR UM SERVIÇO', tousPays:'Todos os países', villePh:'Ex: Calavi, Cotonou...', searchPh:'Ex: Encanador, Buffet, Limpeza...',
-      tous:'Todos', tousSous:'Todos os serviços reais', manger:'Comida', mangerSous:'Buffet, Restaurante, Entrega', domicile:'Casa', domicileSous:'Limpeza, Encanamento, Eletricidade', pro:'Serviços profissionais', proSous:'Design, Dev, Marketing', sejour:'Estadia', sejourSous:'Hotel, Aluguel, Guia, Transporte', immo:'Imobiliário', immoSous:'Aluguel, Venda, Quarto, Visita', livreursTitre:'Entregadores', livreursSous:'Preço a discutir', proposerTitre:'Oferecer um serviço', proposerSous:'Ganhe dinheiro - Se sua categoria não existe, escreva',
-      voirImmo:'🏠 Ver todo Imobiliário', chercherLivreur:'🛵 Buscar entregador', abonnementBtn:'⭐ Assinatura - 1º mês grátis*', commentBtn:'❓ Como funciona?', escrowBtn:'🔒 Meu Escrow', favorisBtn:'❤️ Meus Favoritos',
-      annoncesTitre:'Anúncios reais perto de você', aucuneTitre:'Nenhum anúncio por enquanto', aucuneSous:'Seja o primeiro a oferecer um serviço na sua região.', discuter:'Conversar', voirProfil:'Ver perfil', prixFixe:'Preço fixo', aPartir:'A partir de', prixDiscuter:'Preço a discutir no chat'
-    },
-    ar: {
-      accueil:'الرئيسية', connexion:'تسجيل الدخول', devenir:'كن مقدم خدمة', espace:'مساحتي', bonjour:'مرحبا', visiteur:'أهلا بك، زائر', compte:'حسابي', seConnecter:'🔑 تسجيل الدخول', creerCompte:'📝 إنشاء حساب', favoris:'❤️ مفضلاتي', panier:'🛒 سلة التسوق', notif:'🔔 الإشعارات', deconnexion:'🚪 تسجيل الخروج', services:'الخدمات', immobilier:'🏘️ العقارات', livreurs:'🛵 السعاة', escrow:'🔒 الضمان', abonnement:'⭐ الاشتراك', aide:'مساعدة', comment:'❓ كيف يعمل؟', faq:'💬 مساعدة', contact:'📞 اتصل بنا', tarifs:'💰 الأسعار', cgu:'📄 الشروط', conf:'🔐 الخصوصية', fermer:'✕ إغلاق', proposer:'➕ إنشاء إعلان',
-      heroTitre1:'اعثر على خدمة حقيقية', heroTitre2:'بالقرب منك', heroSous:'بدون منتجات مزيفة. مقدمون حقيقيون فقط، بالقرب منك، مع دفع آمن.',
-      pays:'الدولة', ville:'المدينة / المنطقة', rechercher:'البحث عن خدمة', tousPays:'جميع الدول', villePh:'مثال: كالافي، كوتونو...', searchPh:'مثال: سباك، طعام...',
-      tous:'الكل', tousSous:'جميع الخدمات الحقيقية', manger:'طعام', mangerSous:'طعام، مطعم، توصيل', domicile:'المنزل', domicileSous:'تنظيف، سباكة، كهرباء', pro:'خدمات احترافية', proSous:'تصميم، تطوير، تسويق', sejour:'إقامة', sejourSous:'فندق، إيجار، مرشد، نقل', immo:'عقارات', immoSous:'إيجار، بيع، غرفة، زيارة', livreursTitre:'السعاة', livreursSous:'السعر قابل للنقاش', proposerTitre:'قدم خدمة', proposerSous:'اكسب المال - إذا لم تكن فئتك موجودة، اكتبها',
-      voirImmo:'🏠 كل العقارات', chercherLivreur:'🛵 ابحث عن ساعي', abonnementBtn:'⭐ اشتراك - الشهر الأول مجاني*', commentBtn:'❓ كيف يعمل؟', escrowBtn:'🔒 الضمان', favorisBtn:'❤️ مفضلاتي',
-      annoncesTitre:'إعلانات حقيقية بالقرب منك', aucuneTitre:'لا توجد إعلانات حاليا', aucuneSous:'كن أول من يقدم خدمة في منطقتك.', discuter:'دردشة', voirProfil:'عرض الملف', prixFixe:'سعر ثابت', aPartir:'ابتداء من', prixDiscuter:'السعر قابل للنقاش في الدردشة'
-    },
-    de: {
-      accueil:'Start', connexion:'Anmelden', devenir:'Anbieter werden', espace:'Mein Bereich', bonjour:'Hallo', visiteur:'Willkommen, Besucher', compte:'MEIN KONTO', seConnecter:'🔑 Anmelden', creerCompte:'📝 Konto erstellen', favoris:'❤️ Favoriten', panier:'🛒 Warenkorb', notif:'🔔 Benachrichtigungen', deconnexion:'🚪 Abmelden', services:'DIENSTLEISTUNGEN', immobilier:'🏘️ Immobilien', livreurs:'🛵 Kuriere', escrow:'🔒 Mein Escrow', abonnement:'⭐ Abo', aide:'HILFE', comment:'❓ Wie funktioniert es?', faq:'💬 Hilfe / FAQ', contact:'📞 Kontakt', tarifs:'💰 Preise', cgu:'📄 AGB', conf:'🔐 Datenschutz', fermer:'✕ Schließen', proposer:'➕ Anzeige erstellen',
-      heroTitre1:'Finde einen echten Service', heroTitre2:'in deiner Nähe', heroSous:'Keine Fake-Produkte. Nur echte geprüfte Anbieter, in deiner Nähe, mit sicherer Zahlung.',
-      pays:'LAND', ville:'STADT / ORT', rechercher:'SERVICE SUCHEN', tousPays:'Alle Länder', villePh:'Z.B. Calavi, Cotonou...', searchPh:'Z.B. Klempner, Catering...',
-      tous:'Alle', tousSous:'Alle echten Services', manger:'Essen', mangerSous:'Catering, Restaurant, Lieferung', domicile:'Zuhause', domicileSous:'Reinigung, Klempner, Elektrik', pro:'Professionelle Dienstleistungen', proSous:'Design, Dev, Marketing', sejour:'Aufenthalt', sejourSous:'Hotel, Miete, Guide, Transport', immo:'Immobilien', immoSous:'Miete, Verkauf, Zimmer, Besuch', livreursTitre:'Kuriere', livreursSous:'Preis zu besprechen', proposerTitre:'Service anbieten', proposerSous:'Geld verdienen - Wenn deine Kategorie nicht existiert, schreibe sie',
-      voirImmo:'🏠 Alle Immobilien', chercherLivreur:'🛵 Kurier finden', abonnementBtn:'⭐ Abo - 1. Monat gratis*', commentBtn:'❓ Wie funktioniert es?', escrowBtn:'🔒 Mein Escrow', favorisBtn:'❤️ Favoriten',
-      annoncesTitre:'Echte Anzeigen in deiner Nähe', aucuneTitre:'Noch keine Anzeigen', aucuneSous:'Sei der Erste, der einen Service anbietet.', discuter:'Chatten', voirProfil:'Profil ansehen', prixFixe:'Festpreis', aPartir:'Ab', prixDiscuter:'Preis im Chat zu besprechen'
-    }
+  let langue = localStorage.getItem('rocy_langue') || 'fr';
+
+  // Code pour l'API de traduction. Pour les langues locales qui ne sont pas dans l'API, on passe par une langue proche, puis l'API fait de son mieux.
+  const CODE_API = { fr:'fr', en:'en', yo:'yo', ig:'ig', ha:'ha', fon:'fr', wo:'wo', bm:'bm', ee:'ee', tw:'tw', ln:'ln', sw:'sw', am:'am', so:'so', es:'es', pt:'pt', ar:'ar', de:'de', it:'it', nl:'nl', ru:'ru', tr:'tr', zh:'zh-CN', ja:'ja', ko:'ko', hi:'hi' };
+
+  // Texte de base en Français pour chaque clé. C'est la source pour la traduction auto sur toutes les pages.
+  const BASE_FR = {
+    accueil:'Accueil', connexion:'Connexion', devenir:'Devenir Prestataire', espace:'Mon espace', bonjour:'Bonjour', visiteur:'Bienvenue, visiteur', compte:'MON COMPTE', seConnecter:'🔑 Se connecter', creerCompte:'📝 Créer un compte', favoris:'❤️ Mes Favoris', panier:'🛒 Mon Panier', notif:'🔔 Notifications', deconnexion:'🚪 Déconnexion', services:'SERVICES', immobilier:'🏘️ Immobilier', livreurs:'🛵 Livreurs', escrow:'🔒 Mon Escrow', abonnement:'⭐ Abonnement Prestataire', aide:'AIDE', comment:'❓ Comment ça marche ?', faq:'💬 Aide / FAQ', contact:'📞 Contact', tarifs:'💰 Tarifs', cgu:'📄 CGU', conf:'🔐 Confidentialité', fermer:'✕ Fermer', proposer:'➕ Créer une annonce',
+    heroTitre1:'Trouvez un vrai service', heroTitre2:'près de chez vous', heroSous:'Pas de faux produits. Que des vrais prestataires validés, près de vous, avec paiement sécurisé. Regardez ce que fait chaque entreprise, ça vous donnera envie de commander.',
+    pays:'PAYS', ville:'VILLE / LOCALITÉ', rechercher:'RECHERCHER UN SERVICE', villePh:'Ex: Calavi, Cotonou, Godomey...', searchPh:'Ex: Plombier, Traiteur, Nettoyage...',
+    tous:'Tous', manger:'Se nourrir', domicile:'Domicile', pro:'Services professionnels', sejour:'Séjour', immo:'Immobilier', livreursTitre:'Livreurs',
+    proposerTitre:'Proposer un service', voirImmo:'🏠 Voir tout Immobilier', chercherLivreur:'🛵 Chercher un livreur', abonnementBtn:'⭐ Abonnement Prestataire - 1er mois offert*', commentBtn:'❓ Comment ça marche ?', escrowBtn:'🔒 Mon Escrow', favorisBtn:'❤️ Mes Favoris',
+    annoncesTitre:'Annonces réelles près de vous', aucuneTitre:'Aucune annonce pour le moment', aucuneSous:'Sois le premier à proposer un service dans ta localité.', discuter:'Discuter', voirProfil:'Voir profil', voirEntreprise:"Voir l'entreprise", prixFixe:'Prix fixe', aPartir:'À partir de', prixDiscuter:'Prix à discuter dans le chat', connectePourCommander:'Connecte-toi pour discuter et commander',
+    // Pour les autres pages - ajoute tes clés ici au fur et à mesure
+    mangerTitre:'Se nourrir', domicileTitre:'Domicile', proTitre:'Services professionnels', sejourTitre:'Séjour', immoTitre:'Immobilier', livreursTitrePage:'Livreurs', mesAnnonces:'Mes Annonces', mesRevenus:'Mes Revenus', monAgenda:'Mon Agenda', mesActivites:'Mes Activités', creerAnnonce:'Créer une annonce', mesCommandes:'Mes Commandes', mesFavoris:'Mes Favoris', monPanier:'Mon Panier', monEscrow:'Mon Escrow', valider:'Valider', refuser:'Refuser', envoyer:'Envoyer', rechercherBtn:'Rechercher', commander:'Commander', payer:'Payer', retourAccueil:"Retour à l'accueil"
   };
-  window.rocyT = function(key){ return (TRAD[langue]||TRAD.fr)[key] || (TRAD.fr)[key] || key; };
+
+  window.rocyT = function(key){
+    // Si on est en français, on rend directement le texte français
+    if(langue==='fr') return BASE_FR[key] || key;
+    // Sinon, on regarde dans le cache de traduction auto
+    const cache = localStorage.getItem('rocy_trad_' + langue + '_' + key);
+    if(cache) return cache;
+    // En attendant la traduction, on rend le français
+    return BASE_FR[key] || key;
+  };
   window.rocySetLangue = function(l){ localStorage.setItem('rocy_langue', l); location.reload(); };
-  window.rocyAppliquerTraduction = function(){
-    document.querySelectorAll('[data-i18n]').forEach(el=>{ const k=el.getAttribute('data-i18n'); if(window.rocyT(k)!==k) el.textContent = window.rocyT(k); });
-    document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ const k=el.getAttribute('data-i18n-ph'); if(window.rocyT(k)!==k) el.placeholder = window.rocyT(k); });
-  };
+
+  // TRADUCTION AUTOMATIQUE PAR CONNEXION - POUR TOUTES LES PAGES, TOUTES LES LANGUES
+  async function traduireAuto(texte, langueCible){
+    if(!texte || langueCible==='fr') return texte;
+    const code = CODE_API[langueCible] || langueCible;
+    try{
+      const url = 'https://api.mymemory.translated.net/get?q=' + encodeURIComponent(texte) + '&langpair=fr|' + code;
+      const res = await fetch(url);
+      const j = await res.json();
+      if(j && j.responseData && j.responseData.translatedText) return j.responseData.translatedText;
+    }catch(e){}
+    return texte;
+  }
+
+  // Cette fonction traduit tous les éléments de LA PAGE ACTUELLE, quelle que soit la page
+  async function traduirePageEntiere(){
+    if(langue==='fr'){
+      document.querySelectorAll('[data-i18n]').forEach(el=>{ const k=el.getAttribute('data-i18n'); if(BASE_FR[k]) el.textContent = BASE_FR[k]; });
+      document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ const k=el.getAttribute('data-i18n-ph'); if(BASE_FR[k]) el.placeholder = BASE_FR[k]; });
+      return;
+    }
+    // On traduit en lot, pour ne pas faire 100 appels d'un coup
+    const els = Array.from(document.querySelectorAll('[data-i18n]'));
+    for(const el of els){
+      const k = el.getAttribute('data-i18n');
+      // On prend le texte français de base, pas le texte déjà traduit, sinon on traduit une traduction
+      let base = BASE_FR[k];
+      if(!base){
+        // Si la clé n'existe pas dans BASE_FR, on prend le texte actuel et on l'enregistre comme base
+        base = (el.getAttribute('data-i18n-base') || el.textContent || '').trim();
+        if(!base) continue;
+        el.setAttribute('data-i18n-base', base);
+      } else {
+        el.setAttribute('data-i18n-base', base);
+      }
+      const cacheKey = 'rocy_trad_' + langue + '_' + k;
+      let trad = localStorage.getItem(cacheKey);
+      if(!trad){
+        trad = await traduireAuto(base, langue);
+        localStorage.setItem(cacheKey, trad);
+      }
+      el.textContent = trad;
+    }
+    const phs = Array.from(document.querySelectorAll('[data-i18n-ph]'));
+    for(const el of phs){
+      const k = el.getAttribute('data-i18n-ph');
+      let base = BASE_FR[k] || el.getAttribute('data-i18n-base') || el.placeholder || '';
+      if(!base) continue;
+      el.setAttribute('data-i18n-base', base);
+      const cacheKey = 'rocy_trad_' + langue + '_' + k;
+      let trad = localStorage.getItem(cacheKey);
+      if(!trad){ trad = await traduireAuto(base, langue); localStorage.setItem(cacheKey, trad); }
+      el.placeholder = trad;
+    }
+  }
+  window.rocyAppliquerTraduction = traduirePageEntiere;
+
+  // Quand du nouveau contenu arrive sur la page (ex: annonces chargées après), on le traduit aussi
+  function observerNouveauContenu(){
+    if(!window.MutationObserver) return;
+    const obs = new MutationObserver(()=>{
+      // On ne retraduit que les nouveaux éléments qui ont data-i18n et pas encore traduits
+      const nouveaux = document.querySelectorAll('[data-i18n]:not([data-traduit="1"])');
+      if(nouveaux.length>0 && langue!=='fr'){
+        nouveaux.forEach(el=>el.setAttribute('data-traduit','1'));
+        traduirePageEntiere();
+      }
+    });
+    obs.observe(document.body, {childList:true, subtree:true});
+  }
+
   const DEVISES = [{code:'FCFA', label:'FCFA'}, {code:'EUR', label:'€ EUR'}, {code:'USD', label:'$ USD'}, {code:'NGN', label:'₦ NGN'}, {code:'GHS', label:'₵ GHS'}, {code:'XOF', label:'XOF'}, {code:'GBP', label:'£ GBP'}];
   let devise = localStorage.getItem('rocy_devise') || 'FCFA';
   let tauxJour = JSON.parse(localStorage.getItem('rocy_taux')||'{}');
@@ -101,7 +167,11 @@
   window.rocyFermerMenu = function(){ const d=document.getElementById('rocyDrawer'); const o=document.getElementById('rocyOverlay'); if(!d||!o) return; d.classList.remove('open'); o.classList.remove('show'); };
   window.rocyAllerEspace = function(){ if(typeLocal==='prestataire'||typeLocal==='livreur') location.href='dashboard-prestataire.html'; else if(typeLocal==='admin') location.href='admin.html'; else location.href='dashboard-client.html'; };
   window.rocyDeconnexion = function(){ ['rocy_user_id','rocy_user_nom','rocy_user_type','rocy_role','rocy_user_whatsapp','rocy_user_pays','rocy_user_ville','rocy_user_localite'].forEach(k=>localStorage.removeItem(k)); location.href='index.html'; };
-  window.rocyProposerService = function(){ if(isConnecte) location.href='creer-annonce.html'; else location.href='inscription.html'; };
+  window.rocyProposerService = function(){
+    if(!isConnecte) location.href='inscription.html';
+    else if(isPresta) location.href='creer-annonce.html';
+    else location.href='inscription.html?type=prestataire';
+  };
   async function construire(){
     await chargerTaux();
     const isAdmin = await verifierAdmin();
@@ -115,7 +185,7 @@
       .rocy-logo{font-size:20px;font-weight:800;cursor:pointer;flex:1;min-width:90px} .rocy-logo span{color:#f59e0b}
       .rocy-header .btn{background:#f59e0b;color:#000;border:none;padding:8px 12px;border-radius:999px;font-weight:700;cursor:pointer;font-size:12px;white-space:nowrap}
       .rocy-header .btn-white{background:#fff;color:#111}
-      .rocy-top-select{background:#1e293b;color:#fff;border:1px solid #334155;border-radius:999px;padding:7px 8px;font-size:12px;font-weight:700;cursor:pointer}
+      .rocy-top-select{background:#1e293b;color:#fff;border:1px solid #334155;border-radius:999px;padding:7px 8px;font-size:12px;font-weight:700;cursor:pointer;max-width:135px}
       .rocy-drawer{position:fixed;top:0;left:-300px;width:280px;max-width:85vw;height:100%;background:#fff;z-index:200;transition:left .25s;box-shadow:4px 0 20px rgba(0,0,0,.2);overflow-y:auto;padding-bottom:20px}
       .rocy-drawer.open{left:0}
       .rocy-drawer-head{background:#0f172a;color:#fff;padding:16px}
@@ -134,6 +204,7 @@
       <select class="rocy-top-select" onchange="rocySetLangue(this.value)">${optsLangue}</select>
       <select class="rocy-top-select" onchange="rocySetDevise(this.value)">${optsDevise}</select>
       ${!isConnecte ? `<button type="button" class="btn btn-white" onclick="location.href='connexion.html'">${t('connexion')}</button><button type="button" class="btn" onclick="location.href='inscription.html'">${t('devenir')}</button>` : `<button type="button" class="btn btn-white" onclick="rocyAllerEspace()">${t('espace')}</button>`}
+      ${isPresta ? `<button type="button" class="btn" onclick="rocyProposerService()">${t('proposer')}</button>` : ''}
     </header>
     <div class="rocy-drawer" id="rocyDrawer">
       <div class="rocy-drawer-head"><b>Rocy<span>inter</span></b><br><small>${isConnecte ? '👋 '+t('bonjour')+', '+nom : t('visiteur')}</small><br><button type="button" style="margin-top:8px;background:#f59e0b;border:none;padding:6px 12px;border-radius:999px;font-weight:700;cursor:pointer" onclick="rocyFermerMenu()">${t('fermer')}</button></div>
@@ -153,14 +224,16 @@
       <button type="button" class="rocy-menu-item" onclick="location.href='cgu.html'">${t('cgu')}</button>
       <button type="button" class="rocy-menu-item" onclick="location.href='confidentialite.html'">${t('conf')}</button>
       ${isAdmin ? `<div class="rocy-menu-label">ADMIN - QUE POUR TOI</div><button type="button" class="rocy-menu-item" onclick="location.href='admin.html'">🛡️ Panel Admin</button>` : ''}
-      ${isPresta ? `<div class="rocy-menu-label">PRESTATAIRE</div><button type="button" class="rocy-menu-item" onclick="rocyProposerService()">${t('proposer')}</button>` : ''}
+      ${isPresta ? `<div class="rocy-menu-label">PRESTATAIRE</div><button type="button" class="rocy-menu-item" onclick="rocyProposerService()">${t('proposer')}</button><button type="button" class="rocy-menu-item" onclick="location.href='revenus.html'">💰 Mes Revenus</button><button type="button" class="rocy-menu-item" onclick="location.href='agenda.html'">📅 Mon Agenda</button>` : ''}
     </div>`;
     const footerHTML = `<footer class="rocy-footer">Rocyinter Services © 2026 - Paiement sécurisé Escrow - Bénin<br><a href="tarifs.html">${t('tarifs')}</a> | <a href="cgu.html">${t('cgu')}</a> | <a href="confidentialite.html">${t('conf')}</a> | <a href="aide-faq.html">${t('faq')}</a> | <a href="contact.html">${t('contact')}</a></footer>`;
     document.querySelectorAll('header:not(.rocy-header)').forEach(h=>h.remove());
     document.querySelectorAll('footer:not(.rocy-footer)').forEach(f=>f.remove());
     document.body.insertAdjacentHTML('afterbegin', headerHTML);
     document.body.insertAdjacentHTML('beforeend', footerHTML);
-    window.rocyAppliquerTraduction();
+    // On traduit la page actuelle, puis on surveille les nouveaux contenus
+    await traduirePageEntiere();
+    observerNouveauContenu();
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', construire);
   else construire();
