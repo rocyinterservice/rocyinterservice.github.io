@@ -2,45 +2,136 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Abonnement - Rocyinter</title>
+<title data-i18n="abonnementTitre">Abonnement - Rocyinter</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="pays.js"></script>
+<script src="rocy-layout.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
-body{background:#f6f7f9;color:#111;padding:16px}
-.top{max-width:520px;margin:0 auto}
+body{background:#f6f7f9;color:#111}
+.top{max-width:520px;margin:0 auto;padding:16px}
 .back{color:#64748b;font-size:13px;cursor:pointer}
 h1{font-size:22px;margin:14px 0 4px} h1 span{color:#f59e0b}
-p.sub{color:#64748b;font-size:13px;margin-bottom:12px}
+p.sub{color:#64748b;font-size:13px;margin-bottom:12px;line-height:1.5}
 .card{background:#fff;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
 .card h3{font-size:16px} .card p{font-size:13px;color:#64748b;margin:6px 0;line-height:1.6}
 .btn{width:100%;background:#f59e0b;border:none;padding:12px;border-radius:10px;font-weight:800;cursor:pointer;margin-top:8px}
 .btn-dark{background:#0f172a;color:#fff}
+.btn:disabled{opacity:.5;cursor:not-allowed}
 .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:700;background:#dcfce7;color:#166534}
-.info{background:#fffbe6;border:1px solid #fde68a;border-radius:12px;padding:12px;font-size:13px;line-height:1.6}
+.info{background:#fffbe6;border:1px solid #fde68a;border-radius:12px;padding:12px;font-size:13px;line-height:1.6;margin-bottom:12px}
 .rouge{background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:12px;font-size:13px;line-height:1.6;margin-bottom:12px}
+.bandeau-abo{padding:12px;border-radius:12px;font-size:13px;line-height:1.6;font-weight:600;text-align:center;margin-bottom:12px}
+.abo-ok{background:#dcfce7;color:#166534} .abo-offert{background:#dbeafe;color:#1e40af} .abo-expire{background:#fee2e2;color:#991b1b} .abo-client{background:#f1f5f9;color:#334155}
 </style>
 </head>
 <body>
 <div class="top">
-<div class="back" onclick="location.href='index.html'">← Accueil</div>
-<h1>⭐ <span>Abonnement</span></h1>
-<p class="sub">1er mois d'abonnement offert pour les 30 premiers prestataires validés. Commissions toujours dues, même pendant le mois offert.</p>
+<div class="back" onclick="location.href='index.html'">← <span data-i18n="accueil">Accueil</span></div>
+<h1>⭐ <span data-i18n="abonnement">Abonnement</span></h1>
+<p class="sub" data-i18n="abonnementSous">1er mois d'abonnement offert pour les 30 premiers prestataires validés. Commissions toujours dues, même pendant le mois offert.</p>
+
+<div id="bandeauAbo"></div>
 <div class="info" id="compteur">Chargement...</div>
-<div class="rouge">⚠️ <b>Important :</b> Le mois offert, c'est <b>seulement l'abonnement</b>. Les commissions Rocyinter s'appliquent <b>dès la 1ère mission</b> : Manger 12% (8% lancement), Domicile 8%, Pro 5 000 FCFA, Séjour 12%, Parcelle 10 000 FCFA + 2%, Location 50% d'un mois.</div>
-<div class="card"><h3>Pro - 10 000 FCFA / mois</h3><p>Manger + Domicile : 10 000 FCFA / mois<br>Pro + Hôtel + Immobilier : 25 000 FCFA / mois<br>3 annonces, mise en avant, badge Pro.<br><b>1er mois offert</b> si tu es parmi les 30 premiers validés.</p><button class="btn" onclick="choisir('Pro')">Choisir Pro</button></div>
-<div class="card"><h3>Premium - 25 000 FCFA / mois</h3><p>Manger + Domicile : 25 000 FCFA / mois<br>Pro + Hôtel + Immobilier : 50 000 FCFA / mois<br>Annonces illimitées, en haut des listes, badge Premium.<br><b>1er mois offert</b> si tu es parmi les 30 premiers validés.</p><button class="btn btn-dark" onclick="choisir('Premium')">Choisir Premium</button></div>
-<p style="font-size:12px;color:#64748b;text-align:center;margin-top:8px">Réduction annuelle : 10 mois payés = 12 mois. Après 6 mois : Pro 15 000 / 35 000 FCFA, Premium 35 000 / 75 000 FCFA. À partir du 2ème mois, l'abonnement est payant pour tout le monde.</p>
+<div class="rouge">⚠️ <b data-i18n="important">Important :</b> <span data-i18n="abonnementImportant">Le mois offert, c'est <b>seulement l'abonnement</b>. Les commissions Rocyinter s'appliquent <b>dès la 1ère mission</b> : Manger 12%, Domicile 8%, Pro 5 000 FCFA, Séjour 12%, Immobilier : Parcelle 10 000 FCFA + 2%, Location 50% d'un mois.</span></div>
+
+<div id="blocClient" style="display:none">
+  <div class="card"><h3>💼 Tu es Client</h3><p>L'abonnement, c'est pour les Fournisseurs / Livreurs qui publient. Crée un compte Fournisseur pour publier et prendre un abonnement.</p><button class="btn btn-dark" onclick="location.href='inscription.html?type=prestataire'">Devenir Fournisseur →</button></div>
+</div>
+
+<div id="blocPlans">
+  <div class="card"><h3>Pro - <span id="prixPro">10 000 FCFA / mois</span></h3><p id="descPro">3 annonces, mise en avant, badge Pro.<br><b>1er mois offert</b> si tu es parmi les 30 premiers validés.</p><button class="btn" id="btnPro" onclick="choisir('Pro')">Choisir Pro</button></div>
+  <div class="card"><h3>Premium - <span id="prixPremium">25 000 FCFA / mois</span></h3><p id="descPremium">Annonces illimitées, en haut des listes, badge Premium.<br><b>1er mois offert</b> si tu es parmi les 30 premiers validés.</p><button class="btn btn-dark" id="btnPremium" onclick="choisir('Premium')">Choisir Premium</button></div>
+  <p style="font-size:12px;color:#64748b;text-align:center;margin-top:8px" data-i18n="abonnementFooter">Réduction annuelle : 10 mois payés = 12 mois. Le prix ne change jamais, même après 6 mois. À partir du 2ème mois, l'abonnement est payant pour tout le monde. Sans abonnement à jour, tu ne peux pas publier de nouvelle annonce.</p>
+</div>
 </div>
 <script>
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-async function charger(){
-  const {count} = await supabase.from('profiles').select('*',{count:'exact',head:true}).eq('role','prestataire').eq('statut_validation','valide');
-  const places = Math.max(0, 30 - (count||0));
-  document.getElementById('compteur').innerHTML = `📊 <b>${count||0} / 30</b> prestataires validés.<br>${places>0 ? `Il reste <b>${places} places</b> pour avoir le <b>1er mois d'abonnement offert</b>.` : '❌ <b>Les 30 places avec 1er mois offert sont prises.</b> Abonnement payant dès le 1er mois.'}<br>Commissions dues dès la 1ère mission, même pendant le mois offert.`;
+const WHATSAPP_ROCY = '2290191478460';
+
+const uid = localStorage.getItem('rocy_user_id');
+const roleUser = localStorage.getItem('rocy_user_type') || localStorage.getItem('rocy_role') || '';
+if(!uid){ location.href='connexion.html'; }
+if(roleUser==='admin'){ location.href='admin.html'; }
+if(roleUser==='client'){
+  document.getElementById('blocClient').style.display='block';
+  document.getElementById('blocPlans').style.display='none';
 }
-function choisir(plan){const uid=localStorage.getItem('rocy_user_id'); if(!uid){location.href='connexion.html';return;} localStorage.setItem('rocy_abonnement_choisi',plan); location.href='https://wa.me/2290191478460?text='+encodeURIComponent('Bonjour Rocyinter, je veux l’abonnement '+plan+' (1er mois offert si je suis parmi les 30 premiers).');}
+
+function verifierAbonnement(p){
+  const auj=new Date(); const fin=p.abonnement_fin?new Date(p.abonnement_fin):null;
+  const actif=p.abonnement_actif===true||p.abonnement_statut==='actif';
+  const offert=p.abonnement_offert===true||p.premier_mois_offert===true;
+  if(fin&&fin>=auj) return {ok:true,type:'paye',fin};
+  if(!fin&&(actif||offert)) return {ok:true,type:'offert',fin:null};
+  if(actif&&!fin) return {ok:true,type:'offert',fin:null};
+  return {ok:false,type:'expire',fin};
+}
+function prixPourUnivers(univers){
+  if(['pro','sejour','immobilier'].includes(univers)) return {pro:25000, premium:50000, label:'Pro / Hôtel / Immobilier'};
+  return {pro:10000, premium:25000, label:'Manger / Domicile'};
+}
+function universPourCategorie(cat){
+  if(!cat) return 'domicile';
+  const manger=['Traiteur','Restaurant','Restaurant / Maquis','Livraison repas','Pâtisserie','Jus / Boissons'];
+  const pro=['Design','Design / Graphisme','Développement','Développement Web','Marketing','Marketing / Réseaux sociaux','Comptabilité','Traduction','Cours','Cours / Coaching','Montage vidéo','Rédaction / CV'];
+  const sejour=['Hôtel','Hôtel / Appartement','Location voiture','Guide touristique','Transport','Transport / Moto','Location salle','Excursion / Visite'];
+  const immo=['Location maison / Appartement','Maison à louer','Chambre à louer','Appartement à louer','Parcelle à vendre','Terrain à vendre','Maison à vendre','Vente maison / Terrain','Location chambre / Studio','Gestion locative','Visite / Courtage'];
+  if(manger.includes(cat)) return 'manger';
+  if(pro.includes(cat)) return 'pro';
+  if(sejour.includes(cat)) return 'sejour';
+  if(immo.includes(cat)) return 'immobilier';
+  return 'domicile';
+}
+
+async function charger(){
+  let count = 0;
+  try{
+    const {count: c} = await supabase.from('profiles').select('*',{count:'exact',head:true}).eq('statut_validation','valide').in('user_type',['prestataire','livreur']);
+    count = c || 0;
+  }catch(e){
+    const {count: c2} = await supabase.from('profiles').select('*',{count:'exact',head:true}).eq('statut_validation','valide');
+    count = c2 || 0;
+  }
+  const places = Math.max(0, 30 - count);
+  document.getElementById('compteur').innerHTML = `📊 <b>${count} / 30</b> prestataires validés.<br>${places>0 ? `Il reste <b>${places} places</b> pour avoir le <b>1er mois d'abonnement offert</b>.` : '❌ <b>Les 30 places avec 1er mois offert sont prises.</b> Abonnement payant dès le 1er mois.'}<br>Commissions dues dès la 1ère mission, même pendant le mois offert.`;
+
+  if(roleUser==='client') return;
+  const {data: profil} = await supabase.from('profiles').select('*').eq('id', uid).maybeSingle();
+  if(!profil) return;
+  let acts = profil.activites || [];
+  if(typeof acts==='string'){ try{ acts=JSON.parse(acts); }catch(e){ acts=[acts]; } }
+  if(!acts.length && profil.categorie) acts=[profil.categorie];
+  const univers = universPourCategorie(acts[0]);
+  const prix = prixPourUnivers(univers);
+  document.getElementById('prixPro').textContent = prix.pro.toLocaleString() + ' FCFA / mois';
+  document.getElementById('prixPremium').textContent = prix.premium.toLocaleString() + ' FCFA / mois';
+  document.getElementById('descPro').innerHTML = `Univers : <b>${univers} - ${prix.label}</b><br>3 annonces, mise en avant, badge Pro.<br><b>1er mois offert</b> si tu es parmi les 30 premiers validés.`;
+  document.getElementById('descPremium').innerHTML = `Univers : <b>${univers} - ${prix.label}</b><br>Annonces illimitées, en haut des listes, badge Premium.<br><b>1er mois offert</b> si tu es parmi les 30 premiers validés.`;
+
+  const res = verifierAbonnement(profil);
+  const box = document.getElementById('bandeauAbo');
+  if(res.ok && res.type==='offert'){
+    box.innerHTML = `<div class="bandeau-abo abo-offert">🎁 1er mois offert - Tu peux publier. Commissions dues dès la 1ère mission.</div>`;
+  } else if(res.ok){
+    box.innerHTML = `<div class="bandeau-abo abo-ok">✅ Abonnement à jour jusqu'au ${res.fin.toLocaleDateString('fr-FR')} - Tu peux publier.</div>`;
+    document.getElementById('btnPro').textContent = 'Déjà à jour - Renouveler plus tard';
+    document.getElementById('btnPro').disabled = true;
+    document.getElementById('btnPremium').textContent = 'Déjà à jour - Renouveler plus tard';
+    document.getElementById('btnPremium').disabled = true;
+  } else {
+    box.innerHTML = `<div class="bandeau-abo abo-expire">⛔ Abonnement expiré. Renouvelle pour publier une nouvelle annonce.</div>`;
+  }
+  if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
+}
+function choisir(plan){
+  if(!uid){ location.href='connexion.html'; return; }
+  if(roleUser==='client'){ location.href='inscription.html?type=prestataire'; return; }
+  localStorage.setItem('rocy_abonnement_choisi', plan);
+  location.href='https://wa.me/'+WHATSAPP_ROCY+'?text='+encodeURIComponent('Bonjour Rocyinter, je veux l’abonnement '+plan+' (1er mois offert si je suis parmi les 30 premiers). Mon ID : '+uid);
+}
 charger();
 </script>
 </body>
