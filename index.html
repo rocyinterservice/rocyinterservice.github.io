@@ -44,7 +44,171 @@ body{background:#f6f7f9;color:#111}
 </div>
 <div id="bandeauRole"></div>
 <div class="filters">
-  <div><label data-i18n="pays">PAYS</label><select id="filtrePays" onchange="chargerAnnonces()"></select></div>
+  <div><label data-i18n="pays">PAYS</label>
+  <select id="filtrePays" onchange="chargerAnnonces()">
+    <option value="">🌍 Tous les pays</option>
+    <option value="Bénin">🇧🇯 Bénin</option>
+    <option value="Togo">🇹🇬 Togo</option>
+    <option value="Côte d'Ivoire">🇨🇮 Côte d'Ivoire</option>
+    <option value="Sénégal">🇸🇳 Sénégal</option>
+    <option value="Cameroun">🇨🇲 Cameroun</option>
+    <option value="Nigeria">🇳🇬 Nigeria</option>
+    <option value="Ghana">🇬🇭 Ghana</option>
+    <option value="Mali">🇲🇱 Mali</option>
+    <option value="Burkina Faso">🇧🇫 Burkina Faso</option>
+    <option value="Niger">🇳🇪 Niger</option>
+    <option value="Guinée">🇬🇳 Guinée</option>
+    <option value="Guinée-Bissau">🇬🇼 Guinée-Bissau</option>
+    <option value="Guinée Équatoriale">🇬🇶 Guinée Équatoriale</option>
+    <option value="Gambie">🇬🇲 Gambie</option>
+    <option value="Sierra Leone">🇸🇱 Sierra Leone</option>
+    <option value="Liberia">🇱🇷 Liberia</option>
+    <option value="Cap-Vert">🇨🇻 Cap-Vert</option>
+    <option value="Mauritanie">🇲🇷 Mauritanie</option>
+    <option value="Maroc">🇲🇦 Maroc</option>
+    <option value="Algérie">🇩🇿 Algérie</option>
+    <option value="Tunisie">🇹🇳 Tunisie</option>
+    <option value="Libye">🇱🇾 Libye</option>
+    <option value="Égypte">🇪🇬 Égypte</option>
+    <option value="Soudan">🇸🇩 Soudan</option>
+    <option value="Soudan du Sud">🇸🇸 Soudan du Sud</option>
+    <option value="Éthiopie">🇪🇹 Éthiopie</option>
+    <option value="Érythrée">🇪🇷 Érythrée</option>
+    <option value="Djibouti">🇩🇯 Djibouti</option>
+    <option value="Somalie">🇸🇴 Somalie</option>
+    <option value="Kenya">🇰🇪 Kenya</option>
+    <option value="Ouganda">🇺🇬 Ouganda</option>
+    <option value="Tanzanie">🇹🇿 Tanzanie</option>
+    <option value="Rwanda">🇷🇼 Rwanda</option>
+    <option value="Burundi">🇧🇮 Burundi</option>
+    <option value="Congo">🇨🇬 Congo</option>
+    <option value="Congo RDC">🇨🇩 Congo RDC</option>
+    <option value="Gabon">🇬🇦 Gabon</option>
+    <option value="Centrafrique">🇨🇫 Centrafrique</option>
+    <option value="Tchad">🇹🇩 Tchad</option>
+    <option value="Angola">🇦🇴 Angola</option>
+    <option value="Zambie">🇿🇲 Zambie</option>
+    <option value="Zimbabwe">🇿🇼 Zimbabwe</option>
+    <option value="Mozambique">🇲🇿 Mozambique</option>
+    <option value="Malawi">🇲🇼 Malawi</option>
+    <option value="Madagascar">🇲🇬 Madagascar</option>
+    <option value="Maurice">🇲🇺 Maurice</option>
+    <option value="Seychelles">🇸🇨 Seychelles</option>
+    <option value="Comores">🇰🇲 Comores</option>
+    <option value="Afrique du Sud">🇿🇦 Afrique du Sud</option>
+    <option value="Namibie">🇳🇦 Namibie</option>
+    <option value="Botswana">🇧🇼 Botswana</option>
+    <option value="Lesotho">🇱🇸 Lesotho</option>
+    <option value="Eswatini">🇸🇿 Eswatini</option>
+    <option value="France">🇫🇷 France</option>
+    <option value="Belgique">🇧🇪 Belgique</option>
+    <option value="Suisse">🇨🇭 Suisse</option>
+    <option value="Luxembourg">🇱🇺 Luxembourg</option>
+    <option value="Italie">🇮🇹 Italie</option>
+    <option value="Espagne">🇪🇸 Espagne</option>
+    <option value="Portugal">🇵🇹 Portugal</option>
+    <option value="Allemagne">🇩🇪 Allemagne</option>
+    <option value="Royaume-Uni">🇬🇧 Royaume-Uni</option>
+    <option value="Pays-Bas">🇳🇱 Pays-Bas</option>
+    <option value="Autriche">🇦🇹 Autriche</option>
+    <option value="Danemark">🇩🇰 Danemark</option>
+    <option value="Suède">🇸🇪 Suède</option>
+    <option value="Norvège">🇳🇴 Norvège</option>
+    <option value="Finlande">🇫🇮 Finlande</option>
+    <option value="Irlande">🇮🇪 Irlande</option>
+    <option value="Grèce">🇬🇷 Grèce</option>
+    <option value="Pologne">🇵🇱 Pologne</option>
+    <option value="Roumanie">🇷🇴 Roumanie</option>
+    <option value="Hongrie">🇭🇺 Hongrie</option>
+    <option value="Tchéquie">🇨🇿 Tchéquie</option>
+    <option value="Slovaquie">🇸🇰 Slovaquie</option>
+    <option value="Croatie">🇭🇷 Croatie</option>
+    <option value="Slovénie">🇸🇮 Slovénie</option>
+    <option value="Bosnie">🇧🇦 Bosnie</option>
+    <option value="Serbie">🇷🇸 Serbie</option>
+    <option value="Monténégro">🇲🇪 Monténégro</option>
+    <option value="Albanie">🇦🇱 Albanie</option>
+    <option value="Bulgarie">🇧🇬 Bulgarie</option>
+    <option value="Ukraine">🇺🇦 Ukraine</option>
+    <option value="Biélorussie">🇧🇾 Biélorussie</option>
+    <option value="Lituanie">🇱🇹 Lituanie</option>
+    <option value="Lettonie">🇱🇻 Lettonie</option>
+    <option value="Estonie">🇪🇪 Estonie</option>
+    <option value="Islande">🇮🇸 Islande</option>
+    <option value="Malte">🇲🇹 Malte</option>
+    <option value="Chypre">🇨🇾 Chypre</option>
+    <option value="Russie">🇷🇺 Russie</option>
+    <option value="Turquie">🇹🇷 Turquie</option>
+    <option value="Arménie">🇦🇲 Arménie</option>
+    <option value="Azerbaïdjan">🇦🇿 Azerbaïdjan</option>
+    <option value="Géorgie">🇬🇪 Géorgie</option>
+    <option value="Moldavie">🇲🇩 Moldavie</option>
+    <option value="USA">🇺🇸 USA</option>
+    <option value="Canada">🇨🇦 Canada</option>
+    <option value="Mexique">🇲🇽 Mexique</option>
+    <option value="Brésil">🇧🇷 Brésil</option>
+    <option value="Argentine">🇦🇷 Argentine</option>
+    <option value="Colombie">🇨🇴 Colombie</option>
+    <option value="Pérou">🇵🇪 Pérou</option>
+    <option value="Chili">🇨🇱 Chili</option>
+    <option value="Venezuela">🇻🇪 Venezuela</option>
+    <option value="Équateur">🇪🇨 Équateur</option>
+    <option value="Bolivie">🇧🇴 Bolivie</option>
+    <option value="Paraguay">🇵🇾 Paraguay</option>
+    <option value="Uruguay">🇺🇾 Uruguay</option>
+    <option value="Guatemala">🇬🇹 Guatemala</option>
+    <option value="Salvador">🇸🇻 Salvador</option>
+    <option value="Honduras">🇭🇳 Honduras</option>
+    <option value="Nicaragua">🇳🇮 Nicaragua</option>
+    <option value="Costa Rica">🇨🇷 Costa Rica</option>
+    <option value="Panama">🇵🇦 Panama</option>
+    <option value="Haïti">🇭🇹 Haïti</option>
+    <option value="Cuba">🇨🇺 Cuba</option>
+    <option value="République Dominicaine">🇩🇴 République Dominicaine</option>
+    <option value="Jamaïque">🇯🇲 Jamaïque</option>
+    <option value="Trinité-et-Tobago">🇹🇹 Trinité-et-Tobago</option>
+    <option value="Inde">🇮🇳 Inde</option>
+    <option value="Chine">🇨🇳 Chine</option>
+    <option value="Japon">🇯🇵 Japon</option>
+    <option value="Corée du Sud">🇰🇷 Corée du Sud</option>
+    <option value="Vietnam">🇻🇳 Vietnam</option>
+    <option value="Thaïlande">🇹🇭 Thaïlande</option>
+    <option value="Indonésie">🇮🇩 Indonésie</option>
+    <option value="Philippines">🇵🇭 Philippines</option>
+    <option value="Malaisie">🇲🇾 Malaisie</option>
+    <option value="Singapour">🇸🇬 Singapour</option>
+    <option value="Myanmar">🇲🇲 Myanmar</option>
+    <option value="Cambodge">🇰🇭 Cambodge</option>
+    <option value="Laos">🇱🇦 Laos</option>
+    <option value="Bangladesh">🇧🇩 Bangladesh</option>
+    <option value="Pakistan">🇵🇰 Pakistan</option>
+    <option value="Sri Lanka">🇱🇰 Sri Lanka</option>
+    <option value="Népal">🇳🇵 Népal</option>
+    <option value="Afghanistan">🇦🇫 Afghanistan</option>
+    <option value="Iran">🇮🇷 Iran</option>
+    <option value="Irak">🇮🇶 Irak</option>
+    <option value="Émirats">🇦🇪 Émirats</option>
+    <option value="Arabie Saoudite">🇸🇦 Arabie Saoudite</option>
+    <option value="Qatar">🇶🇦 Qatar</option>
+    <option value="Koweït">🇰🇼 Koweït</option>
+    <option value="Bahreïn">🇧🇭 Bahreïn</option>
+    <option value="Oman">🇴🇲 Oman</option>
+    <option value="Jordanie">🇯🇴 Jordanie</option>
+    <option value="Liban">🇱🇧 Liban</option>
+    <option value="Syrie">🇸🇾 Syrie</option>
+    <option value="Israël">🇮🇱 Israël</option>
+    <option value="Palestine">🇵🇸 Palestine</option>
+    <option value="Yémen">🇾🇪 Yémen</option>
+    <option value="Australie">🇦🇺 Australie</option>
+    <option value="Nouvelle-Zélande">🇳🇿 Nouvelle-Zélande</option>
+    <option value="Fidji">🇫🇯 Fidji</option>
+    <option value="Papouasie">🇵🇬 Papouasie</option>
+    <option value="Îles Salomon">🇸🇧 Îles Salomon</option>
+    <option value="Vanuatu">🇻🇺 Vanuatu</option>
+    <option value="Îles Cook">🇨🇰 Îles Cook</option>
+    <option value="Nouvelle-Calédonie">🇳🇨 Nouvelle-Calédonie</option>
+    <option value="Polynésie">🇵🇫 Polynésie</option>
+  </select></div>
   <div><label data-i18n="ville">VILLE / LOCALITÉ</label><input id="filtreLocalite" data-i18n-ph="villePh" placeholder="Ex: Calavi, Cotonou, Godomey..." oninput="chargerAnnonces()"></div>
   <div><label data-i18n="rechercher">RECHERCHER UN SERVICE</label><input id="filtreSearch" data-i18n-ph="searchPh" placeholder="Ex: Plombier, Traiteur, Nettoyage..." oninput="chargerAnnonces()"></div>
 </div>
@@ -68,15 +232,9 @@ const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 let supabase = null;
 try{ supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); }catch(e){}
 
-function remplirPaysIndex(){
-  const sel = document.getElementById('filtrePays');
-  if(!sel) return;
-  if(window.ROCY_PAYS && window.rocyRemplirPays){ window.rocyRemplirPays('filtrePays'); return; }
-  const secours = [
-    {p:'Bénin', d:'🇧🇯'}, {p:'Togo', d:'🇹🇬'}, {p:'Côte d\'Ivoire', d:'🇨🇮'}, {p:'Sénégal', d:'🇸🇳'}, {p:'Cameroun', d:'🇨🇲'}, {p:'Nigeria', d:'🇳🇬'}, {p:'Ghana', d:'🇬🇭'}, {p:'Mali', d:'🇲🇱'}, {p:'France', d:'🇫🇷'}, {p:'Belgique', d:'🇧🇪'}, {p:'USA', d:'🇺🇸'}, {p:'Canada', d:'🇨🇦'}
-  ];
-  sel.innerHTML = '<option value="">🌍 Tous les pays</option>' + secours.map(x=>`<option value="${x.p}">${x.d} ${x.p}</option>`).join('');
-}
+// ON NE TOUCHE PLUS A LA CASE PAYS - ELLE EST DEJA REMPLIE EN DUR DANS LE HTML
+// Cette fonction ne fait plus rien, juste pour ne pas casser si elle est appelée ailleurs
+function remplirPaysIndex(){ return; }
 
 function afficherBandeauRole(){
   const box = document.getElementById('bandeauRole');
@@ -153,12 +311,8 @@ function voirProfil(prestataireId){
   localStorage.setItem('fiche_prestataire_id', prestataireId);
   location.href = 'fiche-prestataire.html';
 }
-if(document.readyState==='loading'){
-  document.addEventListener('DOMContentLoaded', ()=>{ remplirPaysIndex(); afficherBandeauRole(); chargerAnnonces(); });
-} else {
-  remplirPaysIndex(); afficherBandeauRole(); chargerAnnonces();
-}
-setTimeout(remplirPaysIndex, 500);
+afficherBandeauRole();
+chargerAnnonces();
 </script>
 </body>
 </html>
