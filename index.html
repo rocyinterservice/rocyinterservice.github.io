@@ -43,7 +43,10 @@ header div{display:flex;gap:8px}
 .btn-voir{background:#f1f5f9}
 .empty{background:#fff;border:1px dashed #cbd5e1;border-radius:16px;padding:24px;text-align:center;color:#64748b}
 .empty b{color:#111;display:block;margin-bottom:6px}
-footer{text-align:center;padding:20px;color:#94a3b8;font-size:12px}
+footer{text-align:center;padding:20px;color:#94a3b8;font-size:12px;line-height:1.8}
+footer a{color:#94a3b8;text-decoration:none}
+.liens{padding:0 16px 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.liens button{background:#fff;border:1px solid #e2e8f0;padding:12px;border-radius:12px;font-weight:700;cursor:pointer;font-size:13px}
 </style>
 </head>
 <body>
@@ -52,7 +55,7 @@ footer{text-align:center;padding:20px;color:#94a3b8;font-size:12px}
   <b>Rocy<span>inter</span></b>
   <div>
     <button class="btn btn-white" id="btnConnexion" onclick="location.href='connexion.html'">Connexion</button>
-    <button class="btn" onclick="location.href='inscription.html'">Devenir Prestataire</button>
+    <button class="btn" id="btnDevenir" onclick="location.href='inscription.html'">Devenir Prestataire</button>
   </div>
 </header>
 
@@ -94,7 +97,17 @@ footer{text-align:center;padding:20px;color:#94a3b8;font-size:12px}
   <div class="card-u" id="u-pro" onclick="setUnivers('pro')"><div class="ico">💼</div><b>Pro</b><small>Design, Dev, Marketing, Compta</small></div>
   <div class="card-u" id="u-sejour" onclick="setUnivers('sejour')"><div class="ico">✈️</div><b>Séjour</b><small>Hôtel, Location, Guide, Transport</small></div>
   <div class="card-u" id="u-immobilier" onclick="setUnivers('immobilier')"><div class="ico">🏘️</div><b>Immobilier</b><small>Location, Vente, Chambre, Visite</small></div>
+  <div class="card-u" id="u-livreur" onclick="location.href='livreurs.html'"><div class="ico">🛵</div><b>Livreurs</b><small>Prix à discuter - Choix, pas obligatoire</small></div>
   <div class="card-u" onclick="location.href='inscription.html'" style="grid-column:1 / -1"><div class="ico">➕</div><b>Proposer un service</b><small>Gagnez de l'argent - Si ta catégorie n'existe pas, tu l'écris toi-même</small></div>
+</div>
+
+<div class="liens">
+  <button onclick="location.href='immobilier.html'">🏠 Voir tout Immobilier</button>
+  <button onclick="location.href='livreurs.html'">🛵 Chercher un livreur</button>
+  <button onclick="location.href='abonnement.html'">⭐ Abonnement Prestataire - 1er mois offert*</button>
+  <button onclick="location.href='comment-ca-marche.html'">❓ Comment ça marche ?</button>
+  <button onclick="location.href='escrow.html'">🔒 Mon Escrow</button>
+  <button onclick="location.href='favoris.html'">❤️ Mes Favoris</button>
 </div>
 
 <div class="section">
@@ -102,7 +115,13 @@ footer{text-align:center;padding:20px;color:#94a3b8;font-size:12px}
   <div id="listeAnnonces" class="grid"></div>
 </div>
 
-<footer>Rocyinter Services © 2026 - Paiement sécurisé Escrow - Bénin<br><a href="admin.html" style="color:#94a3b8">Admin</a></footer>
+<footer>
+Rocyinter Services © 2026 - Paiement sécurisé Escrow - Bénin<br>
+<a href="tarifs.html">Tarifs</a> | <a href="cgu.html">CGU</a> | <a href="confidentialite.html">Confidentialité</a> | <a href="aide-faq.html">Aide / FAQ</a> | <a href="contact.html">Contact</a><br>
+<a href="langue.html">🌍 Langue</a> | <a href="monnaie.html">💱 Monnaie</a> | <a href="panier.html">🛒 Panier</a> | <a href="notifications.html">🔔 Notifications</a><br>
+<a href="admin.html" style="color:#94a3b8">Admin</a><br>
+<span style="font-size:11px">* 1er mois offert = seulement l'abonnement, pour les 30 premiers prestataires validés. Commissions dues dès la 1ère mission.</span>
+</footer>
 
 <script>
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
@@ -112,11 +131,15 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let universActif = "";
 
 const uidConnecte = localStorage.getItem('rocy_user_id');
-const typeConnecte = localStorage.getItem('rocy_user_type');
+const typeConnecte = localStorage.getItem('rocy_user_type') || localStorage.getItem('rocy_role');
 if(uidConnecte){
   const btnC = document.getElementById('btnConnexion');
   btnC.textContent = 'Mon espace';
-  btnC.onclick = function(){ location.href = typeConnecte==='prestataire' ? 'dashboard-prestataire.html' : 'dashboard-client.html'; };
+  btnC.onclick = function(){ location.href = (typeConnecte==='prestataire'||typeConnecte==='livreur') ? 'dashboard-prestataire.html' : 'dashboard-client.html'; };
+  // Si déjà prestataire / livreur, on ne montre plus "Devenir Prestataire"
+  if(typeConnecte==='prestataire'||typeConnecte==='livreur'){
+    document.getElementById('btnDevenir').style.display='none';
+  }
 }
 
 function setUnivers(u){
