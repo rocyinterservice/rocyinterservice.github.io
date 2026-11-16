@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Connexion - Rocyinter Services</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
 body{background:#f6f7f9;color:#111;padding:16px}
@@ -14,7 +13,8 @@ h1{font-size:24px;margin:14px 0 4px} h1 span{color:#f59e0b}
 p.sub{color:#64748b;font-size:14px;margin-bottom:16px}
 .card{background:#fff;border-radius:16px;padding:20px;box-shadow:0 4px 20px rgba(0,0,0,.06);display:grid;gap:14px}
 label{font-size:12px;font-weight:700;color:#475569;display:block;margin-bottom:4px}
-input{width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px}
+input,select{width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;background:#fff}
+.telRow{display:grid;grid-template-columns:115px 1fr;gap:8px}
 .btn{background:#f59e0b;color:#000;border:none;padding:14px;border-radius:12px;font-weight:800;cursor:pointer;font-size:15px;width:100%}
 .btn:disabled{opacity:.6}
 .msg{text-align:center;font-size:13px;padding:10px;border-radius:10px;display:none}
@@ -33,7 +33,41 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
 <div class="card">
   <div>
     <label>VOTRE WHATSAPP *</label>
-    <input id="whatsapp" placeholder="Ex: +229 97 00 00 00">
+    <div class="telRow">
+      <select id="indicatif">
+        <option value="+229" selected>🇧🇯 +229 Bénin</option>
+        <option value="+228">🇹🇬 +228 Togo</option>
+        <option value="+225">🇨🇮 +225 Côte d'Ivoire</option>
+        <option value="+221">🇸🇳 +221 Sénégal</option>
+        <option value="+237">🇨🇲 +237 Cameroun</option>
+        <option value="+234">🇳🇬 +234 Nigeria</option>
+        <option value="+233">🇬🇭 +233 Ghana</option>
+        <option value="+226">🇧🇫 +226 Burkina</option>
+        <option value="+227">🇳🇪 +227 Niger</option>
+        <option value="+223">🇲🇱 +223 Mali</option>
+        <option value="+224">🇬🇳 +224 Guinée</option>
+        <option value="+241">🇬🇦 +241 Gabon</option>
+        <option value="+242">🇨🇬 +242 Congo</option>
+        <option value="+243">🇨🇩 +243 RDC</option>
+        <option value="+212">🇲🇦 +212 Maroc</option>
+        <option value="+213">🇩🇿 +213 Algérie</option>
+        <option value="+216">🇹🇳 +216 Tunisie</option>
+        <option value="+20">🇪🇬 +20 Égypte</option>
+        <option value="+27">🇿🇦 +27 Afrique du Sud</option>
+        <option value="+254">🇰🇪 +254 Kenya</option>
+        <option value="+33">🇫🇷 +33 France</option>
+        <option value="+32">🇧🇪 +32 Belgique</option>
+        <option value="+41">🇨🇭 +41 Suisse</option>
+        <option value="+49">🇩🇪 +49 Allemagne</option>
+        <option value="+44">🇬🇧 +44 Royaume-Uni</option>
+        <option value="+1">🇺🇸/🇨🇦 +1 USA / Canada</option>
+        <option value="+91">🇮🇳 +91 Inde</option>
+        <option value="+86">🇨🇳 +86 Chine</option>
+        <option value="+971">🇦🇪 +971 Émirats</option>
+      </select>
+      <input id="whatsappNum" placeholder="97 00 00 00" inputmode="numeric">
+    </div>
+    <p style="font-size:11px;color:#64748b;margin-top:4px">Même numéro que à l'inscription, sans le +229. Ex: 97 00 00 00</p>
   </div>
   <div>
     <label>VOTRE MOT DE PASSE *</label>
@@ -41,7 +75,7 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
   </div>
 
   <div id="msg" class="msg"></div>
-  <button class="btn" id="btnCo" onclick="connecter()">Se connecter →</button>
+  <button class="btn" id="btnCo" type="button" onclick="connecter()">Se connecter →</button>
 
   <div class="info">💡 <b>Pas encore de compte ?</b><br>Créez un compte en 1 minute. Votre WhatsApp + mot de passe = votre identité. Personne d'autre ne peut entrer dans votre compte.</div>
 
@@ -50,86 +84,107 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
 </div>
 
 <script>
-const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
-const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
+// FONCTIONS EN PREMIER - LE BOUTON RÉAGIT TOUJOURS
 function showMsg(txt, ok){
   const m = document.getElementById('msg');
   m.textContent = txt;
   m.className = 'msg ' + (ok ? 'ok' : 'err');
+  m.style.display = 'block';
+}
+function getClient(){
+  if(!window.supabase) return null;
+  try{ return window.supabase.createClient("https://gdwgjsloivrpxxvggxyz.supabase.co", "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF"); }
+  catch(e){ return null; }
+}
+function normaliseWhatsApp(){
+  let num = document.getElementById('whatsappNum').value.replace(/[^0-9]/g,'');
+  if(num.startsWith('0')) num = num.slice(1);
+  const indic = document.getElementById('indicatif').value;
+  return { num: num, whatsapp: indic + ' ' + num, chiffres: (indic + num).replace(/[^0-9]/g,'') };
 }
 
 async function connecter(){
-  const whatsapp = document.getElementById('whatsapp').value.trim();
+  const {num, whatsapp, chiffres} = normaliseWhatsApp();
   const password = document.getElementById('password').value;
   const btn = document.getElementById('btnCo');
-  if(!whatsapp || !password){ showMsg('Remplis WhatsApp + Mot de passe', false); return; }
+  if(!num || !password){ showMsg('Remplis WhatsApp + Mot de passe', false); return; }
 
   btn.disabled = true; btn.textContent = 'Vérification...';
+  const supabase = getClient();
+  if(!supabase){ showMsg('Pas de connexion internet. Recharge la page.', false); btn.disabled=false; btn.textContent='Se connecter →'; return; }
 
-  // 1. On retrouve le profil par WhatsApp pour connaître l'email Auth
-  const chiffres = whatsapp.replace(/[^0-9]/g,'');
-  const {data:profil} = await supabase.from('profiles').select('*').eq('whatsapp', whatsapp).maybeSingle();
+  try{
+    // On récupère tous les profils et on compare par chiffres, pour accepter +229 97 00 00 00 ou +22997000000 ou 22997000000
+    const {data: all, error} = await supabase.from('profiles').select('*');
+    if(error){ showMsg('Erreur : ' + error.message, false); btn.disabled=false; btn.textContent='Se connecter →'; return; }
+    const userProfil = (all||[]).find(p => (p.whatsapp||'').replace(/[^0-9]/g,'') === chiffres || (p.whatsapp||'').replace(/[^0-9]/g,'') === ('229'+num) || (p.whatsapp||'').replace(/[^0-9]/g,'').endsWith(num));
 
-  // Si le WhatsApp est écrit sans + ou avec espaces, on cherche aussi par chiffres
-  let userProfil = profil;
-  if(!userProfil){
-    const {data:all} = await supabase.from('profiles').select('*');
-    userProfil = (all||[]).find(p => (p.whatsapp||'').replace(/[^0-9]/g,'') === chiffres);
-  }
-  if(!userProfil){
-    showMsg('Compte introuvable. Vérifie ton WhatsApp, ou crée un compte.', false);
-    btn.disabled = false; btn.textContent = 'Se connecter →';
-    return;
-  }
+    if(!userProfil){
+      showMsg('Compte introuvable. Vérifie ton WhatsApp, ou crée un compte.', false);
+      btn.disabled = false; btn.textContent = 'Se connecter →';
+      return;
+    }
 
-  // 2. Vérification VRAIE du mot de passe via Supabase Auth
-  // L'email Auth = email du profil, ou chiffres@rocyinter.com si pas d'email
-  const emailAuth = (userProfil.email || (chiffres + '@rocyinter.com')).toLowerCase();
-  const {data:login, error:errLogin} = await supabase.auth.signInWithPassword({email: emailAuth, password});
-
-  if(errLogin || !login?.user){
-    // COMPAT ANCIENS COMPTES : si le compte a été créé avant le mot de passe (ancien système WhatsApp+Nom),
-    // on le migre : on crée le compte Auth maintenant avec ce mot de passe
-    const {data:signUp} = await supabase.auth.signUp({email: emailAuth, password});
-    if(signUp?.user?.id){
-      // On lie l'ancien profil au nouveau user Auth
-      await supabase.from('profiles').update({id: signUp.user.id}).eq('id', userProfil.id);
-      userProfil.id = signUp.user.id;
-    } else {
+    // 1. On vérifie d'abord le mot de passe dans profiles (nouveau système inscription)
+    if(userProfil.password && userProfil.password !== password){
       showMsg('Mot de passe incorrect. Réessaie.', false);
       btn.disabled = false; btn.textContent = 'Se connecter →';
       return;
     }
-  } else {
-    userProfil.id = login.user.id;
+    // 2. Si pas de mot de passe dans profiles, on essaie Supabase Auth (ancien système)
+    if(!userProfil.password){
+      const emailAuth = (userProfil.email || (chiffres + '@rocyinter.com')).toLowerCase();
+      const {data: login, error: errLogin} = await supabase.auth.signInWithPassword({email: emailAuth, password});
+      if(errLogin || !login?.user){
+        showMsg('Mot de passe incorrect. Réessaie.', false);
+        btn.disabled = false; btn.textContent = 'Se connecter →';
+        return;
+      }
+    }
+
+    const typeFinal = userProfil.type || userProfil.type_compte || 'client';
+    localStorage.setItem('rocy_user_id', userProfil.id);
+    localStorage.setItem('rocy_user_nom', userProfil.nom);
+    localStorage.setItem('rocy_user_type', typeFinal);
+    localStorage.setItem('rocy_role', typeFinal);
+    localStorage.setItem('rocy_user_whatsapp', userProfil.whatsapp);
+    localStorage.setItem('rocy_user_pays', userProfil.pays);
+    localStorage.setItem('rocy_user_ville', userProfil.ville);
+    localStorage.setItem('rocy_user_localite', userProfil.localite);
+
+    showMsg('✅ Bienvenue ' + (userProfil.nom||'') + ' ! Redirection...', true);
+    setTimeout(()=>{
+      if(typeFinal==='prestataire') location.href='dashboard-prestataire.html';
+      else if(typeFinal==='admin') location.href='admin.html';
+      else location.href='index.html';
+    }, 800);
+  }catch(e){
+    showMsg('Erreur : '+e.message, false);
+    btn.disabled=false; btn.textContent='Se connecter →';
   }
-
-  // 3. On recharge le profil à jour avec les bons noms de colonnes V3 : type, pas type_compte
-  const {data:finalProfil} = await supabase.from('profiles').select('*').eq('id', userProfil.id).maybeSingle();
-  const p = finalProfil || userProfil;
-  const typeFinal = p.type || p.type_compte || 'client';
-
-  localStorage.setItem('rocy_user_id', p.id);
-  localStorage.setItem('rocy_user_nom', p.nom);
-  localStorage.setItem('rocy_user_type', typeFinal);
-  localStorage.setItem('rocy_user_whatsapp', p.whatsapp);
-  localStorage.setItem('rocy_user_pays', p.pays);
-  localStorage.setItem('rocy_user_ville', p.ville);
-  localStorage.setItem('rocy_user_localite', p.localite);
-
-  showMsg('✅ Bienvenue ' + p.nom + ' ! Redirection...', true);
-  setTimeout(()=>{
-    if(typeFinal==='prestataire') location.href='dashboard-prestataire.html';
-    else if(typeFinal==='admin') location.href='admin.html';
-    else location.href='index.html';
-  }, 800);
 }
 
-// Pré-remplir WhatsApp si déjà connu
-const w = localStorage.getItem('rocy_user_whatsapp');
-if(w) document.getElementById('whatsapp').value = w;
+// Pré-remplir WhatsApp si déjà connu : on sépare indicatif et numéro
+(function(){
+  const w = localStorage.getItem('rocy_user_whatsapp');
+  if(w){
+    const chiffres = w.replace(/[^0-9]/g,'');
+    // On essaie de retrouver l'indicatif
+    const sel = document.getElementById('indicatif');
+    let trouve = false;
+    for(let o of sel.options){
+      const code = o.value.replace(/[^0-9]/g,'');
+      if(chiffres.startsWith(code)){
+        sel.value = o.value;
+        document.getElementById('whatsappNum').value = chiffres.slice(code.length);
+        trouve = true; break;
+      }
+    }
+    if(!trouve) document.getElementById('whatsappNum').value = chiffres;
+  }
+})();
+document.getElementById('password').addEventListener('keydown', e=>{ if(e.key==='Enter') connecter(); });
 </script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </body>
 </html>
