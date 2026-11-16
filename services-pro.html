@@ -28,11 +28,13 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:12px;line-height:1.5}
 .btn{width:100%;background:#f59e0b;border:none;padding:11px;border-radius:10px;font-weight:800;cursor:pointer;margin-top:8px}
 .btn-dark{background:#0f172a;color:#fff}
 .btn-gris{background:#f1f5f9;color:#111}
+.btn-mine{background:#e2e8f0;color:#64748b;cursor:not-allowed}
 .bandeau-role{padding:12px;border-radius:12px;font-size:13px;font-weight:600;text-align:center;line-height:1.5;margin-bottom:12px}
 .bandeau-visiteur{background:#fef3c7;color:#92400e}
 .bandeau-client{background:#dcfce7;color:#166534}
 .bandeau-presta{background:#dbeafe;color:#1e40af}
 .empty{background:#fff;border:1px dashed #cbd5e1;border-radius:16px;padding:24px;text-align:center;color:#64748b}
+.info-commission{background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:10px;font-size:12px;line-height:1.5;color:#92400e;margin-bottom:12px}
 </style>
 </head>
 <body>
@@ -40,6 +42,7 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:12px;line-height:1.5}
 <div class="back" onclick="location.href='index.html'">← <span data-i18n="accueil">Accueil</span></div>
 <h1>💼 <span data-i18n="proTitre">Services professionnels</span></h1>
 <p class="sub" data-i18n="proSous">Designers, développeurs, comptables, coachs... validés par Rocyinter.</p>
+<div class="info-commission">💰 Commission Pro : 5 000 FCFA fixe pour débloquer le contact. Ne paie jamais en dehors de Rocyinter.</div>
 
 <div id="bandeauRole"></div>
 
@@ -237,13 +240,11 @@ function afficherBandeauRole(){
   else if(type==='admin') box.innerHTML = `<div class="bandeau-role bandeau-presta">🛡️ ${t('bandeauAdmin')}</div>`;
   else box.innerHTML = `<div class="bandeau-role bandeau-client">🛒 ${t('bandeauClient')}</div>`;
 }
-
 function setCat(c){
   catActuelle = c;
   document.querySelectorAll('#filtres button').forEach(b=> b.classList.toggle('active', b.dataset.cat === c));
   afficher();
 }
-
 function construireFiltres(){
   const cats = [...new Set(toutesAnnonces.map(a=>a.categorie).filter(Boolean))].sort();
   const box = document.getElementById('filtres');
@@ -252,7 +253,6 @@ function construireFiltres(){
   document.querySelectorAll('#filtres button').forEach(b=> b.classList.toggle('active', b.dataset.cat === catActuelle));
   if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 }
-
 function prixTexte(a){
   const prixVal = a.prix_indicatif || a.prix || a.montant || 0;
   const t = window.rocyT || (k=>k);
@@ -260,15 +260,19 @@ function prixTexte(a){
   if(prixVal>0) return t('aPartir') + ' ' + (window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal+' FCFA');
   return t('prixDiscuter');
 }
-
+function estValide(a){
+  const s = String(a.status || a.statut || '').toLowerCase().trim();
+  if(!s) return true;
+  return s==='valide' || s==='valid' || s==='publie' || s==='publié' || s==='publiee' || s==='actif' || s==='active';
+}
 function afficher(){
   const q = (document.getElementById('search').value || '').trim().toLowerCase();
   const pays = document.getElementById('filtrePays') ? document.getElementById('filtrePays').value : '';
   const loc = (document.getElementById('filtreLocalite').value || '').trim().toLowerCase();
   const box = document.getElementById('liste');
   const t = window.rocyT || (k=>k);
-  let list = toutesAnnonces;
-  list = list.filter(a => (a.univers||'pro') === 'pro');
+  const moiId = localStorage.getItem('rocy_user_id') || '';
+  let list = toutesAnnonces.filter(a => (a.univers||'pro') === 'pro' && estValide(a));
   if(pays) list = list.filter(a => (a.pays||'') === pays);
   if(loc) list = list.filter(a => (a.localite||'').toLowerCase().includes(loc) || (a.ville||'').toLowerCase().includes(loc));
   if(catActuelle) list = list.filter(a=> a.categorie === catActuelle);
@@ -282,6 +286,8 @@ function afficher(){
     const nom = a.prestataire_nom || a.nom_prestataire || a.profiles?.nom || a.nom || 'Prestataire';
     const lieu = [a.localite, a.ville, a.pays].filter(Boolean).join(' - ');
     const prestaId = a.prestataire_id || a.user_id || a.profiles_id || '';
+    const cestMoi = prestaId && moiId && String(prestaId)===String(moiId);
+    const btnChat = cestMoi ? `<button class="btn btn-mine" disabled>C'est ton annonce</button>` : `<button class="btn btn-dark" onclick="discuter('${prestaId}','${a.id}')">💬 ${t('discuter')}</button>`;
     return `<div class="card">
       <img src="${img}" onclick="voirPresta('${prestaId}')" style="cursor:pointer" onerror="this.src='https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&q=80'">
       <span class="badge">${a.categorie||''}</span>
@@ -290,20 +296,19 @@ function afficher(){
       <p>${(a.description||'').slice(0,110)}...</p>
       <div class="price">${prixTexte(a)}</div>
       <button class="btn btn-gris" onclick="voirPresta('${prestaId}')">${t('voirPresta')}</button>
-      <button class="btn btn-dark" onclick="discuter('${prestaId}','${a.id}')">💬 ${t('discuter')}</button>
+      ${btnChat}
     </div>`;
   }).join('');
   if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 }
-
 async function charger(){
   const box = document.getElementById('liste');
   const t = window.rocyT || (k=>k);
   if(!supabaseClient){ box.innerHTML = `<div class="empty"><b>${t('pasConnexion')}</b><br><button class="btn" onclick="charger()">${t('reessayer')}</button></div>`; return; }
   try{
-    const {data, error} = await supabaseClient.from('annonces').select('*, profiles(nom, whatsapp)').eq('univers','pro').eq('status','valide').order('created_at',{ascending:false});
+    const {data, error} = await supabaseClient.from('annonces').select('*, profiles(nom, whatsapp)').eq('univers','pro').order('created_at',{ascending:false});
     if(error) throw error;
-    toutesAnnonces = data || [];
+    toutesAnnonces = (data || []).filter(estValide);
     construireFiltres();
     afficher();
   }catch(e){
@@ -311,16 +316,26 @@ async function charger(){
     box.innerHTML = `<div class="empty"><b>${t('erreurConnexion')}</b><br><button class="btn" onclick="charger()">${t('reessayer')}</button></div>`;
   }
 }
-function voirPresta(id){ localStorage.setItem('fiche_prestataire_id', id); location.href='fiche-prestataire.html'; }
+function voirPresta(id){
+  if(!id) return;
+  localStorage.setItem('fiche_prestataire_id', id);
+  location.href='fiche-prestataire.html';
+}
 function discuter(prestaId, annonceId){
+  const uid = localStorage.getItem('rocy_user_id');
+  const type = localStorage.getItem('rocy_user_type') || localStorage.getItem('rocy_role') || '';
   const t = window.rocyT || (k=>k);
-  if(!localStorage.getItem('rocy_user_id')){ alert(t('connectePourCommander')); location.href='connexion.html'; return; }
+  if(!uid){ alert(t('connectePourCommander')); location.href='connexion.html'; return; }
+  if(type==='admin'){ alert('Admin : tu ne peux pas chatter, tu gères dans Admin.'); return; }
+  if(!prestaId){ alert('Annonce sans prestataire.'); return; }
+  if(String(prestaId)===String(uid)){ alert("C'est ton annonce. Tu ne peux pas te parler à toi-même."); return; }
   localStorage.setItem('chat_prestataire', prestaId);
   localStorage.setItem('chat_annonce', annonceId);
   location.href='chat.html';
 }
 afficherBandeauRole();
 charger();
+if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 </script>
 </body>
 </html>
