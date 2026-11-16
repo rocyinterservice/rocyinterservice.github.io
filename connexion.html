@@ -1,5 +1,9 @@
 <!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Connexion - Rocyinter</title>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title data-i18n="connexionTitre">Connexion - Rocyinter</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="pays.js"></script>
 <script src="rocy-layout.js"></script>
@@ -9,59 +13,233 @@ body{background:#f6f7f9;color:#111}
 .top{max-width:480px;margin:0 auto;padding:16px}
 .back{color:#64748b;font-size:13px;cursor:pointer}
 h1{font-size:24px;margin:14px 0 4px} h1 span{color:#f59e0b}
-p.sub{color:#64748b;font-size:14px;margin-bottom:16px}
+p.sub{color:#64748b;font-size:14px;margin-bottom:16px;line-height:1.5}
 .card{background:#fff;border-radius:16px;padding:20px;box-shadow:0 4px 20px rgba(0,0,0,.06);display:grid;gap:14px}
 label{font-size:12px;font-weight:700;color:#475569;display:block;margin-bottom:4px}
-input{width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px}
+input,select{width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;background:#fff}
+input.err{border-color:#ef4444;background:#fef2f2}
+.telRow{display:grid;grid-template-columns:130px 1fr;gap:8px}
 .btn{background:#f59e0b;color:#000;border:none;padding:14px;border-radius:12px;font-weight:800;cursor:pointer;font-size:15px;width:100%}
 .btn:disabled{opacity:.6}
 .msg{text-align:center;font-size:13px;padding:10px;border-radius:10px;display:none}
 .msg.ok{display:block;background:#dcfce7;color:#166534}
 .msg.err{display:block;background:#fee2e2;color:#991b1b}
-small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10px}
+small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10px;line-height:1.5}
+.info{background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:12px;font-size:13px;line-height:1.5;color:#92400e}
+.errTxt{color:#ef4444;font-size:12px;display:none}
+.errTxt.show{display:block}
 .pwdWrap{position:relative}
 .pwdWrap input{padding-right:46px}
-.eyeBtn{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:none;background:transparent;cursor:pointer;font-size:19px}
-</style></head>
-<body><div class="top">
-<div class="back" onclick="location.href='index.html'">← Accueil</div>
-<h1>Bon retour <span>chez Rocyinter</span></h1>
-<p class="sub">Connecte-toi avec ton Email + Mot de passe.</p>
+.eyeBtn{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:none;background:transparent;cursor:pointer;font-size:19px;line-height:1;border-radius:8px}
+.eyeBtn:active{background:#f1f5f9}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tabs button{padding:11px;border:2px solid #e2e8f0;background:#fff;border-radius:10px;cursor:pointer;font-weight:700;font-size:13px}
+.tabs button.active{border-color:#f59e0b;background:#fffbeb}
+.link-mdp{text-align:right;font-size:13px}
+.link-mdp a{color:#0f172a;font-weight:700}
+</style>
+</head>
+<body>
+<div class="top">
+<div class="back" onclick="location.href='index.html'">← <span data-i18n="accueil">Accueil</span></div>
+<h1><span data-i18n="bonRetour">Bon retour</span> <span>chez Rocyinter</span></h1>
+<p class="sub" data-i18n="connexionSous">Connectez-vous avec votre WhatsApp ou Email + Mot de passe utilisés à l'inscription.</p>
 <div class="card">
-<div><label>VOTRE EMAIL *</label><input id="emailInput" type="email" placeholder="Ex: jean@gmail.com"></div>
-<div><label>VOTRE MOT DE PASSE *</label><div class="pwdWrap"><input id="password" type="password" placeholder="Votre mot de passe"><button type="button" class="eyeBtn" onclick="togglePwd('password', this)">👁️</button></div></div>
-<div style="text-align:right;font-size:13px"><a href="mot-de-passe-oublie.html">Mot de passe oublié ?</a></div>
-<div id="msg" class="msg"></div>
-<button class="btn" id="btnCo" type="button" onclick="connecter()">Se connecter →</button>
-<small>Pas de compte ? <a href="inscription.html">Créez-en un ici</a></small>
-</div></div>
+  <div class="tabs">
+    <button type="button" id="tabWhats" class="active" onclick="setMode('whatsapp')">📱 <span data-i18n="viaWhats">WhatsApp</span></button>
+    <button type="button" id="tabEmail" onclick="setMode('email')">📧 <span data-i18n="viaEmail">Email</span></button>
+  </div>
+  <div id="blocWhats">
+    <label data-i18n="votreWhats">VOTRE WHATSAPP *</label>
+    <div class="telRow">
+      <select id="indicatif" onchange="verifTelConnexion()">
+        <option value="+229" selected>🇧🇯 +229 Bénin</option>
+        <option value="+213">🇩🇿 +213 Algérie</option><option value="+244">🇦🇴 +244 Angola</option><option value="+226">🇧🇫 +226 Burkina Faso</option><option value="+257">🇧🇮 +257 Burundi</option><option value="+237">🇨🇲 +237 Cameroun</option><option value="+238">🇨🇻 +238 Cap-Vert</option><option value="+236">🇨🇫 +236 Centrafrique</option><option value="+235">🇹🇩 +235 Tchad</option><option value="+269">🇰🇲 +269 Comores</option><option value="+242">🇨🇬 +242 Congo</option><option value="+243">🇨🇩 +243 Congo RDC</option><option value="+225">🇨🇮 +225 Côte d'Ivoire</option><option value="+253">🇩🇯 +253 Djibouti</option><option value="+20">🇪🇬 +20 Égypte</option><option value="+240">🇬🇶 +240 Guinée Équatoriale</option><option value="+291">🇪🇷 +291 Érythrée</option><option value="+251">🇪🇹 +251 Éthiopie</option><option value="+241">🇬🇦 +241 Gabon</option><option value="+220">🇬🇲 +220 Gambie</option><option value="+233">🇬🇭 +233 Ghana</option><option value="+224">🇬🇳 +224 Guinée</option><option value="+245">🇬🇼 +245 Guinée-Bissau</option><option value="+254">🇰🇪 +254 Kenya</option><option value="+266">🇱🇸 +266 Lesotho</option><option value="+231">🇱🇷 +231 Liberia</option><option value="+218">🇱🇾 +218 Libye</option><option value="+261">🇲🇬 +261 Madagascar</option><option value="+265">🇲🇼 +265 Malawi</option><option value="+223">🇲🇱 +223 Mali</option><option value="+212">🇲🇦 +212 Maroc</option><option value="+230">🇲🇺 +230 Maurice</option><option value="+222">🇲🇷 +222 Mauritanie</option><option value="+258">🇲🇿 +258 Mozambique</option><option value="+264">🇳🇦 +264 Namibie</option><option value="+227">🇳🇪 +227 Niger</option><option value="+234">🇳🇬 +234 Nigeria</option><option value="+250">🇷🇼 +250 Rwanda</option><option value="+239">🇸🇹 +239 Sao Tomé</option><option value="+221">🇸🇳 +221 Sénégal</option><option value="+248">🇸🇨 +248 Seychelles</option><option value="+232">🇸🇱 +232 Sierra Leone</option><option value="+252">🇸🇴 +252 Somalie</option><option value="+27">🇿🇦 +27 Afrique du Sud</option><option value="+211">🇸🇸 +211 Soudan du Sud</option><option value="+249">🇸🇩 +249 Soudan</option><option value="+268">🇸🇿 +268 Eswatini</option><option value="+255">🇹🇿 +255 Tanzanie</option><option value="+228">🇹🇬 +228 Togo</option><option value="+216">🇹🇳 +216 Tunisie</option><option value="+256">🇺🇬 +256 Ouganda</option><option value="+260">🇿🇲 +260 Zambie</option><option value="+263">🇿🇼 +263 Zimbabwe</option>
+        <option value="+33">🇫🇷 +33 France</option><option value="+32">🇧🇪 +32 Belgique</option><option value="+41">🇨🇭 +41 Suisse</option><option value="+352">🇱🇺 +352 Luxembourg</option><option value="+39">🇮🇹 +39 Italie</option><option value="+34">🇪🇸 +34 Espagne</option><option value="+351">🇵🇹 +351 Portugal</option><option value="+49">🇩🇪 +49 Allemagne</option><option value="+44">🇬🇧 +44 Royaume-Uni</option><option value="+31">🇳🇱 +31 Pays-Bas</option><option value="+43">🇦🇹 +43 Autriche</option><option value="+45">🇩🇰 +45 Danemark</option><option value="+46">🇸🇪 +46 Suède</option><option value="+47">🇳🇴 +47 Norvège</option><option value="+358">🇫🇮 +358 Finlande</option><option value="+353">🇮🇪 +353 Irlande</option><option value="+30">🇬🇷 +30 Grèce</option><option value="+48">🇵🇱 +48 Pologne</option><option value="+40">🇷🇴 +40 Roumanie</option><option value="+36">🇭🇺 +36 Hongrie</option><option value="+420">🇨🇿 +420 Tchéquie</option><option value="+421">🇸🇰 +421 Slovaquie</option><option value="+385">🇭🇷 +385 Croatie</option><option value="+386">🇸🇮 +386 Slovénie</option><option value="+387">🇧🇦 +387 Bosnie</option><option value="+381">🇷🇸 +381 Serbie</option><option value="+382">🇲🇪 +382 Monténégro</option><option value="+355">🇦🇱 +355 Albanie</option><option value="+359">🇧🇬 +359 Bulgarie</option><option value="+380">🇺🇦 +380 Ukraine</option><option value="+375">🇧🇾 +375 Biélorussie</option><option value="+370">🇱🇹 +370 Lituanie</option><option value="+371">🇱🇻 +371 Lettonie</option><option value="+372">🇪🇪 +372 Estonie</option><option value="+354">🇮🇸 +354 Islande</option><option value="+356">🇲🇹 +356 Malte</option><option value="+357">🇨🇾 +357 Chypre</option><option value="+7">🇷🇺 +7 Russie</option><option value="+90">🇹🇷 +90 Turquie</option><option value="+374">🇦🇲 +374 Arménie</option><option value="+994">🇦🇿 +994 Azerbaïdjan</option><option value="+995">🇬🇪 +995 Géorgie</option><option value="+373">🇲🇩 +373 Moldavie</option>
+        <option value="+1">🇺🇸 +1 USA</option><option value="+1">🇨🇦 +1 Canada</option><option value="+52">🇲🇽 +52 Mexique</option><option value="+55">🇧🇷 +55 Brésil</option><option value="+54">🇦🇷 +54 Argentine</option><option value="+57">🇨🇴 +57 Colombie</option><option value="+51">🇵🇪 +51 Pérou</option><option value="+56">🇨🇱 +56 Chili</option><option value="+58">🇻🇪 +58 Venezuela</option><option value="+593">🇪🇨 +593 Équateur</option><option value="+591">🇧🇴 +591 Bolivie</option><option value="+595">🇵🇾 +595 Paraguay</option><option value="+598">🇺🇾 +598 Uruguay</option><option value="+502">🇬🇹 +502 Guatemala</option><option value="+503">🇸🇻 +503 Salvador</option><option value="+504">🇭🇳 +504 Honduras</option><option value="+505">🇳🇮 +505 Nicaragua</option><option value="+506">🇨🇷 +506 Costa Rica</option><option value="+507">🇵🇦 +507 Panama</option><option value="+509">🇭🇹 +509 Haïti</option><option value="+53">🇨🇺 +53 Cuba</option><option value="+1">🇩🇴 +1 République Dominicaine</option><option value="+1">🇯🇲 +1 Jamaïque</option><option value="+1">🇹🇹 +1 Trinité-et-Tobago</option>
+        <option value="+91">🇮🇳 +91 Inde</option><option value="+86">🇨🇳 +86 Chine</option><option value="+81">🇯🇵 +81 Japon</option><option value="+82">🇰🇷 +82 Corée du Sud</option><option value="+84">🇻🇳 +84 Vietnam</option><option value="+66">🇹🇭 +66 Thaïlande</option><option value="+62">🇮🇩 +62 Indonésie</option><option value="+63">🇵🇭 +63 Philippines</option><option value="+60">🇲🇾 +60 Malaisie</option><option value="+65">🇸🇬 +65 Singapour</option><option value="+95">🇲🇲 +95 Myanmar</option><option value="+855">🇰🇭 +855 Cambodge</option><option value="+856">🇱🇦 +856 Laos</option><option value="+880">🇧🇩 +880 Bangladesh</option><option value="+92">🇵🇰 +92 Pakistan</option><option value="+94">🇱🇰 +94 Sri Lanka</option><option value="+977">🇳🇵 +977 Népal</option><option value="+93">🇦🇫 +93 Afghanistan</option><option value="+98">🇮🇷 +98 Iran</option><option value="+964">🇮🇶 +964 Irak</option><option value="+971">🇦🇪 +971 Émirats</option><option value="+966">🇸🇦 +966 Arabie Saoudite</option><option value="+974">🇶🇦 +974 Qatar</option><option value="+965">🇰🇼 +965 Koweït</option><option value="+973">🇧🇭 +973 Bahreïn</option><option value="+968">🇴🇲 +968 Oman</option><option value="+962">🇯🇴 +962 Jordanie</option><option value="+961">🇱🇧 +961 Liban</option><option value="+963">🇸🇾 +963 Syrie</option><option value="+972">🇮🇱 +972 Israël</option><option value="+970">🇵🇸 +970 Palestine</option><option value="+61">🇦🇺 +61 Australie</option><option value="+64">🇳🇿 +64 Nouvelle-Zélande</option><option value="+679">🇫🇯 +679 Fidji</option><option value="+675">🇵🇬 +675 Papouasie</option><option value="+677">🇸🇧 +677 Îles Salomon</option><option value="+678">🇻🇺 +678 Vanuatu</option><option value="+682">🇨🇰 +682 Îles Cook</option><option value="+687">🇳🇨 +687 Nouvelle-Calédonie</option><option value="+689">🇵🇫 +689 Polynésie</option>
+      </select>
+      <input id="whatsappNum" placeholder="01 97 00 00 00" inputmode="numeric" oninput="verifTelConnexion()">
+    </div>
+    <div id="errTel" class="errTxt">❌ Bénin : 10 chiffres. Ex : 01 97 00 00 00</div>
+    <p id="telAideCo" style="font-size:11px;color:#64748b;margin-top:4px">Même numéro qu'à l'inscription. Bénin : 10 chiffres, commence par 01.</p>
+  </div>
+  <div id="blocEmail" style="display:none">
+    <label data-i18n="votreEmail">VOTRE EMAIL *</label>
+    <input id="emailInput" type="email" placeholder="Ex: jean@gmail.com">
+  </div>
+  <div>
+    <label data-i18n="votreMdp">VOTRE MOT DE PASSE *</label>
+    <div class="pwdWrap"><input id="password" type="password" data-i18n-ph="mdpPh" placeholder="Votre mot de passe"><button type="button" class="eyeBtn" onclick="togglePwd('password', this)">👁️</button></div>
+  </div>
+  <div class="link-mdp"><a href="mot-de-passe-oublie.html" data-i18n="mdpOublie">Mot de passe oublié ?</a></div>
+  <div id="msg" class="msg"></div>
+  <button class="btn" id="btnCo" type="button" onclick="connecter()" data-i18n="seConnecter">Se connecter →</button>
+  <div class="info">💡 <b data-i18n="pasCompte">Pas encore de compte ?</b><br><span data-i18n="pasCompteSous">Créez un compte en 1 minute. Votre WhatsApp + mot de passe = votre identité.</span></div>
+  <small><span data-i18n="pasCompte2">Pas de compte ?</span> <a href="inscription.html" data-i18n="creezIci">Créez-en un ici</a></small>
+</div>
+</div>
 <script>
-const ADMIN_EMAIL='rocyinter@gmail.com';
-const supabase=window.supabase.createClient("https://gdwgjsloivrpxxvggxyz.supabase.co","sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF");
-function showMsg(t,ok){const m=document.getElementById('msg');m.textContent=t;m.className='msg '+(ok?'ok':'err');m.style.display='block';}
-function togglePwd(id,btn){const i=document.getElementById(id);const s=i.type==='password';i.type=s?'text':'password';btn.textContent=s?'🙈':'👁️';}
-async function connecter(){
-  const email=document.getElementById('emailInput').value.trim().toLowerCase();
-  const password=document.getElementById('password').value;
-  const btn=document.getElementById('btnCo');
-  if(!email||!email.includes('@')||!password){showMsg('Remplis Email + Mot de passe',false);return;}
-  btn.disabled=true;btn.textContent='Vérification...';
-  try{
-    // SÉCURITÉ : Supabase vérifie le mot de passe haché, jamais nous
-    const {data,error}=await supabase.auth.signInWithPassword({email,password});
-    if(error||!data.user){showMsg('Email ou mot de passe incorrect.',false);btn.disabled=false;btn.textContent='Se connecter →';return;}
-    const uid=data.user.id;
-    // Profil via RLS : on ne peut lire que son propre profil, ou Admin
-    const {data:prof,error:perr}=await supabase.from('profiles').select('id,nom,full_name,email,type,type_compte,role,pays,ville,localite').eq('id',uid).single();
-    if(perr||!prof){showMsg('Profil introuvable. Réinscris-toi.',false);btn.disabled=false;btn.textContent='Se connecter →';return;}
-    let typeFinal=prof.type||prof.type_compte||prof.role||'client';
-    if(String(prof.email||'').toLowerCase()===ADMIN_EMAIL) typeFinal='admin';
-    // On ne stocke que l'affichage, la preuve c'est le token Supabase
-    localStorage.setItem('rocy_user_id',uid);localStorage.setItem('rocy_user_nom',prof.nom||prof.full_name||'');localStorage.setItem('rocy_user_email',String(prof.email||email).toLowerCase());localStorage.setItem('rocy_user_type',typeFinal);localStorage.setItem('rocy_role',typeFinal);localStorage.setItem('rocy_user_pays',prof.pays||'Bénin');localStorage.setItem('rocy_user_ville',prof.ville||'');localStorage.setItem('rocy_user_localite',prof.localite||'');
-    showMsg('✅ Bienvenue ! Redirection...',true);
-    setTimeout(()=>{if(typeFinal==='admin')location.href='admin.html';else if(typeFinal==='prestataire'||typeFinal==='livreur')location.href='dashboard-prestataire.html';else location.href='dashboard-client.html';},800);
-  }catch(e){showMsg('Erreur : '+e.message,false);btn.disabled=false;btn.textContent='Se connecter →';}
+const ADMIN_EMAIL = 'rocyinter@gmail.com';
+const supabase = window.supabase.createClient("https://gdwgjsloivrpxxvggxyz.supabase.co", "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF");
+let modeConnexion='whatsapp';
+function setMode(m){
+  modeConnexion=m;
+  document.getElementById('tabWhats').classList.toggle('active', m==='whatsapp');
+  document.getElementById('tabEmail').classList.toggle('active', m==='email');
+  document.getElementById('blocWhats').style.display = m==='whatsapp' ? 'block' : 'none';
+  document.getElementById('blocEmail').style.display = m==='email' ? 'block' : 'none';
 }
-document.getElementById('password').addEventListener('keydown',e=>{if(e.key==='Enter')connecter();});
-if(window.rocyAppliquerTraduction)window.rocyAppliquerTraduction();
-</script></body></html>
+function showMsg(txt, ok){
+  const m = document.getElementById('msg');
+  m.textContent = txt;
+  m.className = 'msg ' + (ok ? 'ok' : 'err');
+  m.style.display = 'block';
+}
+function togglePwd(id, btn){ const inp=document.getElementById(id); const show = inp.type==='password'; inp.type = show ? 'text' : 'password'; btn.textContent = show ? '🙈' : '👁️'; inp.focus(); }
+const MAP_PAYS_CODE = {
+  'Bénin':'+229','Algérie':'+213','Angola':'+244','Burkina Faso':'+226','Burundi':'+257','Cameroun':'+237','Cap-Vert':'+238','Centrafrique':'+236','Tchad':'+235','Comores':'+269','Congo':'+242','Congo RDC':'+243',"Côte d'Ivoire":'+225','Djibouti':'+253','Égypte':'+20','Guinée Équatoriale':'+240','Érythrée':'+291','Éthiopie':'+251','Gabon':'+241','Gambie':'+220','Ghana':'+233','Guinée':'+224','Guinée-Bissau':'+245','Kenya':'+254','Lesotho':'+266','Liberia':'+231','Libye':'+218','Madagascar':'+261','Malawi':'+265','Mali':'+223','Maroc':'+212','Maurice':'+230','Mauritanie':'+222','Mozambique':'+258','Namibie':'+264','Niger':'+227','Nigeria':'+234','Rwanda':'+250','Sao Tomé':'+239','Sénégal':'+221','Seychelles':'+248','Sierra Leone':'+232','Somalie':'+252','Afrique du Sud':'+27','Soudan du Sud':'+211','Soudan':'+249','Eswatini':'+268','Tanzanie':'+255','Togo':'+228','Tunisie':'+216','Ouganda':'+256','Zambie':'+260','Zimbabwe':'+263',
+  'France':'+33','Belgique':'+32','Suisse':'+41','Luxembourg':'+352','Italie':'+39','Espagne':'+34','Portugal':'+351','Allemagne':'+49','Royaume-Uni':'+44','Pays-Bas':'+31','Autriche':'+43','Danemark':'+45','Suède':'+46','Norvège':'+47','Finlande':'+358','Irlande':'+353','Grèce':'+30','Pologne':'+48','Roumanie':'+40','Hongrie':'+36','Tchéquie':'+420','Slovaquie':'+421','Croatie':'+385','Slovénie':'+386','Bosnie':'+387','Serbie':'+381','Monténégro':'+382','Albanie':'+355','Bulgarie':'+359','Ukraine':'+380','Biélorussie':'+375','Lituanie':'+370','Lettonie':'+371','Estonie':'+372','Islande':'+354','Malte':'+356','Chypre':'+357','Russie':'+7','Turquie':'+90','Arménie':'+374','Azerbaïdjan':'+994','Géorgie':'+995','Moldavie':'+373',
+  'USA':'+1','Canada':'+1','Mexique':'+52','Brésil':'+55','Argentine':'+54','Colombie':'+57','Pérou':'+51','Chili':'+56','Venezuela':'+58','Équateur':'+593','Bolivie':'+591','Paraguay':'+595','Uruguay':'+598','Guatemala':'+502','Salvador':'+503','Honduras':'+504','Nicaragua':'+505','Costa Rica':'+506','Panama':'+507','Haïti':'+509','Cuba':'+53','République Dominicaine':'+1','Jamaïque':'+1','Trinité-et-Tobago':'+1',
+  'Inde':'+91','Chine':'+86','Japon':'+81','Corée du Sud':'+82','Vietnam':'+84','Thaïlande':'+66','Indonésie':'+62','Philippines':'+63','Malaisie':'+60','Singapour':'+65','Myanmar':'+95','Cambodge':'+855','Laos':'+856','Bangladesh':'+880','Pakistan':'+92','Sri Lanka':'+94','Népal':'+977','Afghanistan':'+93','Iran':'+98','Irak':'+964','Émirats':'+971','Arabie Saoudite':'+966','Qatar':'+974','Koweït':'+965','Bahreïn':'+973','Oman':'+968','Jordanie':'+962','Liban':'+961','Syrie':'+963','Israël':'+972','Palestine':'+970','Australie':'+61','Nouvelle-Zélande':'+64','Fidji':'+679','Papouasie':'+675','Îles Salomon':'+677','Vanuatu':'+678','Îles Cook':'+682','Nouvelle-Calédonie':'+687','Polynésie':'+689'
+};
+const LONGUEUR_PAR_PAYS = {
+  'Bénin':[10], 'Togo':[8], "Côte d'Ivoire":[10], 'Sénégal':[9], 'Mali':[8], 'Niger':[8], 'Burkina Faso':[8], 'Ghana':[10], 'Nigeria':[10], 'Cameroun':[9], 'Guinée':[9], 'Gabon':[9], 'Congo':[9], 'Congo RDC':[10], 'Kenya':[10], 'Éthiopie':[9], 'Afrique du Sud':[9], 'Algérie':[9], 'Tunisie':[8], 'Maroc':[9], 'Égypte':[10], 'Rwanda':[9], 'Ouganda':[9], 'Tanzanie':[9], 'Zambie':[9], 'Zimbabwe':[9], 'Angola':[9], 'Mozambique':[9], 'Madagascar':[9], 'Maurice':[7,8], 'Mauritanie':[8], 'Libye':[9], 'Soudan':[9], 'Soudan du Sud':[9], 'Somalie':[9], 'Djibouti':[8], 'Cap-Vert':[7], 'Centrafrique':[8], 'Tchad':[8], 'Comores':[7], 'Guinée Équatoriale':[9], 'Érythrée':[7], 'Gambie':[7], 'Guinée-Bissau':[9], 'Lesotho':[8], 'Liberia':[7,9], 'Malawi':[9], 'Namibie':[9], 'Sao Tomé':[7], 'Seychelles':[7], 'Sierra Leone':[8], 'Eswatini':[8], 'Burundi':[8],
+  'France':[9], 'Belgique':[9], 'Suisse':[9], 'Luxembourg':[9], 'Italie':[10], 'Espagne':[9], 'Portugal':[9], 'Allemagne':[10,11], 'Royaume-Uni':[10], 'Pays-Bas':[9], 'Autriche':[9,10], 'Danemark':[8], 'Suède':[9], 'Norvège':[8], 'Finlande':[9,10], 'Irlande':[9], 'Grèce':[10], 'Pologne':[9], 'Roumanie':[10], 'Hongrie':[9], 'Tchéquie':[9], 'Slovaquie':[9], 'Croatie':[9], 'Slovénie':[8], 'Bosnie':[8,9], 'Serbie':[9], 'Monténégro':[8], 'Albanie':[9], 'Bulgarie':[9], 'Ukraine':[9], 'Biélorussie':[9], 'Lituanie':[8], 'Lettonie':[8], 'Estonie':[7,8], 'Islande':[7], 'Malte':[8], 'Chypre':[8], 'Russie':[10], 'Turquie':[10], 'Arménie':[8], 'Azerbaïdjan':[9], 'Géorgie':[9], 'Moldavie':[8],
+  'USA':[10], 'Canada':[10], 'Mexique':[10], 'Brésil':[11], 'Argentine':[10], 'Colombie':[10], 'Pérou':[9], 'Chili':[9], 'Venezuela':[10], 'Équateur':[9], 'Bolivie':[8], 'Paraguay':[9], 'Uruguay':[8], 'Guatemala':[8], 'Salvador':[8], 'Honduras':[8], 'Nicaragua':[8], 'Costa Rica':[8], 'Panama':[8], 'Haïti':[8], 'Cuba':[8], 'République Dominicaine':[10], 'Jamaïque':[10], 'Trinité-et-Tobago':[10],
+  'Inde':[10], 'Chine':[11], 'Japon':[10], 'Corée du Sud':[10], 'Vietnam':[9], 'Thaïlande':[9], 'Indonésie':[10,11], 'Philippines':[10], 'Malaisie':[9,10], 'Singapour':[8], 'Myanmar':[9], 'Cambodge':[9], 'Laos':[9], 'Bangladesh':[10], 'Pakistan':[10], 'Sri Lanka':[9], 'Népal':[10], 'Afghanistan':[9], 'Iran':[10], 'Irak':[10], 'Émirats':[9], 'Arabie Saoudite':[9], 'Qatar':[8], 'Koweït':[8], 'Bahreïn':[8], 'Oman':[8], 'Jordanie':[9], 'Liban':[8], 'Syrie':[9], 'Israël':[9], 'Palestine':[9], 'Australie':[9], 'Nouvelle-Zélande':[9], 'Fidji':[7], 'Papouasie':[8], 'Îles Salomon':[7], 'Vanuatu':[7], 'Îles Cook':[7], 'Nouvelle-Calédonie':[7], 'Polynésie':[8]
+};
+function paysDepuisIndicatifCo(indic){
+  const stocke = localStorage.getItem('rocy_user_pays');
+  if(stocke && MAP_PAYS_CODE[stocke]===indic) return stocke;
+  for(let p in MAP_PAYS_CODE){ if(MAP_PAYS_CODE[p]===indic) return p; }
+  return 'Bénin';
+}
+function longueursPourPaysCo(pays, indic){
+  if(LONGUEUR_PAR_PAYS[pays]) return LONGUEUR_PAR_PAYS[pays];
+  if(indic==='+1') return [10];
+  return [7,8,9,10,11];
+}
+function texteLongueurCo(pays){
+  const lens = longueursPourPaysCo(pays, MAP_PAYS_CODE[pays]||'');
+  if(pays==='Bénin') return 'Bénin : 10 chiffres, commence par 01. Ex : 01 97 00 00 00';
+  if(lens.length===1) return pays + ' : ' + lens[0] + ' chiffres.';
+  return pays + ' : ' + lens.join(' ou ') + ' chiffres.';
+}
+function majAideCo(){
+  const indic = document.getElementById('indicatif').value;
+  const pays = paysDepuisIndicatifCo(indic);
+  const aide = document.getElementById('telAideCo');
+  if(aide) aide.textContent = 'Même numéro qu\'à l\'inscription. ' + texteLongueurCo(pays);
+  const inp = document.getElementById('whatsappNum');
+  if(pays==='Bénin') inp.placeholder = '01 97 00 00 00';
+}
+function normaliseWhatsApp(){
+  let num = document.getElementById('whatsappNum').value.replace(/[^0-9]/g,'');
+  const indic = document.getElementById('indicatif').value;
+  if(indic==='+229'){
+    if(num.length===13 && num.startsWith('229')) num = num.slice(3);
+    if(num.length===11 && num.startsWith('229')) num = num.slice(3);
+    if(num.length===8) num = '01' + num;
+    if(num.length===8) num = '01' + num;
+  } else {
+    const codeSansPlus = indic.replace('+','');
+    if(num.startsWith(codeSansPlus) && num.length > 8) num = num.slice(codeSansPlus.length);
+    if(num.startsWith('0')) num = num.slice(1);
+  }
+  return { num: num, whatsapp: indic + ' ' + num, chiffres: (indic + num).replace(/[^0-9]/g,'') };
+}
+function verifTelConnexion(){
+  const indic = document.getElementById('indicatif').value;
+  const pays = paysDepuisIndicatifCo(indic);
+  const lens = longueursPourPaysCo(pays, indic);
+  const el = document.getElementById('whatsappNum');
+  const brut = el.value.replace(/[^0-9]/g,'');
+  el.value = brut;
+  const num = normaliseWhatsApp().num;
+  let ok = false;
+  if(pays==='Bénin'){
+    ok = (num.length===10 && num.startsWith('01')) || brut.length===8;
+  } else {
+    ok = lens.includes(num.length);
+  }
+  const errEl = document.getElementById('errTel');
+  errEl.textContent = '❌ ' + texteLongueurCo(pays);
+  errEl.classList.toggle('show', brut.length>0 && !ok);
+  el.classList.toggle('err', brut.length>0 && !ok);
+  majAideCo();
+  return ok;
+}
+// SÉCURISÉ : on ne lit plus profiles, on ne compare plus de password en clair
+async function connecter(){
+  const password = document.getElementById('password').value;
+  const btn = document.getElementById('btnCo');
+  let emailCherche = '';
+  if(modeConnexion==='whatsapp'){
+    const r = normaliseWhatsApp();
+    if(!r.num || !password){ showMsg('Remplis WhatsApp + Mot de passe', false); return; }
+    if(!verifTelConnexion()){ const indic=document.getElementById('indicatif').value; const p=paysDepuisIndicatifCo(indic); showMsg('❌ Numéro incorrect. ' + texteLongueurCo(p), false); return; }
+    // WhatsApp -> Email via fonction serveur, qui ne renvoie QUE l'email
+    const {data: emailViaWhats, error: errRpc} = await supabase.rpc('get_email_by_whatsapp', { p_whatsapp: r.chiffres });
+    if(errRpc || !emailViaWhats){
+      // Fallback anciens comptes : email = chiffres@rocyinter.com
+      emailCherche = r.chiffres + '@rocyinter.com';
+    } else {
+      emailCherche = String(emailViaWhats).toLowerCase().trim();
+    }
+  } else {
+    emailCherche = (document.getElementById('emailInput').value||'').trim().toLowerCase();
+    if(!emailCherche || !password){ showMsg('Remplis Email + Mot de passe', false); return; }
+    if(!emailCherche.includes('@')){ showMsg('Email invalide', false); return; }
+  }
+  btn.disabled = true; btn.textContent = 'Vérification...';
+  try{
+    // 1. Supabase Auth vérifie le mot de passe haché
+    const {data: login, error: errLogin} = await supabase.auth.signInWithPassword({email: emailCherche, password});
+    if(errLogin || !login?.user){ showMsg('Email / WhatsApp ou mot de passe incorrect.', false); btn.disabled = false; btn.textContent = 'Se connecter →'; return; }
+    // 2. Profil = seulement son propre profil, RLS l'impose
+    const {data: prof, error: perr} = await supabase.from('profiles').select('id,nom,full_name,email,whatsapp,phone,type,type_compte,role,pays,country,ville,city,localite').eq('id', login.user.id).single();
+    if(perr || !prof){ showMsg('Profil introuvable. Réinscris-toi.', false); btn.disabled = false; btn.textContent = 'Se connecter →'; return; }
+    const emailFinal = String(prof.email || emailCherche || '').toLowerCase().trim();
+    let typeFinal = prof.type || prof.type_compte || prof.role || 'client';
+    if(emailFinal === ADMIN_EMAIL) typeFinal = 'admin';
+    const nomFinal = prof.nom || prof.full_name || '';
+    const langueAvant = localStorage.getItem('rocy_langue');
+    localStorage.setItem('rocy_user_id', prof.id);
+    localStorage.setItem('rocy_user_nom', nomFinal);
+    localStorage.setItem('rocy_user_email', emailFinal);
+    localStorage.setItem('rocy_email', emailFinal);
+    localStorage.setItem('rocy_user_type', typeFinal);
+    localStorage.setItem('rocy_role', typeFinal);
+    localStorage.setItem('rocy_user_whatsapp', prof.whatsapp || prof.phone || '');
+    localStorage.setItem('rocy_user_pays', prof.pays || prof.country || 'Bénin');
+    localStorage.setItem('rocy_user_ville', prof.ville || prof.city || '');
+    localStorage.setItem('rocy_user_localite', prof.localite || '');
+    if(langueAvant) localStorage.setItem('rocy_langue', langueAvant);
+    showMsg('✅ Bienvenue ' + nomFinal + ' ! Redirection...', true);
+    setTimeout(()=>{
+      if(typeFinal==='admin') location.href='admin.html';
+      else if(typeFinal==='prestataire' || typeFinal==='livreur') location.href='dashboard-prestataire.html';
+      else location.href='dashboard-client.html';
+    }, 800);
+  }catch(e){ showMsg('Erreur : '+e.message, false); btn.disabled=false; btn.textContent='Se connecter →'; }
+}
+(function(){
+  const w = localStorage.getItem('rocy_user_whatsapp');
+  if(w){
+    const chiffres = w.replace(/[^0-9]/g,'');
+    const sel = document.getElementById('indicatif');
+    let trouve = false;
+    for(let o of sel.options){
+      const code = o.value.replace(/[^0-9]/g,'');
+      if(chiffres.startsWith(code)){ sel.value = o.value; document.getElementById('whatsappNum').value = chiffres.slice(code.length); trouve = true; break; }
+    }
+    if(!trouve) document.getElementById('whatsappNum').value = chiffres;
+  }
+  majAideCo();
+})();
+document.getElementById('password').addEventListener('keydown', e=>{ if(e.key==='Enter') connecter(); });
+if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
+</script>
+</body>
+</html>
