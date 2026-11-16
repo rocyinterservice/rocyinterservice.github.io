@@ -1,5 +1,4 @@
 // rocy-layout.js - ROCYINTER SERVICE - HEADER + TRADUCTION AUTO POUR TOUTES LES PAGES + MONNAIE + ROLES
-// PAS DE GOOGLE TRANSLATE. Traduction automatique par connexion, pour toutes les pages.
 (function(){
   const uid = localStorage.getItem('rocy_user_id');
   const typeLocal = localStorage.getItem('rocy_user_type') || localStorage.getItem('rocy_role') || '';
@@ -163,7 +162,7 @@
       .rocy-header-ligne1{display:flex;align-items:center;gap:8px}
       .rocy-header-ligne2{display:flex;justify-content:flex-end;gap:8px}
       .rocy-burger{font-size:26px;cursor:pointer;background:none;border:none;color:#fff;line-height:1;padding:6px 8px;border-radius:8px}
-      .rocy-logo{font-size:19px;font-weight:800;cursor:pointer;flex:1;min-width:120px;line-height:1} .rocy-logo span{color:#f59e0b} .rocy-logo small{font-size:10px;letter-spacing:1px;opacity:.8;font-weight:700}
+      .rocy-logo{font-size:20px;font-weight:800;cursor:pointer;flex:1;min-width:120px;line-height:1} .rocy-logo span{color:#f59e0b}
       .rocy-header .btn{background:#f59e0b;color:#000;border:none;padding:8px 12px;border-radius:999px;font-weight:700;cursor:pointer;font-size:12px;white-space:nowrap}
       .rocy-header .btn-white{background:#fff;color:#111}
       .rocy-top-select{background:#1e293b;color:#fff;border:1px solid #334155;border-radius:999px;padding:7px 8px;font-size:12px;font-weight:700;cursor:pointer;max-width:135px}
@@ -183,13 +182,12 @@
     <header class="rocy-header">
       <div class="rocy-header-ligne1">
         <button type="button" class="rocy-burger" onclick="rocyOuvrirMenu()">☰</button>
-        <div class="rocy-logo" onclick="location.href='index.html'">Rocy<span>inter</span> Service<br><small>SERVICES RÉELS PRÈS DE CHEZ VOUS</small></div>
+        <div class="rocy-logo" onclick="location.href='index.html'">Rocy<span>inter</span> Service</div>
         <select class="rocy-top-select" onchange="rocySetLangue(this.value)">${optsLangue}</select>
         <select class="rocy-top-select" onchange="rocySetDevise(this.value)">${optsDevise}</select>
       </div>
       <div class="rocy-header-ligne2">
-        ${!isConnecte ? `<button type="button" class="rocy-espace-btn" onclick="location.href='connexion.html'">${t('connexion')}</button><button type="button" class="btn" onclick="location.href='inscription.html'">${t('devenir')}</button>` : `<button type="button" class="rocy-espace-btn" onclick="rocyAllerEspace()">👤 ${t('espace')}</button>`}
-        ${isPresta ? `<button type="button" class="btn" onclick="rocyProposerService()">${t('proposer')}</button>` : ''}
+        ${!isConnecte ? `<button type="button" class="rocy-espace-btn" onclick="location.href='connexion.html'">${t('connexion')}</button>` : `<button type="button" class="rocy-espace-btn" onclick="rocyAllerEspace()">👤 ${t('espace')}</button>`}
       </div>
     </header>
     <div class="rocy-drawer" id="rocyDrawer">
