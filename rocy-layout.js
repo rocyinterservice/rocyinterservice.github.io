@@ -7,32 +7,32 @@
   const isPresta = typeLocal === 'prestataire' || typeLocal === 'livreur';
 
   const LANGUES = [
-    {code:'fr', label:'🇫🇷 FR - Français'},
-    {code:'en', label:'🇬🇧 EN - English'},
-    {code:'yo', label:'🇳🇬 YO - Yoruba'},
-    {code:'ig', label:'🇳🇬 IG - Igbo'},
-    {code:'ha', label:'🇳🇬 HA - Hausa'},
-    {code:'fon', label:'🇧🇯 FON - Fon / Fongbe'},
-    {code:'wo', label:'🇸🇳 WO - Wolof'},
-    {code:'bm', label:'🇲🇱 BM - Bambara'},
-    {code:'ee', label:'🇹🇬 EE - Ewe'},
-    {code:'tw', label:'🇬🇭 TW - Twi'},
-    {code:'ln', label:'🇨🇩 LN - Lingala'},
-    {code:'sw', label:'🇹🇿 SW - Kiswahili'},
-    {code:'am', label:'🇪🇹 AM - Amharic'},
-    {code:'so', label:'🇸🇴 SO - Somali'},
-    {code:'es', label:'🇪🇸 ES - Español'},
-    {code:'pt', label:'🇵🇹 PT - Português'},
-    {code:'ar', label:'🇸🇦 AR - العربية'},
-    {code:'de', label:'🇩🇪 DE - Deutsch'},
-    {code:'it', label:'🇮🇹 IT - Italiano'},
-    {code:'nl', label:'🇳🇱 NL - Nederlands'},
-    {code:'ru', label:'🇷🇺 RU - Русский'},
-    {code:'tr', label:'🇹🇷 TR - Türkçe'},
-    {code:'zh', label:'🇨🇳 ZH - 中文'},
-    {code:'ja', label:'🇯🇵 JA - 日本語'},
-    {code:'ko', label:'🇰🇷 KO - 한국어'},
-    {code:'hi', label:'🇮🇳 HI - हिन्दी'}
+    {code:'fr', label:'🇫🇷 FR'},
+    {code:'en', label:'🇬🇧 EN'},
+    {code:'yo', label:'🇳🇬 YO'},
+    {code:'ig', label:'🇳🇬 IG'},
+    {code:'ha', label:'🇳🇬 HA'},
+    {code:'fon', label:'🇧🇯 FON'},
+    {code:'wo', label:'🇸🇳 WO'},
+    {code:'bm', label:'🇲🇱 BM'},
+    {code:'ee', label:'🇹🇬 EE'},
+    {code:'tw', label:'🇬🇭 TW'},
+    {code:'ln', label:'🇨🇩 LN'},
+    {code:'sw', label:'🇹🇿 SW'},
+    {code:'am', label:'🇪🇹 AM'},
+    {code:'so', label:'🇸🇴 SO'},
+    {code:'es', label:'🇪🇸 ES'},
+    {code:'pt', label:'🇵🇹 PT'},
+    {code:'ar', label:'🇸🇦 AR'},
+    {code:'de', label:'🇩🇪 DE'},
+    {code:'it', label:'🇮🇹 IT'},
+    {code:'nl', label:'🇳🇱 NL'},
+    {code:'ru', label:'🇷🇺 RU'},
+    {code:'tr', label:'🇹🇷 TR'},
+    {code:'zh', label:'🇨🇳 ZH'},
+    {code:'ja', label:'🇯🇵 JA'},
+    {code:'ko', label:'🇰🇷 KO'},
+    {code:'hi', label:'🇮🇳 HI'}
   ];
 
   let langue = localStorage.getItem('rocy_langue') || 'fr';
@@ -158,19 +158,23 @@
     const optsDevise = DEVISES.map(d=>`<option value="${d.code}" ${devise===d.code?'selected':''}>${d.label}</option>`).join('');
     const headerHTML = `
     <style>
-      .rocy-header{background:#0f172a;color:#fff;padding:10px 12px 8px;display:flex;flex-direction:column;gap:8px;position:sticky;top:0;z-index:100}
-      .rocy-header-ligne1{display:flex;align-items:center;gap:8px}
-      .rocy-header-ligne2{display:flex;justify-content:flex-end;gap:8px}
-      .rocy-burger{font-size:26px;cursor:pointer;background:none;border:none;color:#fff;line-height:1;padding:6px 8px;border-radius:8px}
-      .rocy-logo{font-size:20px;font-weight:800;cursor:pointer;flex:1;min-width:120px;line-height:1} .rocy-logo span{color:#f59e0b}
+      *{box-sizing:border-box}
+      html,body{overflow-x:hidden;width:100%;margin:0;padding:0}
+      .rocy-header{background:#0f172a;color:#fff;padding:10px 8px 8px;display:flex;flex-direction:column;gap:8px;position:sticky;top:0;z-index:100;width:100%;max-width:100vw;overflow:hidden}
+      .rocy-header-ligne1{display:flex;align-items:center;gap:6px;width:100%;max-width:100%}
+      .rocy-header-ligne2{display:flex;justify-content:flex-end;gap:8px;width:100%}
+      .rocy-burger{font-size:22px;cursor:pointer;background:none;border:none;color:#fff;line-height:1;padding:4px 4px;border-radius:8px;flex-shrink:0}
+      .rocy-logo{font-size:19px;font-weight:800;cursor:pointer;flex:1;min-width:0;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .rocy-logo b{font-size:19px;font-weight:800} .rocy-logo span{color:#f59e0b;font-size:12px;font-weight:600;letter-spacing:.3px}
       .rocy-header .btn{background:#f59e0b;color:#000;border:none;padding:8px 12px;border-radius:999px;font-weight:700;cursor:pointer;font-size:12px;white-space:nowrap}
       .rocy-header .btn-white{background:#fff;color:#111}
-      .rocy-top-select{background:#1e293b;color:#fff;border:1px solid #334155;border-radius:999px;padding:7px 8px;font-size:12px;font-weight:700;cursor:pointer;max-width:135px}
+      .rocy-top-select{background:#1e293b;color:#fff;border:1px solid #334155;border-radius:999px;padding:6px 4px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0}
+      .rocy-select-langue{width:68px;max-width:68px}
+      .rocy-select-devise{width:64px;max-width:64px}
       .rocy-espace-btn{background:#1e293b;color:#fff;border:1px solid #334155;border-radius:999px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
       .rocy-drawer{position:fixed;top:0;left:-300px;width:280px;max-width:85vw;height:100%;background:#fff;z-index:200;transition:left .25s;box-shadow:4px 0 20px rgba(0,0,0,.2);overflow-y:auto;padding-bottom:20px}
       .rocy-drawer.open{left:0}
       .rocy-drawer-head{background:#0f172a;color:#fff;padding:16px}
-      .rocy-drawer-head b{font-size:18px} .rocy-drawer-head b span{color:#f59e0b} .rocy-drawer-head small{opacity:.8}
+      .rocy-drawer-head b{font-size:18px} .rocy-drawer-head b span{color:#f59e0b;font-size:13px;font-weight:600} .rocy-drawer-head small{opacity:.8}
       .rocy-menu-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid #f1f5f9;padding:14px 16px;font-size:14px;cursor:pointer;color:#111}
       .rocy-menu-label{font-size:11px;font-weight:800;color:#94a3b8;padding:14px 16px 4px}
       .rocy-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:150;display:none;pointer-events:none}
@@ -182,16 +186,16 @@
     <header class="rocy-header">
       <div class="rocy-header-ligne1">
         <button type="button" class="rocy-burger" onclick="rocyOuvrirMenu()">☰</button>
-        <div class="rocy-logo" onclick="location.href='index.html'">Rocy<span>inter</span> Service</div>
-        <select class="rocy-top-select" onchange="rocySetLangue(this.value)">${optsLangue}</select>
-        <select class="rocy-top-select" onchange="rocySetDevise(this.value)">${optsDevise}</select>
+        <div class="rocy-logo" onclick="location.href='index.html'"><b>Rocyinter</b> <span>Service</span></div>
+        <select class="rocy-top-select rocy-select-langue" onchange="rocySetLangue(this.value)">${optsLangue}</select>
+        <select class="rocy-top-select rocy-select-devise" onchange="rocySetDevise(this.value)">${optsDevise}</select>
       </div>
       <div class="rocy-header-ligne2">
         ${!isConnecte ? `<button type="button" class="rocy-espace-btn" onclick="location.href='connexion.html'">${t('connexion')}</button>` : `<button type="button" class="rocy-espace-btn" onclick="rocyAllerEspace()">👤 ${t('espace')}</button>`}
       </div>
     </header>
     <div class="rocy-drawer" id="rocyDrawer">
-      <div class="rocy-drawer-head"><b>Rocy<span>inter</span> Service</b><br><small>${isConnecte ? '👋 '+t('bonjour')+', '+nom : t('visiteur')}</small><br><button type="button" style="margin-top:8px;background:#f59e0b;border:none;padding:6px 12px;border-radius:999px;font-weight:700;cursor:pointer" onclick="rocyFermerMenu()">${t('fermer')}</button></div>
+      <div class="rocy-drawer-head"><b>Rocyinter <span>Service</span></b><br><small>${isConnecte ? '👋 '+t('bonjour')+', '+nom : t('visiteur')}</small><br><button type="button" style="margin-top:8px;background:#f59e0b;border:none;padding:6px 12px;border-radius:999px;font-weight:700;cursor:pointer" onclick="rocyFermerMenu()">${t('fermer')}</button></div>
       <div class="rocy-menu-label">${t('compte')}</div>
       ${!isConnecte ? `<button type="button" class="rocy-menu-item" onclick="location.href='connexion.html'">${t('seConnecter')}</button><button type="button" class="rocy-menu-item" onclick="location.href='inscription.html'">${t('creerCompte')}</button>` : `<button type="button" class="rocy-menu-item" onclick="rocyAllerEspace()">👤 ${t('espace')}</button><button type="button" class="rocy-menu-item" onclick="location.href='favoris.html'">${t('favoris')}</button><button type="button" class="rocy-menu-item" onclick="location.href='panier.html'">${t('panier')}</button><button type="button" class="rocy-menu-item" onclick="location.href='notifications.html'">${t('notif')}</button><button type="button" class="rocy-menu-item" onclick="rocyDeconnexion()">${t('deconnexion')}</button>`}
       <div class="rocy-menu-label">${t('services')}</div>
