@@ -1,4 +1,5 @@
-// rocy-layout.js - VERSION CLICABLE
+// rocy-layout.js - LE SEUL HEADER / FOOTER POUR TOUT LE SITE
+// Admin = vérifié dans Supabase, visible que pour toi
 (function(){
   const uid = localStorage.getItem('rocy_user_id');
   const typeLocal = localStorage.getItem('rocy_user_type') || localStorage.getItem('rocy_role') || '';
@@ -32,7 +33,6 @@
     }catch(e){ return false; }
   }
 
-  // FONCTIONS GLOBALES - toujours disponibles, même si la page plante
   window.rocyOuvrirMenu = function(){
     const d = document.getElementById('rocyDrawer'); const o = document.getElementById('rocyOverlay');
     if(!d || !o) return; d.classList.add('open'); o.classList.add('show');
@@ -100,8 +100,7 @@
       ${isAdmin ? `<div class="rocy-menu-label">ADMIN - QUE POUR TOI</div><button type="button" class="rocy-menu-item" onclick="location.href='admin.html'">🛡️ Panel Admin</button>` : ''}
       ${isPresta ? `<div class="rocy-menu-label">PRESTATAIRE</div><button type="button" class="rocy-menu-item" onclick="location.href='creer-annonce.html'">➕ Créer une annonce</button>` : ''}
     </div>`;
-    const footerHTML = `<footer class="rocy-footer">Rocyinter Services © 2026 - Paiement sécurisé Escrow - Bénin<br><a href="tarifs.html">Tarifs</a> | <a href="cgu.html">CGU</a> | <a href="confidentialite.html">Confidentialité</a> | <a href="aide-faq.html">Aide / FAQ</a> | <a href="contact.html">Contact</a></footer>`;
-    // CORRECTION CLIC : on SUPPRIME les vieux header/footer, pas juste les cacher
+    const footerHTML = `<footer class="rocy-footer">Rocyinter Services © 2026 - Paiement sécurisé Escrow - Bénin<br><a href="tarifs.html">Tarifs</a> | <a href="cgu.html">CGU</a> | <a href="confidentialite.html">Confidentialité</a> | <a href="aide-faq.html">Aide / FAQ</a> | <a href="contact.html">Contact</a><br><span style="font-size:11px">* 1er mois offert = seulement l'abonnement, pour les 30 premiers prestataires validés. Commissions dues dès la 1ère mission.</span></footer>`;
     document.querySelectorAll('header:not(.rocy-header)').forEach(h=>h.remove());
     document.querySelectorAll('footer:not(.rocy-footer)').forEach(f=>f.remove());
     document.body.insertAdjacentHTML('afterbegin', headerHTML);
