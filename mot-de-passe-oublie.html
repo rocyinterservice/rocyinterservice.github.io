@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Mot de passe oublié - Rocyinter</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
+body{background:#f6f7f9;color:#111;padding:16px}
+.top{max-width:420px;margin:40px auto}
+.card{background:#fff;border-radius:16px;padding:20px}
+h1{font-size:20px;margin-bottom:8px} p{font-size:13px;color:#64748b;margin-bottom:12px;line-height:1.6}
+input{width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:10px;margin:6px 0}
+.btn{width:100%;background:#f59e0b;border:none;padding:12px;border-radius:10px;font-weight:800;cursor:pointer}
+</style></head>
+<body><div class="top"><div class="card">
+<h1>🔑 Mot de passe oublié</h1>
+<p>Entre ton WhatsApp / Email. On t'envoie un lien de réinitialisation. Sinon, écris-nous sur WhatsApp 2290191478460.</p>
+<input id="email" placeholder="Ton WhatsApp ou Email">
+<button class="btn" onclick="envoyer()">Envoyer le lien</button>
+<p style="text-align:center;margin-top:12px"><a href="connexion.html">← Retour connexion</a></p>
+</div></div>
+<script>
+const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
+const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+async function envoyer(){
+  const email = document.getElementById('email').value.trim();
+  if(!email){alert('Entre ton email / WhatsApp');return;}
+  if(email.includes('@')){
+    const {error} = await supabase.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+'/connexion.html'});
+    if(error){alert('Erreur : '+error.message);return;}
+    alert('Lien envoyé par email. Vérifie ta boîte.');
+  } else {
+    location.href='https://wa.me/2290191478460?text='+encodeURIComponent('Bonjour, j’ai oublié mon mot de passe, mon WhatsApp est '+email);
+  }
+}
+</script></body></html>
