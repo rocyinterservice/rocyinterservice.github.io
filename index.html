@@ -12,7 +12,7 @@
 body{background:#f6f7f9;color:#111}
 .btn{background:#f59e0b;color:#000;border:none;padding:9px 14px;border-radius:999px;font-weight:700;cursor:pointer;font-size:13px}
 .hero{background:#0f172a;color:#fff;padding:28px 16px 20px;text-align:center}
-.hero h1{font-size:26px;line-height:1.2} .hero h1 span{color:#f59e0b} .hero p{opacity:.8;margin-top:8px;font-size:14px}
+.hero h1{font-size:26px;line-height:1.2} .hero h1 span{color:#f59e0b} .hero p{opacity:.8;margin-top:8px;font-size:14px;line-height:1.5}
 .filters{background:#fff;margin:-10px 16px 16px;padding:14px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.08);display:grid;gap:10px}
 .filters label{font-size:12px;font-weight:700;color:#475569}
 .filters select,.filters input{width:100%;padding:11px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;background:#fff}
@@ -31,7 +31,7 @@ body{background:#f6f7f9;color:#111}
 .card-actions{display:flex;gap:8px;margin-top:10px} .card-actions button{flex:1;padding:10px;border-radius:10px;border:none;font-weight:700;cursor:pointer}
 .btn-chat{background:#0f172a;color:#fff} .btn-voir{background:#f1f5f9}
 .empty{background:#fff;border:1px dashed #cbd5e1;border-radius:16px;padding:24px;text-align:center;color:#64748b} .empty b{color:#111;display:block;margin-bottom:6px}
-.bandeau-role{margin:0 16px 16px;padding:12px;border-radius:12px;font-size:13px;font-weight:600;text-align:center}
+.bandeau-role{margin:0 16px 16px;padding:12px;border-radius:12px;font-size:13px;font-weight:600;text-align:center;line-height:1.5}
 .bandeau-visiteur{background:#fef3c7;color:#92400e}
 .bandeau-client{background:#dcfce7;color:#166534}
 .bandeau-presta{background:#dbeafe;color:#1e40af}
@@ -40,7 +40,7 @@ body{background:#f6f7f9;color:#111}
 <body>
 <div class="hero">
   <h1><span data-i18n="heroTitre1">Trouvez un vrai service</span><br><span data-i18n="heroTitre2">près de chez vous</span></h1>
-  <p data-i18n="heroSous">Pas de faux produits. Que des vrais prestataires validés, près de vous, avec paiement sécurisé. Regardez ce que fait chaque entreprise, ça vous donnera envie de commander.</p>
+  <p data-i18n="heroSous">Des prestataires vérifiés près de chez vous. Découvrez leurs services, comparez leurs offres, discutez directement et commandez en toute sécurité avec le paiement Escrow.</p>
 </div>
 <div id="bandeauRole"></div>
 <div class="filters">
@@ -67,45 +67,62 @@ const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 let supabase = null;
 try{ supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); }catch(e){}
-if(window.rocyRemplirPays) rocyRemplirPays('filtrePays');
+
+function remplirPaysIndex(){
+  const sel = document.getElementById('filtrePays');
+  if(!sel) return;
+  if(window.ROCY_PAYS && window.rocyRemplirPays){ window.rocyRemplirPays('filtrePays'); return; }
+  const secours = [
+    {p:'Bénin', d:'🇧🇯'}, {p:'Togo', d:'🇹🇬'}, {p:'Côte d\'Ivoire', d:'🇨🇮'}, {p:'Sénégal', d:'🇸🇳'}, {p:'Cameroun', d:'🇨🇲'}, {p:'Nigeria', d:'🇳🇬'}, {p:'Ghana', d:'🇬🇭'}, {p:'Mali', d:'🇲🇱'}, {p:'France', d:'🇫🇷'}, {p:'Belgique', d:'🇧🇪'}, {p:'USA', d:'🇺🇸'}, {p:'Canada', d:'🇨🇦'}
+  ];
+  sel.innerHTML = '<option value="">🌍 Tous les pays</option>' + secours.map(x=>`<option value="${x.p}">${x.d} ${x.p}</option>`).join('');
+}
+
 function afficherBandeauRole(){
   const box = document.getElementById('bandeauRole');
   if(!box) return;
   const uid = localStorage.getItem('rocy_user_id');
   const type = localStorage.getItem('rocy_user_type') || localStorage.getItem('rocy_role') || '';
-  if(!uid) box.innerHTML = `<div class="bandeau-role bandeau-visiteur">👁️ Vous êtes visiteur : vous pouvez voir toutes les entreprises, c'est une publicité pour elles. Pour discuter et commander, connectez-vous.</div>`;
-  else if(type==='prestataire' || type==='livreur') box.innerHTML = `<div class="bandeau-role bandeau-presta">🛠️ Vous êtes fournisseur : vous pouvez voir les autres entreprises, et aussi créer vos annonces sur vos activités. <a href="creer-annonce.html" style="color:#1e40af">Créer une annonce →</a></div>`;
-  else if(type==='admin') box.innerHTML = `<div class="bandeau-role bandeau-presta">🛡️ Vous êtes admin : vous contrôlez, vous validez. <a href="admin.html" style="color:#1e40af">Panel Admin →</a></div>`;
-  else box.innerHTML = `<div class="bandeau-role bandeau-client">🛒 Vous êtes client : vous pouvez voir les entreprises, discuter, commander, mettre en favoris et payer en sécurisé.</div>`;
+  const t = window.rocyT || (k=>k);
+  if(!uid) box.innerHTML = `<div class="bandeau-role bandeau-visiteur">👁️ ${t('bandeauVisiteur')}</div>`;
+  else if(type==='prestataire' || type==='livreur') box.innerHTML = `<div class="bandeau-role bandeau-presta">🛠️ ${t('bandeauPresta')} <a href="creer-annonce.html" style="color:#1e40af">${t('creerAnnonce')} →</a></div>`;
+  else if(type==='admin') box.innerHTML = `<div class="bandeau-role bandeau-presta">🛡️ ${t('bandeauAdmin')} <a href="admin.html" style="color:#1e40af">Panel Admin →</a></div>`;
+  else box.innerHTML = `<div class="bandeau-role bandeau-client">🛒 ${t('bandeauClient')}</div>`;
 }
+
 async function chargerAnnonces(){
   const box = document.getElementById('listeAnnonces');
   if(!box) return;
+  const t = window.rocyT || (k=>k);
   try{
     const pays = document.getElementById('filtrePays').value;
     const loc = document.getElementById('filtreLocalite').value.trim().toLowerCase();
     const search = document.getElementById('filtreSearch').value.trim().toLowerCase();
-    if(!supabase){ box.innerHTML = `<div class="empty"><b>Pas de connexion</b><br><button type="button" class="btn" onclick="chargerAnnonces()">Réessayer</button></div>`; return; }
-    let q = supabase.from('annonces').select('*, profiles(nom, whatsapp, ville, localite)').eq('status','valide').order('created_at',{ascending:false});
+    if(!supabase){ box.innerHTML = `<div class="empty"><b>${t('pasConnexion')}</b><br><button type="button" class="btn" onclick="chargerAnnonces()">${t('reessayer')}</button></div>`; return; }
+    let q = supabase.from('annonces').select('*').order('created_at',{ascending:false});
     if(pays) q = q.eq('pays', pays);
     const {data, error} = await q;
     if(error) throw error;
     let filtres = data || [];
+    filtres = filtres.filter(a => {
+      const s = (a.status || a.statut || 'valide').toLowerCase();
+      return s.includes('valide') || s.includes('valid') || s.includes('publi') || s.includes('actif') || s === '';
+    });
     if(loc) filtres = filtres.filter(a => (a.localite||'').toLowerCase().includes(loc) || (a.ville||'').toLowerCase().includes(loc));
     if(search) filtres = filtres.filter(a => (a.titre||'').toLowerCase().includes(search) || (a.categorie||'').toLowerCase().includes(search) || (a.description||'').toLowerCase().includes(search));
     if(filtres.length===0){
-      const t = window.rocyT || (k=>k);
       box.innerHTML = `<div class="empty"><b>${t('aucuneTitre')}</b>${t('aucuneSous')}<br><br><button type="button" class="btn" onclick="rocyProposerService()">${t('proposerTitre')}</button></div>`;
       return;
     }
     box.innerHTML = filtres.map(a=>{
-      const img = a.photo_url || 'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&q=80';
-      const nom = a.profiles?.nom || 'Prestataire';
+      const img = a.photo_url || a.image_url || a.photo || 'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&q=80';
+      const nom = a.prestataire_nom || a.nom_prestataire || a.nom || 'Prestataire';
       const lieu = [a.localite, a.ville, a.pays].filter(Boolean).join(' - ');
-      const t = window.rocyT || (k=>k);
-      const prixTxt = a.prix_fixe ? `${window.rocyFormatPrix ? window.rocyFormatPrix(a.prix_indicatif) : a.prix_indicatif+' FCFA'} - ${t('prixFixe')}` : (a.prix_indicatif>0 ? `${t('aPartir')} ${window.rocyFormatPrix ? window.rocyFormatPrix(a.prix_indicatif) : a.prix_indicatif+' FCFA'}` : t('prixDiscuter'));
+      const prixVal = a.prix_indicatif || a.prix || a.montant || 0;
+      const prixTxt = a.prix_fixe ? `${window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal+' FCFA'} - ${t('prixFixe')}` : (prixVal>0 ? `${t('aPartir')} ${window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal+' FCFA'}` : t('prixDiscuter'));
+      const prestaId = a.prestataire_id || a.user_id || a.profiles_id || '';
       return `<div class="card">
-        <img src="${img}" onclick="voirProfil('${a.prestataire_id}')" style="cursor:pointer" onerror="this.src='https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&q=80'">
+        <img src="${img}" onclick="voirProfil('${prestaId}')" style="cursor:pointer" onerror="this.src='https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&q=80'">
         <div class="card-body">
           <span class="badge">${a.univers||''} • ${a.categorie||''}</span>
           <h3 style="margin-top:8px">${a.titre||''}</h3>
@@ -113,14 +130,15 @@ async function chargerAnnonces(){
           <p>${(a.description||'').slice(0,90)}...</p>
           <div class="price">${prixTxt}</div>
           <div class="card-actions">
-            <button type="button" class="btn-chat" onclick="allerChat('${a.prestataire_id}','${a.id}')">${t('discuter')}</button>
-            <button type="button" class="btn-voir" onclick="voirProfil('${a.prestataire_id}')">${t('voirEntreprise')}</button>
+            <button type="button" class="btn-chat" onclick="allerChat('${prestaId}','${a.id}')">${t('discuter')}</button>
+            <button type="button" class="btn-voir" onclick="voirProfil('${prestaId}')">${t('voirEntreprise')}</button>
           </div>
         </div>
       </div>`;
     }).join('');
   }catch(e){
-    box.innerHTML = `<div class="empty"><b>Erreur de connexion</b><br><button type="button" class="btn" onclick="chargerAnnonces()">Réessayer</button></div>`;
+    console.log('ROCY index erreur annonces:', e);
+    box.innerHTML = `<div class="empty"><b>${t('erreurConnexion')}</b><br><button type="button" class="btn" onclick="chargerAnnonces()">${t('reessayer')}</button></div>`;
   }
 }
 function allerChat(prestataireId, annonceId){
@@ -135,8 +153,12 @@ function voirProfil(prestataireId){
   localStorage.setItem('fiche_prestataire_id', prestataireId);
   location.href = 'fiche-prestataire.html';
 }
-afficherBandeauRole();
-chargerAnnonces();
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded', ()=>{ remplirPaysIndex(); afficherBandeauRole(); chargerAnnonces(); });
+} else {
+  remplirPaysIndex(); afficherBandeauRole(); chargerAnnonces();
+}
+setTimeout(remplirPaysIndex, 500);
 </script>
 </body>
 </html>
