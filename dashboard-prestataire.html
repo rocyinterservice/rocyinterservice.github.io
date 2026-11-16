@@ -14,17 +14,24 @@ header b{font-size:20px} header b span{color:#f59e0b}
 header button{background:#fff;border:1px solid #e2e8f0;padding:8px 12px;border-radius:999px;cursor:pointer;font-size:12px}
 h1{font-size:22px;margin:16px 0 4px}
 p.sub{color:#64748b;font-size:13px;margin-bottom:14px}
+.banner{padding:12px;border-radius:12px;font-size:13px;margin-bottom:14px;line-height:1.5}
+.banner.attente{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
+.banner.valide{background:#dcfce7;color:#166534}
+.banner.rejete{background:#fee2e2;color:#991b1b}
 .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px}
 .stat{background:#fff;border-radius:14px;padding:12px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.04)}
 .stat b{font-size:18px;display:block}
 .stat small{color:#64748b;font-size:11px}
 .card{background:#fff;border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
 .card h3{font-size:15px}
-.card p{font-size:13px;color:#64748b;margin:6px 0}
+.card p{font-size:13px;color:#64748b;margin:6px 0;line-height:1.5}
 .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:700}
 .badge.attente{background:#fef3c7;color:#92400e}
 .badge.valide{background:#dcfce7;color:#166534}
 .badge.rejete{background:#fee2e2;color:#991b1b}
+.badge.paye{background:#dbeafe;color:#1e40af}
+.badge.cours{background:#e0e7ff;color:#3730a3}
+.badge.litige{background:#fee2e2;color:#991b1b}
 .btn{width:100%;background:#f59e0b;border:none;padding:12px;border-radius:10px;font-weight:800;cursor:pointer;margin-top:8px}
 .btn-dark{background:#0f172a;color:#fff}
 .btn-green{background:#16a34a;color:#fff}
@@ -44,12 +51,14 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px}
 
 <h1>Bonjour <span id="nomUser">Prestataire</span> 👋</h1>
 <p class="sub" id="infoUser">Chargement...</p>
+<div id="bannerStatut"></div>
 
 <div class="stats">
   <div class="stat"><b id="nbAnnonces">0</b><small>Annonces</small></div>
   <div class="stat"><b id="nbCommandes">0</b><small>Commandes</small></div>
-  <div class="stat"><b id="totalGagne">0 F</b><small>À recevoir</small></div>
+  <div class="stat"><b id="totalGagne">0 F</b><small>À recevoir*</small></div>
 </div>
+<p style="font-size:11px;color:#64748b;margin:-10px 0 14px">* Seulement les commandes payées / en cours / validées. Les commandes en attente ne comptent pas.</p>
 
 <button class="btn" onclick="location.href='creer-annonce.html'">➕ Créer une nouvelle annonce</button>
 
@@ -83,7 +92,35 @@ document.getElementById('infoUser').textContent = `${localStorage.getItem('rocy_
 
 function deconnecter(){ localStorage.clear(); location.href='index.html'; }
 
+function badgeCommande(s){
+  if(s==='en_attente') return '<span class="badge attente">⏳ En attente</span>';
+  if(s==='paye') return '<span class="badge paye">💳 Payé - Bloqué</span>';
+  if(s==='en_cours') return '<span class="badge cours">🔧 En cours</span>';
+  if(s==='valide') return '<span class="badge valide">✅ Validé</span>';
+  if(s==='libere') return '<span class="badge valide">💰 Libéré</span>';
+  if(s==='litige') return '<span class="badge litige">⚠️ Litige</span>';
+  return `<span class="badge attente">${s}</span>`;
+}
+function texteCommission(c){
+  if(c.univers==='domicile') return `Commission 8% : ${Number(c.commission).toLocaleString()} FCFA`;
+  if(c.univers==='pro') return `Commission 5 000 FCFA fixe`;
+  if(c.univers==='manger' || c.univers==='sejour') return `Commission 12% : ${Number(c.commission).toLocaleString()} FCFA`;
+  return `Commission : ${Number(c.commission||0).toLocaleString()} FCFA`;
+}
+
 async function charger(){
+  // CORRECTION V3 : Statut du compte prestataire - en_attente / valide / rejete
+  const {data: profil} = await supabase.from('profiles').select('*').eq('id', uid).maybeSingle();
+  const statut = profil?.statut_validation || profil?.status_prestataire || 'en_attente';
+  const banner = document.getElementById('bannerStatut');
+  if(statut==='valide'){
+    banner.innerHTML = `<div class="banner valide">✅ <b>Compte validé</b> - Tes annonces sont visibles par les clients.</div>`;
+  } else if(statut==='rejete' || statut==='refuse'){
+    banner.innerHTML = `<div class="banner rejete">❌ <b>Compte refusé</b> - Contacte l'Admin sur WhatsApp pour savoir pourquoi.</div>`;
+  } else {
+    banner.innerHTML = `<div class="banner attente">⏳ <b>Compte en attente de validation</b> - L'Admin va vérifier ta fiche. Tu peux déjà créer des annonces, elles seront visibles après validation.</div>`;
+  }
+
   // Annonces
   const {data: annonces} = await supabase.from('annonces').select('*').eq('prestataire_id', uid).order('created_at',{ascending:false});
   const boxA = document.getElementById('listeAnnonces');
@@ -93,21 +130,39 @@ async function charger(){
   } else {
     boxA.innerHTML = annonces.map(a=>{
       const badge = a.status==='valide' ? '<span class="badge valide">✅ Validée - Visible</span>' : a.status==='en_attente' ? '<span class="badge attente">⏳ En attente</span>' : '<span class="badge rejete">❌ Rejetée</span>';
-      return `<div class="card">${badge}<h3 style="margin-top:8px">${a.titre}</h3><p>${a.categorie} • ${a.localite} - ${a.ville}<br>${a.prix_fixe ? Number(a.prix_indicatif).toLocaleString()+' FCFA - Prix fixe' : 'Prix à discuter'}</p></div>`;
+      return `<div class="card">${badge}<h3 style="margin-top:8px">${a.titre}</h3><p>${a.categorie} • ${a.localite} - ${a.ville}<br>${a.prix_fixe ? Number(a.prix_indicatif).toLocaleString()+' FCFA - Prix fixe' : 'Prix à discuter'}</p><button class="btn btn-dark" onclick="location.href='creer-annonce.html'">✏️ Modifier / Voir</button></div>`;
     }).join('');
   }
 
-  // Commandes
-  const {data: cmds} = await supabase.from('commandes').select('*, profiles!commandes_client_id_fkey(nom)').eq('prestataire_id', uid).order('created_at',{ascending:false});
+  // Commandes - sans join compliqué qui casse, on récupère les noms clients après
+  const {data: cmds} = await supabase.from('commandes').select('*').eq('prestataire_id', uid).order('created_at',{ascending:false});
   const boxC = document.getElementById('listeCommandes');
   document.getElementById('nbCommandes').textContent = cmds?.length || 0;
+
+  // CORRECTION V3 : Total = seulement paye / en_cours / valide / libere. Pas en_attente, pas litige, pas annulé.
   let total = 0;
-  cmds?.forEach(c=>{ if(c.status!=='annule') total += Number(c.montant_prestataire||0); });
+  (cmds||[]).forEach(c=>{ if(['paye','en_cours','valide','libere'].includes(c.status)) total += Number(c.montant_prestataire||0); });
   document.getElementById('totalGagne').textContent = total.toLocaleString() + ' F';
+
   if(!cmds || cmds.length===0){
     boxC.innerHTML = `<div class="empty">Aucune commande pour l'instant. Quand un client te parlera dans le chat et créera une commande, elle apparaîtra ici.</div>`;
   } else {
-    boxC.innerHTML = cmds.map(c=>`<div class="card"><b>${c.titre}</b><p>Client : ${c.profiles?.nom || 'Client'} • Status : <b>${c.status}</b><br>Total : ${Number(c.montant_total).toLocaleString()} FCFA • Commission : ${Number(c.commission).toLocaleString()} FCFA • Tu reçois : <b>${Number(c.montant_prestataire).toLocaleString()} FCFA</b></p><button class="btn btn-dark" onclick="voirConversation('${c.conversation_id}','${c.annonce_id}')">Ouvrir le chat</button></div>`).join('');
+    // Récupérer les noms des clients
+    const clientIds = [...new Set(cmds.map(c=>c.client_id).filter(Boolean))];
+    let nomsClients = {};
+    if(clientIds.length){
+      const {data: profs} = await supabase.from('profiles').select('id,nom').in('id', clientIds);
+      (profs||[]).forEach(p=> nomsClients[p.id]=p.nom);
+    }
+    boxC.innerHTML = cmds.map(c=>{
+      let action = '';
+      if(c.status==='paye') action = `<button class="btn btn-green" onclick="changerStatut('${c.id}','en_cours')">🔧 Commencer le service</button>`;
+      if(c.status==='en_cours') action = `<button class="btn btn-green" onclick="changerStatut('${c.id}','en_cours_termine')">✅ Marquer comme terminé (client valide)</button><p style="color:#64748b">Le client doit valider pour libérer l'argent.</p>`;
+      if(c.status==='litige') action = `<p style="color:#991b1b">⚠️ Litige : ${c.litige_raison || 'En cours'} - Argent bloqué, Admin tranche.</p>`;
+      if(c.status==='valide') action = `<p style="color:#166534">⏳ Validé par le client - Libération dans 48h / lundi.</p>`;
+      if(c.status==='libere') action = `<p style="color:#166534">💰 Argent libéré - Vérifie ton Mobile Money / compte.</p>`;
+      return `<div class="card">${badgeCommande(c.status)}<h3 style="margin-top:8px">${c.titre}</h3><p>Client : ${nomsClients[c.client_id] || 'Client'}<br>Total : ${Number(c.montant_total).toLocaleString()} FCFA • ${texteCommission(c)} • Tu reçois : <b>${Number(c.montant_prestataire).toLocaleString()} FCFA</b><br>📍 ${c.localite||''} - ${c.ville||''}<br><span style="color:#16a34a">🔒 Escrow : argent bloqué chez Rocyinter jusqu'à validation client</span></p>${action}<button class="btn btn-dark" onclick="voirConversation('${c.conversation_id}','${c.annonce_id}')">Ouvrir le chat</button></div>`;
+    }).join('');
   }
 
   // Conversations
@@ -118,6 +173,20 @@ async function charger(){
   } else {
     boxV.innerHTML = convs.map(cv=>`<div class="card"><b>${cv.annonces?.titre || 'Discussion'}</b><p>Conversation • ${new Date(cv.created_at).toLocaleDateString('fr-FR')}</p><button class="btn btn-green" onclick="voirConversation('${cv.id}','${cv.annonce_id}')">Répondre</button></div>`).join('');
   }
+}
+
+async function changerStatut(id, action){
+  if(action==='en_cours'){
+    await supabase.from('commandes').update({status:'en_cours'}).eq('id', id);
+  } else if(action==='en_cours_termine'){
+    // Le prestataire dit "terminé" : on prévient le client dans le chat, le client valide
+    const {data: cmd} = await supabase.from('commandes').select('*').eq('id', id).single();
+    if(cmd?.conversation_id){
+      await supabase.from('messages').insert([{conversation_id: cmd.conversation_id, sender_id: uid, contenu: `✅ J'ai terminé le service "${cmd.titre}". Peux-tu valider pour que l'argent soit libéré ?`, type: 'texte'}]);
+    }
+    alert('✅ Client prévenu dans le chat. Il doit valider pour libérer l’argent.');
+  }
+  charger();
 }
 
 function voirConversation(convId, annonceId){
