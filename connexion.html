@@ -28,7 +28,7 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
 <div class="top">
 <div class="back" onclick="location.href='index.html'">← Retour à l'accueil</div>
 <h1>Bon retour <span>chez Rocyinter</span></h1>
-<p class="sub">Connectez-vous avec votre WhatsApp utilisé à l'inscription.</p>
+<p class="sub">Connectez-vous avec votre WhatsApp + Mot de passe utilisés à l'inscription.</p>
 
 <div class="card">
   <div>
@@ -36,14 +36,14 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
     <input id="whatsapp" placeholder="Ex: +229 97 00 00 00">
   </div>
   <div>
-    <label>VOTRE NOM *</label>
-    <input id="nom" placeholder="Ex: Jean Kouassi">
+    <label>VOTRE MOT DE PASSE *</label>
+    <input id="password" type="password" placeholder="Votre mot de passe">
   </div>
 
   <div id="msg" class="msg"></div>
   <button class="btn" id="btnCo" onclick="connecter()">Se connecter →</button>
 
-  <div class="info">💡 <b>Pas encore de compte ?</b><br>Créez un compte en 1 minute. Pas de mot de passe compliqué. Votre WhatsApp = votre identité.</div>
+  <div class="info">💡 <b>Pas encore de compte ?</b><br>Créez un compte en 1 minute. Votre WhatsApp + mot de passe = votre identité. Personne d'autre ne peut entrer dans votre compte.</div>
 
   <small>Pas de compte ? <a href="inscription.html">Créez-en un ici</a></small>
 </div>
@@ -62,40 +62,74 @@ function showMsg(txt, ok){
 
 async function connecter(){
   const whatsapp = document.getElementById('whatsapp').value.trim();
-  const nom = document.getElementById('nom').value.trim();
+  const password = document.getElementById('password').value;
   const btn = document.getElementById('btnCo');
-  if(!whatsapp || !nom){ showMsg('Remplis WhatsApp + Nom', false); return; }
+  if(!whatsapp || !password){ showMsg('Remplis WhatsApp + Mot de passe', false); return; }
 
   btn.disabled = true; btn.textContent = 'Vérification...';
 
-  const {data, error} = await supabase.from('profiles').select('*').eq('whatsapp', whatsapp).ilike('nom', '%'+nom+'%').maybeSingle();
+  // 1. On retrouve le profil par WhatsApp pour connaître l'email Auth
+  const chiffres = whatsapp.replace(/[^0-9]/g,'');
+  const {data:profil} = await supabase.from('profiles').select('*').eq('whatsapp', whatsapp).maybeSingle();
 
-  if(error || !data){
-    showMsg('Compte introuvable. Vérifie ton WhatsApp + Nom, ou crée un compte.', false);
+  // Si le WhatsApp est écrit sans + ou avec espaces, on cherche aussi par chiffres
+  let userProfil = profil;
+  if(!userProfil){
+    const {data:all} = await supabase.from('profiles').select('*');
+    userProfil = (all||[]).find(p => (p.whatsapp||'').replace(/[^0-9]/g,'') === chiffres);
+  }
+  if(!userProfil){
+    showMsg('Compte introuvable. Vérifie ton WhatsApp, ou crée un compte.', false);
     btn.disabled = false; btn.textContent = 'Se connecter →';
     return;
   }
 
-  localStorage.setItem('rocy_user_id', data.id);
-  localStorage.setItem('rocy_user_nom', data.nom);
-  localStorage.setItem('rocy_user_type', data.type_compte);
-  localStorage.setItem('rocy_user_whatsapp', data.whatsapp);
-  localStorage.setItem('rocy_user_pays', data.pays);
-  localStorage.setItem('rocy_user_ville', data.ville);
-  localStorage.setItem('rocy_user_localite', data.localite);
+  // 2. Vérification VRAIE du mot de passe via Supabase Auth
+  // L'email Auth = email du profil, ou chiffres@rocyinter.com si pas d'email
+  const emailAuth = (userProfil.email || (chiffres + '@rocyinter.com')).toLowerCase();
+  const {data:login, error:errLogin} = await supabase.auth.signInWithPassword({email: emailAuth, password});
 
-  showMsg('✅ Bienvenue ' + data.nom + ' ! Redirection...', true);
+  if(errLogin || !login?.user){
+    // COMPAT ANCIENS COMPTES : si le compte a été créé avant le mot de passe (ancien système WhatsApp+Nom),
+    // on le migre : on crée le compte Auth maintenant avec ce mot de passe
+    const {data:signUp} = await supabase.auth.signUp({email: emailAuth, password});
+    if(signUp?.user?.id){
+      // On lie l'ancien profil au nouveau user Auth
+      await supabase.from('profiles').update({id: signUp.user.id}).eq('id', userProfil.id);
+      userProfil.id = signUp.user.id;
+    } else {
+      showMsg('Mot de passe incorrect. Réessaie.', false);
+      btn.disabled = false; btn.textContent = 'Se connecter →';
+      return;
+    }
+  } else {
+    userProfil.id = login.user.id;
+  }
+
+  // 3. On recharge le profil à jour avec les bons noms de colonnes V3 : type, pas type_compte
+  const {data:finalProfil} = await supabase.from('profiles').select('*').eq('id', userProfil.id).maybeSingle();
+  const p = finalProfil || userProfil;
+  const typeFinal = p.type || p.type_compte || 'client';
+
+  localStorage.setItem('rocy_user_id', p.id);
+  localStorage.setItem('rocy_user_nom', p.nom);
+  localStorage.setItem('rocy_user_type', typeFinal);
+  localStorage.setItem('rocy_user_whatsapp', p.whatsapp);
+  localStorage.setItem('rocy_user_pays', p.pays);
+  localStorage.setItem('rocy_user_ville', p.ville);
+  localStorage.setItem('rocy_user_localite', p.localite);
+
+  showMsg('✅ Bienvenue ' + p.nom + ' ! Redirection...', true);
   setTimeout(()=>{
-    if(data.type_compte==='prestataire') location.href='dashboard-prestataire.html';
+    if(typeFinal==='prestataire') location.href='dashboard-prestataire.html';
+    else if(typeFinal==='admin') location.href='admin.html';
     else location.href='index.html';
-  }, 1200);
+  }, 800);
 }
 
-// Si déjà connecté, pré-remplir
+// Pré-remplir WhatsApp si déjà connu
 const w = localStorage.getItem('rocy_user_whatsapp');
-const n = localStorage.getItem('rocy_user_nom');
 if(w) document.getElementById('whatsapp').value = w;
-if(n) document.getElementById('nom').value = n;
 </script>
 </body>
 </html>
