@@ -83,17 +83,18 @@ footer{text-align:center;padding:20px;color:#94a3b8;font-size:12px}
   </div>
   <div>
     <label>RECHERCHER UN SERVICE</label>
-    <input id="filtreSearch" placeholder="Ex: Plombier, Traiteur, Ménage..." oninput="chargerAnnonces()">
+    <input id="filtreSearch" placeholder="Ex: Plombier, Traiteur, Nettoyage..." oninput="chargerAnnonces()">
   </div>
 </div>
 
 <div class="univers">
   <div class="card-u active" id="u-tous" onclick="setUnivers('')"><div class="ico">🌍</div><b>Tous</b><small>Tous les services réels</small></div>
   <div class="card-u" id="u-manger" onclick="setUnivers('manger')"><div class="ico">🍽️</div><b>Se nourrir</b><small>Traiteur, Restaurant, Livraison</small></div>
-  <div class="card-u" id="u-domicile" onclick="setUnivers('domicile')"><div class="ico">🏠</div><b>Domicile</b><small>Ménage, Plomberie, Électricité</small></div>
+  <div class="card-u" id="u-domicile" onclick="setUnivers('domicile')"><div class="ico">🏠</div><b>Domicile</b><small>Nettoyage, Ménage, Plomberie, Électricité</small></div>
   <div class="card-u" id="u-pro" onclick="setUnivers('pro')"><div class="ico">💼</div><b>Pro</b><small>Design, Dev, Marketing, Compta</small></div>
   <div class="card-u" id="u-sejour" onclick="setUnivers('sejour')"><div class="ico">✈️</div><b>Séjour</b><small>Hôtel, Location, Guide, Transport</small></div>
-  <div class="card-u" onclick="location.href='inscription.html'"><div class="ico">➕</div><b>Proposer un service</b><small>Gagnez de l'argent</small></div>
+  <div class="card-u" id="u-immobilier" onclick="setUnivers('immobilier')"><div class="ico">🏘️</div><b>Immobilier</b><small>Location, Vente, Chambre, Visite</small></div>
+  <div class="card-u" onclick="location.href='inscription.html'" style="grid-column:1 / -1"><div class="ico">➕</div><b>Proposer un service</b><small>Gagnez de l'argent - Si ta catégorie n'existe pas, tu l'écris toi-même</small></div>
 </div>
 
 <div class="section">
@@ -110,7 +111,6 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let universActif = "";
 
-// Si déjà connecté, le bouton Connexion devient Mon espace
 const uidConnecte = localStorage.getItem('rocy_user_id');
 const typeConnecte = localStorage.getItem('rocy_user_type');
 if(uidConnecte){
@@ -127,6 +127,16 @@ function setUnivers(u){
   if(u==="domicile") document.getElementById('u-domicile').classList.add('active');
   if(u==="pro") document.getElementById('u-pro').classList.add('active');
   if(u==="sejour") document.getElementById('u-sejour').classList.add('active');
+  if(u==="immobilier") document.getElementById('u-immobilier').classList.add('active');
+  const titres = {
+    '': 'Annonces réelles près de vous',
+    'manger': '🍽️ Se nourrir - Traiteur, Restaurant, Livraison',
+    'domicile': '🏠 Domicile - Nettoyage, Ménage, Plomberie, Électricité',
+    'pro': '💼 Pro - Design, Dev, Marketing, Compta',
+    'sejour': '✈️ Séjour - Hôtel, Location, Guide, Transport',
+    'immobilier': '🏘️ Immobilier - Location, Vente, Chambre, Visite'
+  };
+  document.getElementById('titreSection').textContent = titres[u] || titres[''];
   chargerAnnonces();
 }
 
