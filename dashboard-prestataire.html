@@ -3,21 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mon Dashboard - Rocyinter</title>
+<title data-i18n="dashboardPrestaTitre">Mon Dashboard - Rocyinter</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="pays.js"></script>
+<script src="rocy-layout.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
-body{background:#f6f7f9;color:#111;padding:16px}
-.top{max-width:560px;margin:0 auto}
-header{display:flex;justify-content:space-between;align-items:center}
-header b{font-size:20px} header b span{color:#f59e0b}
-header button{background:#fff;border:1px solid #e2e8f0;padding:8px 12px;border-radius:999px;cursor:pointer;font-size:12px}
+body{background:#f6f7f9;color:#111}
+.top{max-width:560px;margin:0 auto;padding:16px}
 h1{font-size:22px;margin:16px 0 4px}
 p.sub{color:#64748b;font-size:13px;margin-bottom:14px}
 .banner{padding:12px;border-radius:12px;font-size:13px;margin-bottom:14px;line-height:1.5}
 .banner.attente{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
 .banner.valide{background:#dcfce7;color:#166534}
 .banner.rejete{background:#fee2e2;color:#991b1b}
+.bandeau-abo{padding:12px;border-radius:12px;font-size:13px;line-height:1.6;font-weight:600;text-align:center;margin-bottom:12px}
+.abo-ok{background:#dcfce7;color:#166534} .abo-offert{background:#dbeafe;color:#1e40af} .abo-expire{background:#fee2e2;color:#991b1b}
 .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px}
 .stat{background:#fff;border-radius:14px;padding:12px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.04)}
 .stat b{font-size:18px;display:block}
@@ -35,47 +36,45 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px}
 .btn{width:100%;background:#f59e0b;border:none;padding:12px;border-radius:10px;font-weight:800;cursor:pointer;margin-top:8px}
 .btn-dark{background:#0f172a;color:#fff}
 .btn-green{background:#16a34a;color:#fff}
+.btn:disabled{opacity:.5;cursor:not-allowed}
 .section h2{font-size:17px;margin:18px 0 10px}
 .empty{background:#fff;border:1px dashed #cbd5e1;border-radius:14px;padding:20px;text-align:center;color:#64748b;font-size:13px}
 </style>
 </head>
 <body>
 <div class="top">
-<header>
-  <b>Rocy<span>inter</span></b>
-  <div style="display:flex;gap:6px">
-    <button onclick="location.href='index.html'">Accueil</button>
-    <button onclick="deconnecter()">Déconnexion</button>
-  </div>
-</header>
-
-<h1>Bonjour <span id="nomUser">Prestataire</span> 👋</h1>
+<h1><span data-i18n="bonjour">Bonjour</span> <span id="nomUser">Prestataire</span> 👋</h1>
 <p class="sub" id="infoUser">Chargement...</p>
 <div id="bannerStatut"></div>
+<div id="bandeauAbo"></div>
 
 <div class="stats">
-  <div class="stat"><b id="nbAnnonces">0</b><small>Annonces</small></div>
-  <div class="stat"><b id="nbCommandes">0</b><small>Commandes</small></div>
-  <div class="stat"><b id="totalGagne">0 F</b><small>À recevoir*</small></div>
+  <div class="stat"><b id="nbAnnonces">0</b><small data-i18n="annonces">Annonces</small></div>
+  <div class="stat"><b id="nbCommandes">0</b><small data-i18n="commandes">Commandes</small></div>
+  <div class="stat"><b id="totalGagne">0 F</b><small data-i18n="aRecevoir">À recevoir*</small></div>
 </div>
-<p style="font-size:11px;color:#64748b;margin:-10px 0 14px">* Seulement les commandes payées / en cours / validées. Les commandes en attente ne comptent pas.</p>
+<p style="font-size:11px;color:#64748b;margin:-10px 0 14px" data-i18n="totalAide">* Seulement les commandes payées / en cours / validées. Les commandes en attente ne comptent pas.</p>
 
-<button class="btn" onclick="location.href='creer-annonce.html'">➕ Créer une nouvelle annonce</button>
+<button class="btn" id="btnCreer" onclick="location.href='creer-annonce.html'">➕ <span data-i18n="creerAnnonce">Créer une nouvelle annonce</span></button>
+<button class="btn btn-dark" onclick="location.href='abonnement.html'">💳 <span data-i18n="voirAbonnement">Voir / Renouveler mon abonnement</span></button>
+<button class="btn" style="background:#f1f5f9;color:#111" onclick="location.href='mes-activites.html'">🛠️ <span data-i18n="mesActivites">Mes Activités</span></button>
 
 <div class="section">
-  <h2>📋 Mes annonces</h2>
+  <h2>📋 <span data-i18n="mesAnnonces">Mes annonces</span></h2>
   <div id="listeAnnonces"></div>
 </div>
 
 <div class="section">
-  <h2>💰 Mes commandes</h2>
+  <h2>💰 <span data-i18n="mesCommandes">Mes commandes</span></h2>
   <div id="listeCommandes"></div>
 </div>
 
 <div class="section">
-  <h2>💬 Mes conversations</h2>
+  <h2>💬 <span data-i18n="mesConversations">Mes conversations</span></h2>
   <div id="listeConvs"></div>
 </div>
+
+<button class="btn btn-dark" style="margin-top:16px" onclick="deconnecter()" data-i18n="deconnexion">Déconnexion</button>
 </div>
 
 <script>
@@ -84,14 +83,31 @@ const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const uid = localStorage.getItem('rocy_user_id');
+const roleUser = localStorage.getItem('rocy_user_type') || localStorage.getItem('rocy_role') || '';
 const nom = localStorage.getItem('rocy_user_nom') || 'Prestataire';
-if(!uid){ alert('Connecte-toi d’abord.'); location.href='connexion.html'; }
+if(!uid){ location.href='connexion.html'; }
+if(roleUser==='client'){ location.href='dashboard-client.html'; }
+if(roleUser==='admin'){ location.href='admin.html'; }
 
 document.getElementById('nomUser').textContent = nom;
 document.getElementById('infoUser').textContent = `${localStorage.getItem('rocy_user_localite') || ''} - ${localStorage.getItem('rocy_user_ville') || ''} • ${localStorage.getItem('rocy_user_pays') || ''}`;
 
-function deconnecter(){ localStorage.clear(); location.href='index.html'; }
-
+function deconnecter(){
+  // Cahier : on garde rocy_langue, on efface seulement la session
+  const langue = localStorage.getItem('rocy_langue');
+  localStorage.clear();
+  if(langue) localStorage.setItem('rocy_langue', langue);
+  location.href='index.html';
+}
+function verifierAbonnement(p){
+  const auj=new Date(); const fin=p.abonnement_fin?new Date(p.abonnement_fin):null;
+  const actif=p.abonnement_actif===true||p.abonnement_statut==='actif';
+  const offert=p.abonnement_offert===true||p.premier_mois_offert===true;
+  if(fin&&fin>=auj) return {ok:true,type:'paye',fin};
+  if(!fin&&(actif||offert)) return {ok:true,type:'offert',fin:null};
+  if(actif&&!fin) return {ok:true,type:'offert',fin:null};
+  return {ok:false,type:'expire',fin};
+}
 function badgeCommande(s){
   if(s==='en_attente') return '<span class="badge attente">⏳ En attente</span>';
   if(s==='paye') return '<span class="badge paye">💳 Payé - Bloqué</span>';
@@ -109,16 +125,31 @@ function texteCommission(c){
 }
 
 async function charger(){
-  // CORRECTION V3 : Statut du compte prestataire - en_attente / valide / rejete
   const {data: profil} = await supabase.from('profiles').select('*').eq('id', uid).maybeSingle();
   const statut = profil?.statut_validation || profil?.status_prestataire || 'en_attente';
   const banner = document.getElementById('bannerStatut');
+  const t = window.rocyT || (k=>k);
   if(statut==='valide'){
-    banner.innerHTML = `<div class="banner valide">✅ <b>Compte validé</b> - Tes annonces sont visibles par les clients.</div>`;
+    banner.innerHTML = `<div class="banner valide">✅ <b>${t('compteValide')}</b> - ${t('compteValideSous')}</div>`;
   } else if(statut==='rejete' || statut==='refuse'){
-    banner.innerHTML = `<div class="banner rejete">❌ <b>Compte refusé</b> - Contacte l'Admin sur WhatsApp pour savoir pourquoi.</div>`;
+    banner.innerHTML = `<div class="banner rejete">❌ <b>${t('compteRefuse')}</b> - ${t('compteRefuseSous')}</div>`;
   } else {
-    banner.innerHTML = `<div class="banner attente">⏳ <b>Compte en attente de validation</b> - L'Admin va vérifier ta fiche. Tu peux déjà créer des annonces, elles seront visibles après validation.</div>`;
+    banner.innerHTML = `<div class="banner attente">⏳ <b>${t('compteAttente')}</b> - ${t('compteAttenteSous')}</div>`;
+  }
+
+  // --- NOUVELLE RÈGLE : abonnement ---
+  const resAbo = verifierAbonnement(profil||{});
+  const boxAbo = document.getElementById('bandeauAbo');
+  const btnCreer = document.getElementById('btnCreer');
+  if(resAbo.ok && resAbo.type==='offert'){
+    boxAbo.innerHTML = `<div class="bandeau-abo abo-offert">🎁 1er mois offert - Tu peux publier. Commissions dues dès la 1ère mission.</div>`;
+    btnCreer.disabled=false;
+  } else if(resAbo.ok){
+    boxAbo.innerHTML = `<div class="bandeau-abo abo-ok">✅ Abonnement à jour jusqu'au ${resAbo.fin.toLocaleDateString('fr-FR')} - Tu peux publier.</div>`;
+    btnCreer.disabled=false;
+  } else {
+    boxAbo.innerHTML = `<div class="bandeau-abo abo-expire">⛔ Abonnement expiré. Tu ne peux pas publier de nouvelle annonce tant que tu ne renouvelles pas.<br><button class="btn btn-dark" onclick="location.href='abonnement.html'">Renouveler maintenant →</button></div>`;
+    btnCreer.disabled=true; btnCreer.textContent='⛔ Publier bloqué - Abonnement expiré';
   }
 
   // Annonces
@@ -134,20 +165,16 @@ async function charger(){
     }).join('');
   }
 
-  // Commandes - sans join compliqué qui casse, on récupère les noms clients après
+  // Commandes
   const {data: cmds} = await supabase.from('commandes').select('*').eq('prestataire_id', uid).order('created_at',{ascending:false});
   const boxC = document.getElementById('listeCommandes');
   document.getElementById('nbCommandes').textContent = cmds?.length || 0;
-
-  // CORRECTION V3 : Total = seulement paye / en_cours / valide / libere. Pas en_attente, pas litige, pas annulé.
   let total = 0;
   (cmds||[]).forEach(c=>{ if(['paye','en_cours','valide','libere'].includes(c.status)) total += Number(c.montant_prestataire||0); });
   document.getElementById('totalGagne').textContent = total.toLocaleString() + ' F';
-
   if(!cmds || cmds.length===0){
     boxC.innerHTML = `<div class="empty">Aucune commande pour l'instant. Quand un client te parlera dans le chat et créera une commande, elle apparaîtra ici.</div>`;
   } else {
-    // Récupérer les noms des clients
     const clientIds = [...new Set(cmds.map(c=>c.client_id).filter(Boolean))];
     let nomsClients = {};
     if(clientIds.length){
@@ -173,13 +200,13 @@ async function charger(){
   } else {
     boxV.innerHTML = convs.map(cv=>`<div class="card"><b>${cv.annonces?.titre || 'Discussion'}</b><p>Conversation • ${new Date(cv.created_at).toLocaleDateString('fr-FR')}</p><button class="btn btn-green" onclick="voirConversation('${cv.id}','${cv.annonce_id}')">Répondre</button></div>`).join('');
   }
+  if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 }
 
 async function changerStatut(id, action){
   if(action==='en_cours'){
     await supabase.from('commandes').update({status:'en_cours'}).eq('id', id);
   } else if(action==='en_cours_termine'){
-    // Le prestataire dit "terminé" : on prévient le client dans le chat, le client valide
     const {data: cmd} = await supabase.from('commandes').select('*').eq('id', id).single();
     if(cmd?.conversation_id){
       await supabase.from('messages').insert([{conversation_id: cmd.conversation_id, sender_id: uid, contenu: `✅ J'ai terminé le service "${cmd.titre}". Peux-tu valider pour que l'argent soit libéré ?`, type: 'texte'}]);
@@ -188,13 +215,11 @@ async function changerStatut(id, action){
   }
   charger();
 }
-
 function voirConversation(convId, annonceId){
   localStorage.setItem('chat_prestataire', uid);
   localStorage.setItem('chat_annonce', annonceId);
   location.href='chat.html';
 }
-
 charger();
 </script>
 </body>
