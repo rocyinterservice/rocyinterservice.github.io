@@ -59,8 +59,8 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
 </select>
 <input id="whatsappNum" placeholder="01 97 00 00 00" inputmode="numeric" oninput="verifTel(this)">
 </div>
-<div id="errTel" class="errTxt">❌ Numéro incorrect. Ex Bénin : 01 97 00 00 00 (10 chiffres)</div>
-<p style="font-size:11px;color:#64748b;margin-top:4px" data-i18n="telAide">Bénin : 10 chiffres. Si tu tapes ton ancien numéro à 8 chiffres, on ajoute 01 automatiquement.</p>
+<div id="errTel" class="errTxt">❌ Numéro incorrect.</div>
+<p id="telAide" style="font-size:11px;color:#64748b;margin-top:4px">Bénin : 10 chiffres, commence par 01. Ex : 01 97 00 00 00</p>
 </div>
 <div><label data-i18n="mdp">MOT DE PASSE *</label><div class="pwdWrap"><input id="password" type="password" data-i18n-ph="mdpPh" placeholder="Min 6 caractères" oninput="verifMdp()"><button type="button" class="eyeBtn" onclick="togglePwd('password', this)">👁️</button></div></div>
 <div><label data-i18n="mdp2">CONFIRME TON MOT DE PASSE *</label><div class="pwdWrap"><input id="password2" type="password" data-i18n-ph="mdp2Ph" placeholder="Retape le même mot de passe" oninput="verifMdp()"><button type="button" class="eyeBtn" onclick="togglePwd('password2', this)">👁️</button></div>
@@ -143,6 +143,41 @@ const DRAPEAUX_PAYS = {
   'USA':'🇺🇸','Canada':'🇨🇦','Mexique':'🇲🇽','Brésil':'🇧🇷','Argentine':'🇦🇷','Colombie':'🇨🇴','Pérou':'🇵🇪','Chili':'🇨🇱','Venezuela':'🇻🇪','Équateur':'🇪🇨','Bolivie':'🇧🇴','Paraguay':'🇵🇾','Uruguay':'🇺🇾','Guatemala':'🇬🇹','Salvador':'🇸🇻','Honduras':'🇭🇳','Nicaragua':'🇳🇮','Costa Rica':'🇨🇷','Panama':'🇵🇦','Haïti':'🇭🇹','Cuba':'🇨🇺','République Dominicaine':'🇩🇴','Jamaïque':'🇯🇲','Trinité-et-Tobago':'🇹🇹',
   'Inde':'🇮🇳','Chine':'🇨🇳','Japon':'🇯🇵','Corée du Sud':'🇰🇷','Vietnam':'🇻🇳','Thaïlande':'🇹🇭','Indonésie':'🇮🇩','Philippines':'🇵🇭','Malaisie':'🇲🇾','Singapour':'🇸🇬','Myanmar':'🇲🇲','Cambodge':'🇰🇭','Laos':'🇱🇦','Bangladesh':'🇧🇩','Pakistan':'🇵🇰','Sri Lanka':'🇱🇰','Népal':'🇳🇵','Afghanistan':'🇦🇫','Iran':'🇮🇷','Irak':'🇮🇶','Émirats':'🇦🇪','Arabie Saoudite':'🇸🇦','Qatar':'🇶🇦','Koweït':'🇰🇼','Bahreïn':'🇧🇭','Oman':'🇴🇲','Jordanie':'🇯🇴','Liban':'🇱🇧','Syrie':'🇸🇾','Israël':'🇮🇱','Palestine':'🇵🇸','Australie':'🇦🇺','Nouvelle-Zélande':'🇳🇿','Fidji':'🇫🇯','Papouasie':'🇵🇬','Îles Salomon':'🇸🇧','Vanuatu':'🇻🇺','Îles Cook':'🇨🇰','Nouvelle-Calédonie':'🇳🇨','Polynésie':'🇵🇫'
 };
+// --- CORRIGÉ : longueur par pays, pas 10 pour tous. Bénin seul = 10 avec 01 ---
+// Valeur = longueurs acceptées SANS indicatif, SANS le 0 initial
+const LONGUEUR_PAR_PAYS = {
+  'Bénin':[10], 'Togo':[8], "Côte d'Ivoire":[10], 'Sénégal':[9], 'Mali':[8], 'Niger':[8], 'Burkina Faso':[8], 'Ghana':[10], 'Nigeria':[10], 'Cameroun':[9], 'Guinée':[9], 'Gabon':[9], 'Congo':[9], 'Congo RDC':[10], 'Kenya':[10], 'Éthiopie':[9], 'Afrique du Sud':[9], 'Algérie':[9], 'Tunisie':[8], 'Maroc':[9], 'Égypte':[10], 'Rwanda':[9], 'Ouganda':[9], 'Tanzanie':[9], 'Zambie':[9], 'Zimbabwe':[9], 'Angola':[9], 'Mozambique':[9], 'Madagascar':[9], 'Maurice':[7,8], 'Mauritanie':[8], 'Libye':[9], 'Soudan':[9], 'Soudan du Sud':[9], 'Somalie':[9], 'Djibouti':[8], 'Cap-Vert':[7], 'Centrafrique':[8], 'Tchad':[8], 'Comores':[7], 'Guinée Équatoriale':[9], 'Érythrée':[7], 'Gambie':[7], 'Guinée-Bissau':[9], 'Lesotho':[8], 'Liberia':[7,9], 'Malawi':[9], 'Namibie':[9], 'Sao Tomé':[7], 'Seychelles':[7], 'Sierra Leone':[8], 'Eswatini':[8], 'Burundi':[8],
+  'France':[9], 'Belgique':[9], 'Suisse':[9], 'Luxembourg':[9], 'Italie':[10], 'Espagne':[9], 'Portugal':[9], 'Allemagne':[10,11], 'Royaume-Uni':[10], 'Pays-Bas':[9], 'Autriche':[9,10], 'Danemark':[8], 'Suède':[9], 'Norvège':[8], 'Finlande':[9,10], 'Irlande':[9], 'Grèce':[10], 'Pologne':[9], 'Roumanie':[10], 'Hongrie':[9], 'Tchéquie':[9], 'Slovaquie':[9], 'Croatie':[9], 'Slovénie':[8], 'Bosnie':[8,9], 'Serbie':[9], 'Monténégro':[8], 'Albanie':[9], 'Bulgarie':[9], 'Ukraine':[9], 'Biélorussie':[9], 'Lituanie':[8], 'Lettonie':[8], 'Estonie':[7,8], 'Islande':[7], 'Malte':[8], 'Chypre':[8], 'Russie':[10], 'Turquie':[10], 'Arménie':[8], 'Azerbaïdjan':[9], 'Géorgie':[9], 'Moldavie':[8],
+  'USA':[10], 'Canada':[10], 'Mexique':[10], 'Brésil':[11], 'Argentine':[10], 'Colombie':[10], 'Pérou':[9], 'Chili':[9], 'Venezuela':[10], 'Équateur':[9], 'Bolivie':[8], 'Paraguay':[9], 'Uruguay':[8], 'Guatemala':[8], 'Salvador':[8], 'Honduras':[8], 'Nicaragua':[8], 'Costa Rica':[8], 'Panama':[8], 'Haïti':[8], 'Cuba':[8], 'République Dominicaine':[10], 'Jamaïque':[10], 'Trinité-et-Tobago':[10],
+  'Inde':[10], 'Chine':[11], 'Japon':[10], 'Corée du Sud':[10], 'Vietnam':[9], 'Thaïlande':[9], 'Indonésie':[10,11], 'Philippines':[10], 'Malaisie':[9,10], 'Singapour':[8], 'Myanmar':[9], 'Cambodge':[9], 'Laos':[9], 'Bangladesh':[10], 'Pakistan':[10], 'Sri Lanka':[9], 'Népal':[10], 'Afghanistan':[9], 'Iran':[10], 'Irak':[10], 'Émirats':[9], 'Arabie Saoudite':[9], 'Qatar':[8], 'Koweït':[8], 'Bahreïn':[8], 'Oman':[8], 'Jordanie':[9], 'Liban':[8], 'Syrie':[9], 'Israël':[9], 'Palestine':[9], 'Australie':[9], 'Nouvelle-Zélande':[9], 'Fidji':[7], 'Papouasie':[8], 'Îles Salomon':[7], 'Vanuatu':[7], 'Îles Cook':[7], 'Nouvelle-Calédonie':[7], 'Polynésie':[8]
+};
+function paysDepuisIndicatif(indic){
+  const paysSel = document.getElementById('pays');
+  if(paysSel && paysSel.value && MAP_PAYS_CODE[paysSel.value]===indic) return paysSel.value;
+  for(let p in MAP_PAYS_CODE){ if(MAP_PAYS_CODE[p]===indic) return p; }
+  return paysSel ? paysSel.value : 'Bénin';
+}
+function longueursPourPays(pays, indic){
+  if(LONGUEUR_PAR_PAYS[pays]) return LONGUEUR_PAR_PAYS[pays];
+  if(indic==='+1') return [10];
+  if(indic==='+33') return [9];
+  return [7,8,9,10,11];
+}
+function texteLongueur(pays){
+  const lens = longueursPourPays(pays, MAP_PAYS_CODE[pays]||'');
+  if(pays==='Bénin') return 'Bénin : 10 chiffres, commence par 01. Ex : 01 97 00 00 00';
+  if(lens.length===1) return pays + ' : ' + lens[0] + ' chiffres.';
+  return pays + ' : ' + lens.join(' ou ') + ' chiffres.';
+}
+function majAideTel(){
+  const indic = document.getElementById('indicatif').value;
+  const pays = paysDepuisIndicatif(indic);
+  const aide = document.getElementById('telAide');
+  if(aide) aide.textContent = texteLongueur(pays);
+  const inp = document.getElementById('whatsappNum');
+  if(pays==='Bénin') inp.placeholder = '01 97 00 00 00';
+  else inp.placeholder = 'Ex : ' + longueursPourPays(pays, indic)[0] + ' chiffres';
+}
 const VILLES_PAR_PAYS = {
   'Bénin': ["Abomey","Abomey-Calavi","Adja-Ouèrè","Adjarra","Agbangnizoun","Allada","Aplahoué","Athieme","Avrankou","Bantè","Bassila","Bembèrèkè","Bohicon","Bopa","Boukoumbé","Cobly","Comè","Copargo","Cotonou","Covè","Dangbo","Dassa-Zoumè","Djakotomey","Djogou","Dogbo","Glazoué","Gogounou","Grand-Popo","Houéyogbé","Ifangni","Kalalé","Kandi","Karimama","Kérou","Kétou","Klouékanmè","Kouandé","Kpomassè","Lalo","Lokossa","Malanville","Matéri","Natitingou","Nikki","Ouaké","Ouèssè","Ouidah","Ouinhi","Pehunco","Pobè","Porto-Novo","Sakété","Savalou","Savè","Ségbana","Sèmè-Podji","Sinendé","So-Ava","Tanguiéta","Tchaourou","Toffo","Tori-Bossito","Toucountouna","Zagnanado","Za-Kpota","Zè","Zogbodomey"],
   'Togo': ["Lomé","Sokodé","Kara","Kpalimé","Atakpamé","Dapaong","Tsévié","Aného","Notsé","Sotouboua","Bafilo","Badou","Kanté"],
@@ -205,40 +240,52 @@ function majIndicatif(){
   const code = document.getElementById('indicatif').value;
   const paysSel = document.getElementById('pays');
   for(let p in MAP_PAYS_CODE){ if(MAP_PAYS_CODE[p]===code){ paysSel.value = p; break; } }
-  majListeVilles();
+  majListeVilles(); majAideTel();
 }
 function syncPaysVersIndicatif(){
   const pays = document.getElementById('pays').value;
   const code = MAP_PAYS_CODE[pays];
   if(code) document.getElementById('indicatif').value = code;
   verifTel(document.getElementById('whatsappNum'));
-  majListeVilles();
+  majListeVilles(); majAideTel();
 }
 function normaliseNumero(indic, numBrut){
   let num = numBrut.replace(/[^0-9]/g,'');
+  const pays = paysDepuisIndicatif(indic);
+  // Bénin : seul pays avec la règle 01 + 8 chiffres -> 10 chiffres
   if(indic==='+229'){
-    if(num.length===8) num = '01' + num;
     if(num.length===13 && num.startsWith('229')) num = num.slice(3);
     if(num.length===11 && num.startsWith('229')) num = num.slice(3);
     if(num.length===8) num = '01' + num;
+    if(num.length===8) num = '01' + num;
+  } else {
+    // Autres pays : on enlève le 0 initial (ex France 06 -> 6) et l'indicatif si collé
+    const codeSansPlus = indic.replace('+','');
+    if(num.startsWith(codeSansPlus) && num.length > 8) num = num.slice(codeSansPlus.length);
+    if(num.startsWith('0')) num = num.slice(1);
   }
   return num;
 }
 function verifTel(el){
   const indic = document.getElementById('indicatif').value;
-  let num = el.value.replace(/[^0-9]/g,'');
-  el.value = num;
-  let ok = false; let msg = '❌ Numéro incorrect.';
-  if(indic==='+229'){ if(num.length===10 && num.startsWith('01')){ ok=true; } else if(num.length===8){ ok=true; msg=''; } else { msg='❌ Bénin : 10 chiffres. Ex : 01 97 00 00 00.'; } }
-  else if(['+228','+225','+221','+226','+227','+223'].includes(indic)){ ok = num.length===8; msg='❌ Ce pays : 8 chiffres.'; }
-  else if(indic==='+33'){ ok = num.length===9 || num.length===10; }
-  else if(indic==='+1'){ ok = num.length===10; }
-  else if(['+234','+233'].includes(indic)){ ok = num.length===10; }
-  else { ok = num.length>=7 && num.length<=12; }
+  const pays = paysDepuisIndicatif(indic);
+  const lens = longueursPourPays(pays, indic);
+  let numBrut = el.value.replace(/[^0-9]/g,'');
+  // Pour l'affichage on garde ce que l'utilisateur tape, mais on teste la version normalisée
+  let num = normaliseNumero(indic, numBrut);
+  // Cas Bénin : on accepte aussi 8 chiffres en cours de frappe, on ajoutera 01 à la fin
+  let ok = false;
+  if(pays==='Bénin'){
+    ok = (num.length===10 && num.startsWith('01')) || numBrut.length===8;
+  } else {
+    ok = lens.includes(num.length);
+  }
+  let msg = '❌ ' + texteLongueur(pays);
   const errEl = document.getElementById('errTel');
   errEl.textContent = msg;
-  errEl.classList.toggle('show', num.length>0 && !ok);
-  el.classList.toggle('err', num.length>0 && !ok);
+  errEl.classList.toggle('show', numBrut.length>0 && !ok);
+  el.classList.toggle('err', numBrut.length>0 && !ok);
+  majAideTel();
   return ok;
 }
 function verifMdp(){
@@ -275,7 +322,7 @@ async function inscrire(){
   const description=document.getElementById('description').value.trim();
   const btn=document.getElementById('btnInscrire');
   if(!nom || !numSeul || !ville || !localite){ showMsg('Remplis Nom + WhatsApp + Ville + Localité', false); return; }
-  if(!verifTel(document.getElementById('whatsappNum'))){ showMsg('❌ Numéro WhatsApp incorrect.', false); return; }
+  if(!verifTel(document.getElementById('whatsappNum'))){ const indic=document.getElementById('indicatif').value; const p=paysDepuisIndicatif(indic); showMsg('❌ Numéro incorrect. ' + texteLongueur(p), false); return; }
   if(!verifVille(document.getElementById('ville'))){ showMsg('❌ Cette ville n\'existe pas dans le pays choisi.', false); return; }
   if(!password || password.length<6){ showMsg('Mot de passe : min 6 caractères', false); return; }
   if(password!==password2){ showMsg('❌ Les 2 mots de passe ne sont pas identiques', false); return; }
@@ -305,8 +352,7 @@ async function inscrire(){
     const newId=(crypto.randomUUID?crypto.randomUUID():'id-'+Date.now());
     const emailFinal=(emailRaw||(chiffres+'@rocyinter.com')).toLowerCase();
     const univers = typeFinal==='prestataire' ? universPourCategorie(categorie) : null;
-    const activites = typeFinal==='prestataire' ? [categorie] : (typeFinal==='livreur' ? ['Livraison'] : []);
-    const {data,error}=await supabase.from('profiles').insert([{
+    const payload = {
       id:newId, nom, full_name: nom, whatsapp, phone: whatsapp,
       email:emailFinal, password:password,
       type:typeFinal, type_compte:typeFinal, role:typeFinal,
@@ -315,27 +361,25 @@ async function inscrire(){
       photo_url:photoBase64||null, avatar_url:photoBase64||null,
       categorie:typeFinal==='prestataire'?categorie:null,
       categorie_prestataire:typeFinal==='prestataire'?categorie:null,
-      activites:activites,
       univers:univers,
       statut_validation:typeFinal==='admin' ? 'valide' : (typeFinal==='prestataire'?'en_attente':'valide'),
       status_prestataire:typeFinal==='prestataire'?'en_attente':'valide'
-    }]).select().single();
+    };
+    let {data,error}=await supabase.from('profiles').insert([payload]).select().single();
+    if(error && error.message.includes("Could not find the")){
+      const minimal = { id:newId, nom, whatsapp, phone: whatsapp, email:emailFinal, password:password, type:typeFinal, type_compte:typeFinal, pays, ville, localite, description_profil:description||null, categorie_prestataire:typeFinal==='prestataire'?categorie:null, statut_validation:typeFinal==='admin' ? 'valide' : (typeFinal==='prestataire'?'en_attente':'valide'), status_prestataire:typeFinal==='prestataire'?'en_attente':'valide' };
+      const retry = await supabase.from('profiles').insert([minimal]).select().single();
+      data = retry.data; error = retry.error;
+    }
     if(error){ showMsg('Erreur profil : '+error.message, false); btn.disabled=false; btn.textContent='Créer mon compte →'; return; }
     localStorage.setItem('rocy_user_id', data.id); localStorage.setItem('rocy_user_nom', nom); localStorage.setItem('rocy_user_type', typeFinal); localStorage.setItem('rocy_role', typeFinal); localStorage.setItem('rocy_user_email', emailFinal); localStorage.setItem('rocy_email', emailFinal); localStorage.setItem('rocy_user_whatsapp', whatsapp); localStorage.setItem('rocy_user_pays', pays); localStorage.setItem('rocy_user_ville', ville); localStorage.setItem('rocy_user_localite', localite);
     showMsg('✅ Compte créé ! Redirection...', true);
     setTimeout(()=>{ if(typeFinal==='admin') location.href='admin.html'; else if(typeFinal==='prestataire') location.href='creer-annonce.html'; else if(typeFinal==='livreur') location.href='dashboard-prestataire.html'; else location.href='index.html'; },1200);
   }catch(e){ showMsg('Erreur : '+e.message, false); btn.disabled=false; btn.textContent='Créer mon compte →'; }
 }
-// --- Init pays : TOUS les pays, source = MAP_PAYS_CODE ---
 document.addEventListener('DOMContentLoaded', ()=>{
   const sel = document.getElementById('pays');
-  // 1. On part de MAP_PAYS_CODE = TOUS les pays de l'indicatif
-  let liste = Object.keys(MAP_PAYS_CODE).map(nom => ({
-    nom: nom,
-    drapeau: DRAPEAUX_PAYS[nom] || '',
-    code: MAP_PAYS_CODE[nom]
-  }));
-  // 2. Si pays.js a un pays en plus, on l'ajoute
+  let liste = Object.keys(MAP_PAYS_CODE).map(nom => ({ nom: nom, drapeau: DRAPEAUX_PAYS[nom] || '', code: MAP_PAYS_CODE[nom] }));
   (window.ROCY_PAYS || window.PAYS || []).forEach(p => {
     const nom = (typeof p === 'string' ? p : (p.nom || p.name || p.pays || '')) || '';
     if(nom && !MAP_PAYS_CODE[nom]){
@@ -343,9 +387,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
       liste.push({ nom: nom, drapeau: drapeau, code: '' });
     }
   });
-  // 3. Nettoyage anti-undefined
   liste = liste.filter(p => p.nom && p.nom !== 'undefined' && p.nom !== 'null');
-  // 4. Bénin en premier, reste alphabétique
   liste.sort((a,b)=> a.nom==='Bénin' ? -1 : b.nom==='Bénin' ? 1 : a.nom.localeCompare(b.nom));
   sel.innerHTML = liste.map(p => {
     const aff = (p.drapeau ? p.drapeau + ' ' : '') + p.nom;
@@ -355,7 +397,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
   const t = params.get('type');
   if(t==='prestataire' || t==='livreur' || t==='client') setType(t);
   redirigerSiDejaConnecte();
-  majListeVilles();
+  majListeVilles(); majAideTel();
   if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 });
 </script>
