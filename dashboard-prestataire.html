@@ -47,53 +47,33 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px}
 <p class="sub" id="infoUser">Chargement...</p>
 <div id="bannerStatut"></div>
 <div id="bandeauAbo"></div>
-
 <div class="stats">
   <div class="stat"><b id="nbAnnonces">0</b><small data-i18n="annonces">Annonces</small></div>
   <div class="stat"><b id="nbCommandes">0</b><small data-i18n="commandes">Commandes</small></div>
   <div class="stat"><b id="totalGagne">0 F</b><small data-i18n="aRecevoir">À recevoir*</small></div>
 </div>
 <p style="font-size:11px;color:#64748b;margin:-10px 0 14px" data-i18n="totalAide">* Seulement les commandes payées / en cours / validées. Les commandes en attente ne comptent pas.</p>
-
 <button class="btn" id="btnCreer" onclick="location.href='creer-annonce.html'">➕ <span data-i18n="creerAnnonce">Créer une nouvelle annonce</span></button>
 <button class="btn btn-dark" onclick="location.href='abonnement.html'">💳 <span data-i18n="voirAbonnement">Voir / Renouveler mon abonnement</span></button>
 <button class="btn" style="background:#f1f5f9;color:#111" onclick="location.href='mes-activites.html'">🛠️ <span data-i18n="mesActivites">Mes Activités</span></button>
-
-<div class="section">
-  <h2>📋 <span data-i18n="mesAnnonces">Mes annonces</span></h2>
-  <div id="listeAnnonces"></div>
-</div>
-
-<div class="section">
-  <h2>💰 <span data-i18n="mesCommandes">Mes commandes</span></h2>
-  <div id="listeCommandes"></div>
-</div>
-
-<div class="section">
-  <h2>💬 <span data-i18n="mesConversations">Mes conversations</span></h2>
-  <div id="listeConvs"></div>
-</div>
-
+<div class="section"><h2>📋 <span data-i18n="mesAnnonces">Mes annonces</span></h2><div id="listeAnnonces"></div></div>
+<div class="section"><h2>💰 <span data-i18n="mesCommandes">Mes commandes</span></h2><div id="listeCommandes"></div></div>
+<div class="section"><h2>💬 <span data-i18n="mesConversations">Mes conversations</span></h2><div id="listeConvs"></div></div>
 <button class="btn btn-dark" style="margin-top:16px" onclick="deconnecter()" data-i18n="deconnexion">Déconnexion</button>
 </div>
-
 <script>
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
 const uid = localStorage.getItem('rocy_user_id');
 const roleUser = localStorage.getItem('rocy_user_type') || localStorage.getItem('rocy_role') || '';
 const nom = localStorage.getItem('rocy_user_nom') || 'Prestataire';
 if(!uid){ location.href='connexion.html'; }
 if(roleUser==='client'){ location.href='dashboard-client.html'; }
 if(roleUser==='admin'){ location.href='admin.html'; }
-
 document.getElementById('nomUser').textContent = nom;
 document.getElementById('infoUser').textContent = `${localStorage.getItem('rocy_user_localite') || ''} - ${localStorage.getItem('rocy_user_ville') || ''} • ${localStorage.getItem('rocy_user_pays') || ''}`;
-
 function deconnecter(){
-  // Cahier : on garde rocy_langue, on efface seulement la session
   const langue = localStorage.getItem('rocy_langue');
   localStorage.clear();
   if(langue) localStorage.setItem('rocy_langue', langue);
@@ -106,7 +86,7 @@ function verifierAbonnement(p){
   if(fin&&fin>=auj) return {ok:true,type:'paye',fin};
   if(!fin&&(actif||offert)) return {ok:true,type:'offert',fin:null};
   if(actif&&!fin) return {ok:true,type:'offert',fin:null};
-  return {ok:false,type:'expire',fin};
+  return {ok:false,type:'expire',fin:null};
 }
 function badgeCommande(s){
   if(s==='en_attente') return '<span class="badge attente">⏳ En attente</span>';
@@ -121,23 +101,32 @@ function texteCommission(c){
   if(c.univers==='domicile') return `Commission 8% : ${Number(c.commission).toLocaleString()} FCFA`;
   if(c.univers==='pro') return `Commission 5 000 FCFA fixe`;
   if(c.univers==='manger' || c.univers==='sejour') return `Commission 12% : ${Number(c.commission).toLocaleString()} FCFA`;
+  if(c.univers==='livreur') return `Commission 20% (Livreur 80%) : ${Number(c.commission).toLocaleString()} FCFA`;
+  if(c.univers==='immobilier'){
+    const t = String(c.titre||'').toLowerCase();
+    if(t.includes('parcelle') || t.includes('vente') || t.includes('terrain')) return `Commission Parcelle 10 000 + 2% plafonné 200 000 : ${Number(c.commission).toLocaleString()} FCFA`;
+    return `Commission Location 50% d'un mois : ${Number(c.commission).toLocaleString()} FCFA`;
+  }
   return `Commission : ${Number(c.commission||0).toLocaleString()} FCFA`;
 }
-
+function badgeAnnonce(a){
+  const s = String(a.status || a.statut || '').toLowerCase();
+  if(s==='valide' || s==='valid' || s==='publie' || s==='publié' || s==='actif') return '<span class="badge valide">✅ Validée - Visible</span>';
+  if(s==='rejete' || s==='refuse' || s==='refusé' || s==='rejeté') return '<span class="badge rejete">❌ Rejetée</span>';
+  return '<span class="badge attente">⏳ En attente</span>';
+}
 async function charger(){
   const {data: profil} = await supabase.from('profiles').select('*').eq('id', uid).maybeSingle();
-  const statut = profil?.statut_validation || profil?.status_prestataire || 'en_attente';
+  const statut = String(profil?.statut_validation || profil?.status_prestataire || profil?.statut || 'en_attente').toLowerCase();
   const banner = document.getElementById('bannerStatut');
   const t = window.rocyT || (k=>k);
-  if(statut==='valide'){
+  if(statut==='valide' || statut==='valid'){
     banner.innerHTML = `<div class="banner valide">✅ <b>${t('compteValide')}</b> - ${t('compteValideSous')}</div>`;
-  } else if(statut==='rejete' || statut==='refuse'){
+  } else if(statut==='rejete' || statut==='refuse' || statut==='refusé'){
     banner.innerHTML = `<div class="banner rejete">❌ <b>${t('compteRefuse')}</b> - ${t('compteRefuseSous')}</div>`;
   } else {
     banner.innerHTML = `<div class="banner attente">⏳ <b>${t('compteAttente')}</b> - ${t('compteAttenteSous')}</div>`;
   }
-
-  // --- NOUVELLE RÈGLE : abonnement ---
   const resAbo = verifierAbonnement(profil||{});
   const boxAbo = document.getElementById('bandeauAbo');
   const btnCreer = document.getElementById('btnCreer');
@@ -151,8 +140,6 @@ async function charger(){
     boxAbo.innerHTML = `<div class="bandeau-abo abo-expire">⛔ Abonnement expiré. Tu ne peux pas publier de nouvelle annonce tant que tu ne renouvelles pas.<br><button class="btn btn-dark" onclick="location.href='abonnement.html'">Renouveler maintenant →</button></div>`;
     btnCreer.disabled=true; btnCreer.textContent='⛔ Publier bloqué - Abonnement expiré';
   }
-
-  // Annonces
   const {data: annonces} = await supabase.from('annonces').select('*').eq('prestataire_id', uid).order('created_at',{ascending:false});
   const boxA = document.getElementById('listeAnnonces');
   document.getElementById('nbAnnonces').textContent = annonces?.length || 0;
@@ -160,12 +147,9 @@ async function charger(){
     boxA.innerHTML = `<div class="empty">Aucune annonce. Crée ta première annonce pour commencer à gagner.</div>`;
   } else {
     boxA.innerHTML = annonces.map(a=>{
-      const badge = a.status==='valide' ? '<span class="badge valide">✅ Validée - Visible</span>' : a.status==='en_attente' ? '<span class="badge attente">⏳ En attente</span>' : '<span class="badge rejete">❌ Rejetée</span>';
-      return `<div class="card">${badge}<h3 style="margin-top:8px">${a.titre}</h3><p>${a.categorie} • ${a.localite} - ${a.ville}<br>${a.prix_fixe ? Number(a.prix_indicatif).toLocaleString()+' FCFA - Prix fixe' : 'Prix à discuter'}</p><button class="btn btn-dark" onclick="location.href='creer-annonce.html'">✏️ Modifier / Voir</button></div>`;
+      return `<div class="card">${badgeAnnonce(a)}<h3 style="margin-top:8px">${a.titre}</h3><p>${a.categorie} • ${a.localite} - ${a.ville}<br>${a.prix_fixe ? Number(a.prix_indicatif||a.prix||0).toLocaleString()+' FCFA - Prix fixe' : 'Prix à discuter'}</p><button class="btn btn-dark" onclick="location.href='creer-annonce.html'">✏️ Modifier / Voir</button></div>`;
     }).join('');
   }
-
-  // Commandes
   const {data: cmds} = await supabase.from('commandes').select('*').eq('prestataire_id', uid).order('created_at',{ascending:false});
   const boxC = document.getElementById('listeCommandes');
   document.getElementById('nbCommandes').textContent = cmds?.length || 0;
@@ -191,9 +175,8 @@ async function charger(){
       return `<div class="card">${badgeCommande(c.status)}<h3 style="margin-top:8px">${c.titre}</h3><p>Client : ${nomsClients[c.client_id] || 'Client'}<br>Total : ${Number(c.montant_total).toLocaleString()} FCFA • ${texteCommission(c)} • Tu reçois : <b>${Number(c.montant_prestataire).toLocaleString()} FCFA</b><br>📍 ${c.localite||''} - ${c.ville||''}<br><span style="color:#16a34a">🔒 Escrow : argent bloqué chez Rocyinter jusqu'à validation client</span></p>${action}<button class="btn btn-dark" onclick="voirConversation('${c.conversation_id}','${c.annonce_id}')">Ouvrir le chat</button></div>`;
     }).join('');
   }
-
-  // Conversations
-  const {data: convs} = await supabase.from('conversations').select('*, annonces(titre)').eq('prestataire_id', uid).order('created_at',{ascending:false});
+  const {data: convsBrutes} = await supabase.from('conversations').select('*, annonces(titre)').eq('prestataire_id', uid).order('created_at',{ascending:false});
+  const convs = (convsBrutes||[]).filter(cv => String(cv.client_id)!==String(cv.prestataire_id));
   const boxV = document.getElementById('listeConvs');
   if(!convs || convs.length===0){
     boxV.innerHTML = `<div class="empty">Aucune conversation pour l'instant.</div>`;
@@ -202,12 +185,14 @@ async function charger(){
   }
   if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 }
-
 async function changerStatut(id, action){
   if(action==='en_cours'){
-    await supabase.from('commandes').update({status:'en_cours'}).eq('id', id);
+    // CORRIGÉ : seul le vrai prestataire, seulement si paye
+    const {error} = await supabase.from('commandes').update({status:'en_cours'}).eq('id', id).eq('prestataire_id', uid).eq('status','paye');
+    if(error) alert('Erreur : ' + error.message);
   } else if(action==='en_cours_termine'){
-    const {data: cmd} = await supabase.from('commandes').select('*').eq('id', id).single();
+    const {data: cmd} = await supabase.from('commandes').select('*').eq('id', id).eq('prestataire_id', uid).single();
+    if(!cmd){ alert('Commande introuvable.'); return; }
     if(cmd?.conversation_id){
       await supabase.from('messages').insert([{conversation_id: cmd.conversation_id, sender_id: uid, contenu: `✅ J'ai terminé le service "${cmd.titre}". Peux-tu valider pour que l'argent soit libéré ?`, type: 'texte'}]);
     }
@@ -215,7 +200,11 @@ async function changerStatut(id, action){
   }
   charger();
 }
-function voirConversation(convId, annonceId){
+async function voirConversation(convId, annonceId){
+  if(!convId || convId==='null' || convId==='undefined'){ alert('Conversation introuvable.'); return; }
+  const {data} = await supabase.from('conversations').select('*').eq('id', convId).eq('prestataire_id', uid).single();
+  if(!data){ alert('Conversation introuvable.'); return; }
+  if(String(data.client_id)===String(data.prestataire_id)){ alert('Conversation invalide.'); return; }
   localStorage.setItem('chat_prestataire', uid);
   localStorage.setItem('chat_annonce', annonceId);
   location.href='chat.html';
