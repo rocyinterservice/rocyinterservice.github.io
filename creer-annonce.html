@@ -1,30 +1,34 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Créer une annonce - Rocyinter</title>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title data-i18n="creerTitre">Créer une annonce - Rocyinter</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="pays.js"></script>
+<script src="rocy-layout.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
-body{background:#f6f7f9;color:#111;padding:16px}
-.top{max-width:520px;margin:0 auto}
+body{background:#f6f7f9;color:#111}
+.top{max-width:520px;margin:0 auto;padding:16px}
 .back{color:#64748b;font-size:13px;cursor:pointer}
 h1{font-size:22px;margin:14px 0 4px} h1 span{color:#f59e0b}
-p.sub{color:#64748b;font-size:14px;margin-bottom:16px}
+p.sub{color:#64748b;font-size:14px;margin-bottom:16px;line-height:1.5}
 .card{background:#fff;border-radius:16px;padding:16px;box-shadow:0 4px 20px rgba(0,0,0,.06);display:grid;gap:12px}
 label{font-size:12px;font-weight:700;color:#475569;display:block;margin-bottom:4px}
 input,select,textarea{width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;background:#fff}
 textarea{min-height:90px;resize:vertical}
-.univers{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.univers button{padding:12px;border:2px solid #e2e8f0;background:#fff;border-radius:12px;cursor:pointer;font-weight:700;font-size:13px}
-.univers button.active{border-color:#f59e0b;background:#fffbeb}
 .toggle{display:flex;gap:8px}
 .toggle button{flex:1;padding:12px;border:2px solid #e2e8f0;background:#fff;border-radius:10px;cursor:pointer;font-weight:700}
 .toggle button.active{border-color:#0f172a;background:#0f172a;color:#fff}
 .info-commission{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px;font-size:12px;line-height:1.5;color:#92400e;display:none}
+.info-univers{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px;font-size:13px;line-height:1.5;color:#1e40af}
+.bandeau-abo{padding:12px;border-radius:12px;font-size:13px;line-height:1.5;font-weight:600;text-align:center;margin-bottom:12px}
+.abo-ok{background:#dcfce7;color:#166534}
+.abo-offert{background:#dbeafe;color:#1e40af}
+.abo-expire{background:#fee2e2;color:#991b1b}
 .btn{background:#f59e0b;color:#000;border:none;padding:14px;border-radius:12px;font-weight:800;cursor:pointer;font-size:15px;width:100%}
-.btn:disabled{opacity:.6}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-dark{background:#0f172a;color:#fff}
 .msg{text-align:center;font-size:13px;padding:10px;border-radius:10px;display:none}
 .msg.ok{display:block;background:#dcfce7;color:#166534}
 .msg.err{display:block;background:#fee2e2;color:#991b1b}
@@ -33,221 +37,153 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:8p
 </head>
 <body>
 <div class="top">
-<div class="back" onclick="location.href='index.html'">← Retour</div>
-<h1>Publiez votre <span>vrai service</span></h1>
-<p class="sub">Décrivez ce que vous savez vraiment faire. Si ton service n'existe pas dans la liste, tu l'écris toi-même.</p>
+<div class="back" onclick="location.href='index.html'">← <span data-i18n="accueil">Accueil</span></div>
+<h1><span data-i18n="creerTitre">Publiez votre</span> <span data-i18n="vraiService">vrai service</span></h1>
+<p class="sub" data-i18n="creerSous">Tu ne peux publier que sur tes activités + avec un abonnement à jour.</p>
+
+<div id="bandeauAbo"></div>
 
 <div class="card">
   <div>
-    <label>UNIVERS *</label>
-    <div class="univers">
-      <button type="button" id="u-manger" onclick="setUnivers('manger')">🍽️ Se nourrir</button>
-      <button type="button" id="u-domicile" onclick="setUnivers('domicile')">🏠 Domicile</button>
-      <button type="button" id="u-pro" onclick="setUnivers('pro')">💼 Pro</button>
-      <button type="button" id="u-sejour" onclick="setUnivers('sejour')">✈️ Séjour</button>
-      <button type="button" id="u-immobilier" onclick="setUnivers('immobilier')">🏘️ Immobilier</button>
-      <button type="button" id="u-livreur" onclick="setUnivers('livreur')">🛵 Livreur</button>
-    </div>
-    <div id="infoCommission" class="info-commission"></div>
+    <label data-i18n="categorie">CATÉGORIE * - TES ACTIVITÉS SEULEMENT</label>
+    <select id="categorie" onchange="onCategorieChange()"><option value="">Chargement de tes activités...</option></select>
   </div>
-
-  <div>
-    <label>CATÉGORIE *</label>
-    <select id="categorie" onchange="checkAutre()">
-      <option value="">D'abord choisis l'univers...</option>
-    </select>
-  </div>
-
   <div id="blocAutreCategorie" style="display:none">
-    <label>ÉCRIS TA CATÉGORIE * (elle n'existait pas)</label>
-    <input id="autreCategorie" placeholder="Ex: Nettoyage, Désinfection, Nettoyage après chantier...">
-    <p style="font-size:11px;color:#64748b;margin-top:4px">Exemple : tu choisis Domicile → Autre → tu écris « Nettoyage ». Ton annonce sera créée avec la catégorie « Nettoyage ».</p>
+    <label>+ AJOUTER UNE AUTRE ACTIVITÉ *</label>
+    <input id="autreCategorie" placeholder="Ex: Nettoyage, Désinfection...">
   </div>
-
-  <div>
-    <label>TITRE DE VOTRE ANNONCE *</label>
-    <input id="titre" placeholder="Ex: Plombier rapide à Calavi - Fuites, robinets, installation">
+  <div id="blocUnivers" class="info-univers" style="display:none"></div>
+  <div id="infoCommission" class="info-commission"></div>
+  <div><label data-i18n="titreAnnonce">TITRE DE VOTRE ANNONCE *</label><input id="titre" placeholder="Ex: Plombier rapide à Calavi"></div>
+  <div><label data-i18n="description">DESCRIPTION DÉTAILLÉE *</label><textarea id="description" placeholder="Ex: Je suis plombier à Godomey depuis 5 ans..."></textarea></div>
+  <div><label data-i18n="typePrix">TYPE DE PRIX *</label>
+    <div class="toggle"><button type="button" id="btnFixe" onclick="setPrixType(true)">💰 Prix fixe</button><button type="button" id="btnDiscuter" class="active" onclick="setPrixType(false)">💬 À discuter</button></div>
   </div>
-
-  <div>
-    <label>DESCRIPTION DÉTAILLÉE *</label>
-    <textarea id="description" placeholder="Ex: Je suis plombier à Godomey depuis 5 ans. Je répare fuites, je change robinets, j'installe douche et WC. Je me déplace chez vous. Devis gratuit dans le chat..."></textarea>
-  </div>
-
-  <div>
-    <label>TYPE DE PRIX *</label>
-    <div class="toggle">
-      <button type="button" id="btnFixe" onclick="setPrixType(true)">💰 Prix fixe</button>
-      <button type="button" id="btnDiscuter" class="active" onclick="setPrixType(false)">💬 À discuter</button>
-    </div>
-  </div>
-
-  <div id="blocPrix" style="display:none">
-    <label>PRIX INDICATIF (FCFA)</label>
-    <input id="prix" type="number" placeholder="Ex: 15000">
-  </div>
-
+  <div id="blocPrix" style="display:none"><label>PRIX INDICATIF (FCFA)</label><input id="prix" type="number" placeholder="Ex: 15000"></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-    <div>
-      <label>PAYS *</label>
-      <select id="pays">
-        <option value="Bénin">🇧🇯 Bénin</option>
-        <option value="Togo">🇹🇬 Togo</option>
-        <option value="Côte d'Ivoire">🇨🇮 Côte d'Ivoire</option>
-        <option value="Sénégal">🇸🇳 Sénégal</option>
-        <option value="Cameroun">🇨🇲 Cameroun</option>
-        <option value="Nigeria">🇳🇬 Nigeria</option>
-        <option value="Ghana">🇬🇭 Ghana</option>
-        <option value="France">🇫🇷 France</option>
-        <option value="Canada">🇨🇦 Canada</option>
-      </select>
-    </div>
-    <div>
-      <label>VILLE *</label>
-      <input id="ville" placeholder="Ex: Calavi">
-    </div>
+    <div><label data-i18n="pays">PAYS *</label><select id="pays"></select></div>
+    <div><label data-i18n="ville">VILLE *</label><input id="ville" placeholder="Ex: Calavi"></div>
   </div>
-
-  <div>
-    <label>LOCALITÉ / QUARTIER *</label>
-    <input id="localite" placeholder="Ex: Godomey, Cococodji...">
-    <p style="font-size:11px;color:#64748b;margin-top:4px">Écris ta localité toi-même, ne choisis pas dans une liste.</p>
-  </div>
-
-  <div>
-    <label>PHOTO DE VOTRE TRAVAIL (lien - optionnel)</label>
-    <input id="photo" placeholder="Collez un lien photo de votre travail">
-  </div>
-
+  <div><label data-i18n="localite">LOCALITÉ / QUARTIER *</label><input id="localite" placeholder="Ex: Godomey"></div>
+  <div><label>PHOTO (lien - optionnel)</label><input id="photo" placeholder="Collez un lien photo"></div>
   <div id="msg" class="msg"></div>
   <button class="btn" id="btnPublier" onclick="publier()">Publier mon annonce →</button>
-  <small>⚠️ Votre annonce sera en attente de validation.<br>Elle apparaîtra sur l'accueil après validation. Pas de faux service = pas de bannissement.<br><a href="abonnement.html">Voir abonnement - 1er mois offert* pour les 30 premiers validés. Commissions dues dès la 1ère mission.</a></small>
+  <small>⚠️ Annonce en attente de validation. Abonnement à jour obligatoire pour publier. Commissions dues dès la 1ère mission.</small>
 </div>
 </div>
-
 <script>
-const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
-const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const SUPABASE_URL="https://gdwgjsloivrpxxvggxyz.supabase.co";
+const SUPABASE_KEY="sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
+const supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let prixFixe=false, mesActivites=[], universChoisi="", abonnementAJour=false, profilFournisseur=null;
 
-let universChoisi = "";
-let prixFixe = false;
-
-const categories = {
-  manger: ["Traiteur","Restaurant / Maquis","Livraison repas","Pâtisserie","Jus / Boissons"],
-  domicile: ["Nettoyage / Ménage","Ménage / Repassage","Plomberie","Électricité","Climatisation","Menuiserie","Peinture","Jardinage","Mécanique","Serrurerie","Déménagement"],
-  pro: ["Design / Graphisme","Développement Web","Marketing / Réseaux sociaux","Comptabilité","Traduction","Cours / Coaching","Montage vidéo","Rédaction / CV"],
-  sejour: ["Hôtel / Appartement","Location voiture","Guide touristique","Transport / Moto","Location salle","Excursion / Visite"],
-  immobilier: ["Maison à louer","Chambre à louer","Appartement à louer","Parcelle à vendre","Terrain à vendre","Maison à vendre","Gestion locative","Visite / Courtage"],
-  livreur: ["Livraison moto","Livraison voiture","Livraison colis","Livraison repas","Courses / Marché"]
-};
-
-const infosCommission = {
-  manger: "🍽️ <b>Manger : Commission 12%</b> - Lancement 8% pour les 20 premiers. Prélevée à la libération. Espèces à la livraison + 500 FCFA possible.",
-  domicile: "🏠 <b>Domicile : Commission 8%</b> - Prélevée à la libération. Tu reçois 92% du montant. Escrow 100%.",
-  pro: "💼 <b>Pro : Commission 5 000 FCFA fixe</b> - Pour débloquer le contact client. Pas de %. Le client paie, tu reçois le contact.",
-  sejour: "✈️ <b>Séjour : Commission 12% par nuit réservée.</b> Prélevée à la libération. Paiement avant arrivée, escrow.",
-  immobilier: "🏘️ <b>Immobilier :</b> Parcelle / Vente : 10 000 FCFA / 30 jours + 2% plafonné à 200 000 FCFA. Location : 50% d'un mois, une fois, payé par le propriétaire. Mise en avant parcelle : 5 000 FCFA / semaine.",
-  livreur: "🛵 <b>Livreur : Livreur 80% / Rocyinter 20%.</b> Livraison non obligatoire, au choix du client. Prix de livraison à discuter dans le chat, pas de prix fixe."
-};
-
-function setUnivers(u){
-  universChoisi = u;
-  ['manger','domicile','pro','sejour','immobilier','livreur'].forEach(k=>{
-    const el = document.getElementById('u-'+k);
-    if(el) el.classList.toggle('active', k===u);
-  });
-  const sel = document.getElementById('categorie');
-  sel.innerHTML = '<option value="">Choisir une catégorie...</option>' + categories[u].map(c=>`<option value="${c}">${c}</option>`).join('') + '<option value="__AUTRE__">➕ Autre - Écrire ma catégorie...</option>';
-  document.getElementById('blocAutreCategorie').style.display = 'none';
-  document.getElementById('autreCategorie').value = '';
-  const info = document.getElementById('infoCommission');
-  info.innerHTML = infosCommission[u] || '';
-  info.style.display = 'block';
-  const exemples = {
-    manger: "Ex: Traiteur à Calavi - Riz, sauce, livraison rapide",
-    domicile: "Ex: Nettoyage à Calavi - Maison, bureau, après chantier",
-    pro: "Ex: Graphiste à Cotonou - Logo, flyer, réseaux sociaux",
-    sejour: "Ex: Appartement meublé à Fidjrossè - 2 chambres, wifi",
-    immobilier: "Ex: Maison 3 chambres à Godomey - Location 150 000 FCFA/mois",
-    livreur: "Ex: Livreur moto à Calavi - Godomey, Cococodji, Cotonou"
-  };
-  document.getElementById('titre').placeholder = exemples[u] || '';
-  // Livreur : prix toujours à discuter par défaut
-  if(u==='livreur'){ setPrixType(false); }
+const infosCommission={manger:"🍽️ <b>Manger : 12%</b>",domicile:"🏠 <b>Domicile : 8%</b> - Tu reçois 92%",pro:"💼 <b>Pro : 5 000 FCFA fixe</b>",sejour:"✈️ <b>Séjour : 12% par nuit</b>",immobilier:"🏘️ <b>Immobilier :</b> Parcelle/Vente 10 000 FCFA/30j + 2% plafonné 200 000 FCFA. Location 50% d'un mois.",livreur:"🛵 <b>Livreur 80% / Rocyinter 20%</b>"};
+function universPourCategorie(cat){
+  const manger=['Traiteur','Restaurant','Restaurant / Maquis','Livraison repas','Pâtisserie','Jus / Boissons'];
+  const domicile=['Nettoyage / Ménage','Ménage / Repassage','Plomberie','Électricité','Climatisation','Menuiserie','Peinture','Jardinage','Mécanique','Serrurerie','Déménagement','Nettoyage','Désinfection'];
+  const pro=['Design','Design / Graphisme','Développement','Développement Web','Marketing','Marketing / Réseaux sociaux','Comptabilité','Traduction','Cours','Cours / Coaching','Montage vidéo','Rédaction / CV'];
+  const sejour=['Hôtel','Hôtel / Appartement','Location voiture','Guide touristique','Transport','Transport / Moto','Location salle','Excursion / Visite'];
+  const immo=['Location maison / Appartement','Maison à louer','Chambre à louer','Appartement à louer','Parcelle à vendre','Terrain à vendre','Maison à vendre','Vente maison / Terrain','Location chambre / Studio','Gestion locative','Visite / Courtage'];
+  if(manger.includes(cat)) return 'manger';
+  if(domicile.includes(cat)) return 'domicile';
+  if(pro.includes(cat)) return 'pro';
+  if(sejour.includes(cat)) return 'sejour';
+  if(immo.includes(cat)) return 'immobilier';
+  if(cat.toLowerCase().includes('livraison')||cat.toLowerCase().includes('livreur')) return 'livreur';
+  return 'domicile';
 }
-
-function checkAutre(){
-  const sel = document.getElementById('categorie');
-  const isAutre = sel.value === '__AUTRE__';
-  document.getElementById('blocAutreCategorie').style.display = isAutre ? 'block' : 'none';
+// --- NOUVELLE RÈGLE : abonnement à jour ? ---
+function verifierAbonnement(profil){
+  // Champs Supabase : abonnement_actif (bool), abonnement_fin (date), abonnement_offert (bool)
+  const auj = new Date();
+  const fin = profil.abonnement_fin ? new Date(profil.abonnement_fin) : null;
+  const actif = profil.abonnement_actif === true || profil.abonnement_statut === 'actif';
+  const offert = profil.abonnement_offert === true || profil.premier_mois_offert === true;
+  // Si fin dans le futur => à jour. Si pas de fin mais actif/offert => à jour (1er mois offert)
+  if(fin && fin >= auj) return {ok:true, type:'paye', fin};
+  if(!fin && (actif || offert)) return {ok:true, type:'offert', fin:null};
+  if(actif && !fin) return {ok:true, type:'offert', fin:null};
+  return {ok:false, type:'expire', fin};
 }
-
-function setPrixType(fixe){
-  prixFixe = fixe;
-  document.getElementById('btnFixe').classList.toggle('active', fixe);
-  document.getElementById('btnDiscuter').classList.toggle('active', !fixe);
-  document.getElementById('blocPrix').style.display = fixe ? 'block' : 'none';
-}
-
-function showMsg(txt, ok){
-  const m = document.getElementById('msg');
-  m.textContent = txt;
-  m.className = 'msg ' + (ok ? 'ok' : 'err');
-}
-
-const uid = localStorage.getItem('rocy_user_id');
-const roleUser = localStorage.getItem('rocy_user_type') || localStorage.getItem('rocy_role') || '';
-if(!uid){ showMsg('Connecte-toi d’abord pour publier une annonce.', false); setTimeout(()=>location.href='connexion.html',1500); }
-else if(roleUser==='client'){
-  showMsg('Tu es connecté comme Client / Acheteur. Pour publier, crée un compte Prestataire / Livreur.', false);
-  setTimeout(()=>location.href='inscription.html',2000);
-} else {
-  document.getElementById('pays').value = localStorage.getItem('rocy_user_pays') || 'Bénin';
-  document.getElementById('ville').value = localStorage.getItem('rocy_user_ville') || '';
-  document.getElementById('localite').value = localStorage.getItem('rocy_user_localite') || '';
-}
-
-async function publier(){
-  // Sécurité : un acheteur ne publie pas
-  if(roleUser==='client'){ showMsg('Compte Client : tu ne peux pas publier. Crée un compte Prestataire.', false); return; }
-  const titre = document.getElementById('titre').value.trim();
-  const description = document.getElementById('description').value.trim();
-  let categorie = document.getElementById('categorie').value;
-  const pays = document.getElementById('pays').value;
-  const ville = document.getElementById('ville').value.trim();
-  const localite = document.getElementById('localite').value.trim();
-  const photo = document.getElementById('photo').value.trim();
-  const prix = document.getElementById('prix').value;
-  const btn = document.getElementById('btnPublier');
-
-  if(categorie === '__AUTRE__'){
-    const autre = document.getElementById('autreCategorie').value.trim();
-    if(!autre){ showMsg('Écris ta catégorie, ex: Nettoyage, Désinfection...', false); return; }
-    categorie = autre;
+function afficherBandeauAbo(res){
+  const box=document.getElementById('bandeauAbo');
+  const btn=document.getElementById('btnPublier');
+  if(res.ok && res.type==='offert'){
+    box.innerHTML=`<div class="bandeau-abo abo-offert">🎁 1er mois offert - Tu peux publier. Commissions dues dès la 1ère mission.</div>`;
+    btn.disabled=false;
+  } else if(res.ok){
+    const dateFin = res.fin ? res.fin.toLocaleDateString('fr-FR') : '';
+    box.innerHTML=`<div class="bandeau-abo abo-ok">✅ Abonnement à jour ${dateFin ? 'jusqu\'au '+dateFin : ''} - Tu peux publier.</div>`;
+    btn.disabled=false;
+  } else {
+    box.innerHTML=`<div class="bandeau-abo abo-expire">⛔ Ton abonnement est expiré. Renouvelle pour publier une nouvelle annonce.<br><br><button class="btn btn-dark" onclick="location.href='abonnement.html'">Renouveler mon abonnement →</button></div>`;
+    btn.disabled=true; btn.textContent='⛔ Abonnement expiré - Publier bloqué';
   }
-
-  if(!universChoisi || !categorie || !titre || !description || !ville || !localite){ showMsg('Remplis Univers + Catégorie + Titre + Description + Ville + Localité', false); return; }
-  if(prixFixe && (!prix || Number(prix)<=0)){ showMsg('Mets un prix fixe supérieur à 0', false); return; }
-
-  btn.disabled = true; btn.textContent = 'Publication...';
-
-  const {data, error} = await supabase.from('annonces').insert([{
-    prestataire_id: uid,
-    univers: universChoisi,
-    categorie, titre, description,
-    prix_fixe: prixFixe,
-    prix_indicatif: prixFixe ? Number(prix) : (prix ? Number(prix) : null),
-    pays, ville, localite,
-    photo_url: photo || null,
-    status: 'en_attente'
-  }]).select().single();
-
-  if(error){ showMsg('Erreur : ' + error.message, false); btn.disabled=false; btn.textContent='Publier mon annonce →'; return; }
-
-  showMsg('✅ Annonce envoyée ! En attente de validation. Tu seras notifié.', true);
-  setTimeout(()=> location.href='dashboard-prestataire.html', 1500);
 }
+function onCategorieChange(){
+  const sel=document.getElementById('categorie');
+  const isAutre=sel.value==='__AJOUTER__';
+  document.getElementById('blocAutreCategorie').style.display=isAutre?'block':'none';
+  if(isAutre||!sel.value) return;
+  universChoisi=universPourCategorie(sel.value);
+  const bloc=document.getElementById('blocUnivers'); bloc.style.display='block'; bloc.innerHTML='🌍 Univers automatique : <b>'+universChoisi+'</b> - activité <b>'+sel.value+'</b>';
+  const info=document.getElementById('infoCommission'); info.innerHTML=infosCommission[universChoisi]||''; info.style.display='block';
+  if(universChoisi==='livreur') setPrixType(false);
+}
+function setPrixType(fixe){prixFixe=fixe;document.getElementById('btnFixe').classList.toggle('active',fixe);document.getElementById('btnDiscuter').classList.toggle('active',!fixe);document.getElementById('blocPrix').style.display=fixe?'block':'none';}
+function showMsg(t,ok){const m=document.getElementById('msg');m.textContent=t;m.className='msg '+(ok?'ok':'err');m.style.display='block';}
+function remplirPays(){const sel=document.getElementById('pays');if(window.ROCY_PAYS&&window.ROCY_PAYS.length){sel.innerHTML=window.ROCY_PAYS.map(p=>`<option value="${p.nom}">${p.drapeau} ${p.nom}</option>`).join('');}else{sel.innerHTML=`<option value="Bénin">🇧🇯 Bénin</option>`;}sel.value=localStorage.getItem('rocy_user_pays')||'Bénin';}
+
+async function init(){
+  const uid=localStorage.getItem('rocy_user_id');
+  const roleUser=localStorage.getItem('rocy_user_type')||localStorage.getItem('rocy_role')||'';
+  remplirPays();
+  if(!uid){location.href='connexion.html';return;}
+  if(roleUser==='client'){showMsg('Client : crée un compte Prestataire pour publier.',false);setTimeout(()=>location.href='inscription.html?type=prestataire',1500);return;}
+  if(roleUser==='admin'){location.href='admin.html';return;}
+  document.getElementById('ville').value=localStorage.getItem('rocy_user_ville')||'';
+  document.getElementById('localite').value=localStorage.getItem('rocy_user_localite')||'';
+  try{
+    const {data}=await supabase.from('profiles').select('*').eq('id',uid).single();
+    profilFournisseur=data;
+    // --- Blocage abonnement ---
+    const res=verifierAbonnement(data||{});
+    abonnementAJour=res.ok;
+    afficherBandeauAbo(res);
+    let acts=data.activites||[];
+    if(typeof acts==='string'){try{acts=JSON.parse(acts);}catch(e){acts=[acts];}}
+    if(!acts.length&&data.categorie) acts=[data.categorie];
+    if(roleUser==='livreur'&&!acts.length) acts=['Livraison moto'];
+    mesActivites=acts;
+    const sel=document.getElementById('categorie');
+    if(!mesActivites.length){sel.innerHTML=`<option value="">Aucune activité</option><option value="__AJOUTER__">➕ + Ajouter une autre activité</option>`;document.getElementById('blocAutreCategorie').style.display='block';}
+    else{sel.innerHTML=`<option value="">Choisir parmi tes activités...</option>`+mesActivites.map(c=>`<option value="${c}">${c}</option>`).join('')+`<option value="__AJOUTER__">➕ + Ajouter une autre activité</option>`;}
+  }catch(e){console.log(e);}
+}
+async function publier(){
+  // --- Double sécurité : même si on force le bouton ---
+  if(!abonnementAJour){showMsg('⛔ Abonnement expiré. Renouvelle pour publier.',false);setTimeout(()=>location.href='abonnement.html',1200);return;}
+  const uid=localStorage.getItem('rocy_user_id');
+  const titre=document.getElementById('titre').value.trim();
+  const description=document.getElementById('description').value.trim();
+  let categorie=document.getElementById('categorie').value;
+  const pays=document.getElementById('pays').value;
+  const ville=document.getElementById('ville').value.trim();
+  const localite=document.getElementById('localite').value.trim();
+  const photo=document.getElementById('photo').value.trim();
+  const prix=document.getElementById('prix').value;
+  const btn=document.getElementById('btnPublier');
+  if(categorie==='__AJOUTER__'){const autre=document.getElementById('autreCategorie').value.trim();if(!autre){showMsg('Écris ta nouvelle activité',false);return;}categorie=autre;universChoisi=universPourCategorie(categorie);if(!mesActivites.includes(categorie)){const n=[...mesActivites,categorie];await supabase.from('profiles').update({activites:n}).eq('id',uid);mesActivites=n;}}
+  else{if(!categorie||!mesActivites.includes(categorie)){showMsg('Choisis une activité parmi TES activités.',false);return;}universChoisi=universPourCategorie(categorie);}
+  if(!universChoisi||!categorie||!titre||!description||!ville||!localite){showMsg('Remplis Catégorie + Titre + Description + Ville + Localité',false);return;}
+  if(prixFixe&&(!prix||Number(prix)<=0)){showMsg('Mets un prix fixe > 0',false);return;}
+  btn.disabled=true;btn.textContent='Publication...';
+  const {error}=await supabase.from('annonces').insert([{prestataire_id:uid,univers:universChoisi,categorie,titre,description,prix_fixe:prixFixe,prix_indicatif:prixFixe?Number(prix):(prix?Number(prix):null),pays,ville,localite,photo_url:photo||null,status:'en_attente'}]).select().single();
+  if(error){showMsg('Erreur : '+error.message,false);btn.disabled=false;btn.textContent='Publier mon annonce →';return;}
+  showMsg('✅ Annonce envoyée ! En attente de validation.',true);
+  setTimeout(()=>location.href='dashboard-prestataire.html',1500);
+}
+init();
 </script>
 </body>
 </html>
