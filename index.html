@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rocyinter Services</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="pays.js"></script>
 <script src="rocy-layout.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
@@ -15,10 +16,11 @@ body{background:#f6f7f9;color:#111}
 .filters{background:#fff;margin:-10px 16px 16px;padding:14px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.08);display:grid;gap:10px}
 .filters label{font-size:12px;font-weight:700;color:#475569}
 .filters select,.filters input{width:100%;padding:11px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;background:#fff}
-.univers{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 16px 16px}
-.card-u{background:#fff;border-radius:16px;padding:16px;cursor:pointer;border:2px solid transparent;box-shadow:0 2px 10px rgba(0,0,0,.05)}
-.card-u.active{border-color:#f59e0b;background:#fffbeb}
-.card-u .ico{font-size:28px} .card-u b{display:block;margin:6px 0 2px} .card-u small{color:#64748b;font-size:12px;line-height:1.3;display:block}
+.univers{display:flex;flex-wrap:wrap;gap:8px;padding:0 16px 16px}
+.card-u{background:#fff;border:1px solid #e2e8f0;border-radius:999px;padding:8px 14px;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.card-u:active{background:#fffbeb;border-color:#f59e0b}
+.card-u .ico{font-size:16px} .card-u b{font-size:13px} .card-u small{display:none}
+.card-u.proposer{background:#0f172a;color:#fff;border-color:#0f172a}
 .section{padding:0 16px 20px} .section h2{font-size:18px;margin-bottom:10px}
 .grid{display:grid;gap:12px}
 .card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.05)}
@@ -31,29 +33,32 @@ body{background:#f6f7f9;color:#111}
 .empty{background:#fff;border:1px dashed #cbd5e1;border-radius:16px;padding:24px;text-align:center;color:#64748b} .empty b{color:#111;display:block;margin-bottom:6px}
 .liens{padding:0 16px 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .liens button{background:#fff;border:1px solid #e2e8f0;padding:12px;border-radius:12px;font-weight:700;cursor:pointer;font-size:13px}
+.bandeau-role{margin:0 16px 16px;padding:12px;border-radius:12px;font-size:13px;font-weight:600;text-align:center}
+.bandeau-visiteur{background:#fef3c7;color:#92400e}
+.bandeau-client{background:#dcfce7;color:#166534}
+.bandeau-presta{background:#dbeafe;color:#1e40af}
 </style>
 </head>
 <body>
 <div class="hero">
   <h1><span data-i18n="heroTitre1">Trouvez un vrai service</span><br><span data-i18n="heroTitre2">près de chez vous</span></h1>
-  <p data-i18n="heroSous">Pas de faux produits. Que des vrais prestataires validés, près de vous, avec paiement sécurisé.</p>
+  <p data-i18n="heroSous">Pas de faux produits. Que des vrais prestataires validés, près de vous, avec paiement sécurisé. Regardez ce que fait chaque entreprise, ça vous donnera envie de commander.</p>
 </div>
+<div id="bandeauRole"></div>
 <div class="filters">
-  <div><label data-i18n="pays">PAYS</label><select id="filtrePays" onchange="chargerAnnonces()">
-    <option value="">Tous les pays</option><option value="Bénin">🇧🇯 Bénin</option><option value="Togo">🇹🇬 Togo</option><option value="Côte d'Ivoire">🇨🇮 Côte d'Ivoire</option><option value="Sénégal">🇸🇳 Sénégal</option><option value="Cameroun">🇨🇲 Cameroun</option><option value="Nigeria">🇳🇬 Nigeria</option><option value="Ghana">🇬🇭 Ghana</option><option value="France">🇫🇷 France</option><option value="Canada">🇨🇦 Canada</option><option value="Mali">🇲🇱 Mali</option><option value="Burkina Faso">🇧🇫 Burkina Faso</option><option value="Niger">🇳🇪 Niger</option><option value="Guinée">🇬🇳 Guinée</option><option value="Maroc">🇲🇦 Maroc</option><option value="Algérie">🇩🇿 Algérie</option><option value="Tunisie">🇹🇳 Tunisie</option><option value="USA">🇺🇸 USA</option><option value="Belgique">🇧🇪 Belgique</option><option value="Suisse">🇨🇭 Suisse</option>
-  </select></div>
+  <div><label data-i18n="pays">PAYS</label><select id="filtrePays" onchange="chargerAnnonces()"></select></div>
   <div><label data-i18n="ville">VILLE / LOCALITÉ</label><input id="filtreLocalite" data-i18n-ph="villePh" placeholder="Ex: Calavi, Cotonou, Godomey..." oninput="chargerAnnonces()"></div>
   <div><label data-i18n="rechercher">RECHERCHER UN SERVICE</label><input id="filtreSearch" data-i18n-ph="searchPh" placeholder="Ex: Plombier, Traiteur, Nettoyage..." oninput="chargerAnnonces()"></div>
 </div>
 <div class="univers">
-  <div class="card-u" onclick="location.href='categorie.html?univers='"><div class="ico">🌍</div><b data-i18n="tous">Tous</b><small data-i18n="tousSous">Tous les services réels</small></div>
-  <div class="card-u" onclick="location.href='categorie.html?univers=manger'"><div class="ico">🍽️</div><b data-i18n="manger">Se nourrir</b><small data-i18n="mangerSous">Traiteur, Restaurant, Livraison</small></div>
-  <div class="card-u" onclick="location.href='categorie.html?univers=domicile'"><div class="ico">🏠</div><b data-i18n="domicile">Domicile</b><small data-i18n="domicileSous">Nettoyage, Ménage, Plomberie, Électricité</small></div>
-  <div class="card-u" onclick="location.href='categorie.html?univers=pro'"><div class="ico">💼</div><b data-i18n="pro">Services professionnels</b><small data-i18n="proSous">Design, Dev, Marketing, Compta</small></div>
-  <div class="card-u" onclick="location.href='categorie.html?univers=sejour'"><div class="ico">✈️</div><b data-i18n="sejour">Séjour</b><small data-i18n="sejourSous">Hôtel, Location, Guide, Transport</small></div>
-  <div class="card-u" onclick="location.href='categorie.html?univers=immobilier'"><div class="ico">🏘️</div><b data-i18n="immo">Immobilier</b><small data-i18n="immoSous">Location, Vente, Chambre, Visite</small></div>
-  <div class="card-u" onclick="location.href='livreurs.html'"><div class="ico">🛵</div><b data-i18n="livreursTitre">Livreurs</b><small data-i18n="livreursSous">Prix à discuter - Choix, pas obligatoire</small></div>
-  <div class="card-u" onclick="rocyProposerService()" style="grid-column:1 / -1"><div class="ico">➕</div><b data-i18n="proposerTitre">Proposer un service</b><small data-i18n="proposerSous">Gagnez de l'argent - Si ta catégorie n'existe pas, tu l'écris toi-même</small></div>
+  <div class="card-u" onclick="location.href='index.html'"><div class="ico">🌍</div><b data-i18n="tous">Tous</b></div>
+  <div class="card-u" onclick="location.href='manger.html'"><div class="ico">🍽️</div><b data-i18n="manger">Se nourrir</b></div>
+  <div class="card-u" onclick="location.href='services-domicile.html'"><div class="ico">🏠</div><b data-i18n="domicile">Domicile</b></div>
+  <div class="card-u" onclick="location.href='services-pro.html'"><div class="ico">💼</div><b data-i18n="pro">Services professionnels</b></div>
+  <div class="card-u" onclick="location.href='sejour.html'"><div class="ico">✈️</div><b data-i18n="sejour">Séjour</b></div>
+  <div class="card-u" onclick="location.href='immobilier.html'"><div class="ico">🏘️</div><b data-i18n="immo">Immobilier</b></div>
+  <div class="card-u" onclick="location.href='livreurs.html'"><div class="ico">🛵</div><b data-i18n="livreursTitre">Livreurs</b></div>
+  <div class="card-u proposer" onclick="rocyProposerService()"><div class="ico">➕</div><b data-i18n="proposerTitre">Proposer un service</b></div>
 </div>
 <div class="liens">
   <button type="button" onclick="location.href='immobilier.html'" data-i18n="voirImmo">🏠 Voir tout Immobilier</button>
@@ -72,6 +77,20 @@ const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 let supabase = null;
 try{ supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); }catch(e){}
+if(window.rocyRemplirPays) rocyRemplirPays('filtrePays');
+
+// BANDEAU SELON ROLE : VISITEUR / CLIENT / FOURNISSEUR / ADMIN
+function afficherBandeauRole(){
+  const box = document.getElementById('bandeauRole');
+  if(!box) return;
+  const uid = localStorage.getItem('rocy_user_id');
+  const type = localStorage.getItem('rocy_user_type') || localStorage.getItem('rocy_role') || '';
+  const t = window.rocyT || (k=>k);
+  if(!uid) box.innerHTML = `<div class="bandeau-role bandeau-visiteur">👁️ Vous êtes visiteur : vous pouvez voir toutes les entreprises, c'est une publicité pour elles. Pour discuter et commander, connectez-vous.</div>`;
+  else if(type==='prestataire' || type==='livreur') box.innerHTML = `<div class="bandeau-role bandeau-presta">🛠️ Vous êtes fournisseur : vous pouvez voir les autres entreprises, et aussi créer vos annonces sur vos activités. <a href="creer-annonce.html" style="color:#1e40af">Créer une annonce →</a></div>`;
+  else if(type==='admin') box.innerHTML = `<div class="bandeau-role bandeau-presta">🛡️ Vous êtes admin : vous contrôlez, vous validez. <a href="admin.html" style="color:#1e40af">Panel Admin →</a></div>`;
+  else box.innerHTML = `<div class="bandeau-role bandeau-client">🛒 Vous êtes client : vous pouvez voir les entreprises, discuter, commander, mettre en favoris et payer en sécurisé.</div>`;
+}
 async function chargerAnnonces(){
   const box = document.getElementById('listeAnnonces');
   if(!box) return;
@@ -98,8 +117,10 @@ async function chargerAnnonces(){
       const lieu = [a.localite, a.ville, a.pays].filter(Boolean).join(' - ');
       const t = window.rocyT || (k=>k);
       const prixTxt = a.prix_fixe ? `${window.rocyFormatPrix ? window.rocyFormatPrix(a.prix_indicatif) : a.prix_indicatif+' FCFA'} - ${t('prixFixe')}` : (a.prix_indicatif>0 ? `${t('aPartir')} ${window.rocyFormatPrix ? window.rocyFormatPrix(a.prix_indicatif) : a.prix_indicatif+' FCFA'}` : t('prixDiscuter'));
+      // TOUT LE MONDE VOIT L'ENTREPRISE - C'EST UNE PUBLICITE POUR ELLE
+      // SEUL LE VISITEUR NE PEUT PAS DISCUTER / COMMANDER
       return `<div class="card">
-        <img src="${img}" onerror="this.src='https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&q=80'">
+        <img src="${img}" onclick="voirProfil('${a.prestataire_id}')" style="cursor:pointer" onerror="this.src='https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&q=80'">
         <div class="card-body">
           <span class="badge">${a.univers||''} • ${a.categorie||''}</span>
           <h3 style="margin-top:8px">${a.titre||''}</h3>
@@ -108,7 +129,7 @@ async function chargerAnnonces(){
           <div class="price">${prixTxt}</div>
           <div class="card-actions">
             <button type="button" class="btn-chat" onclick="allerChat('${a.prestataire_id}','${a.id}')">${t('discuter')}</button>
-            <button type="button" class="btn-voir" onclick="voirProfil('${a.prestataire_id}')">${t('voirProfil')}</button>
+            <button type="button" class="btn-voir" onclick="voirProfil('${a.prestataire_id}')">${t('voirEntreprise')}</button>
           </div>
         </div>
       </div>`;
@@ -119,7 +140,9 @@ async function chargerAnnonces(){
 }
 function allerChat(prestataireId, annonceId){
   const uid = localStorage.getItem('rocy_user_id');
-  if(!uid){ location.href='connexion.html'; return; }
+  const t = window.rocyT || (k=>k);
+  // VISITEUR : il voit, mais il ne peut pas commander sans se connecter
+  if(!uid){ alert(t('connectePourCommander')); location.href='connexion.html'; return; }
   localStorage.setItem('chat_prestataire', prestataireId);
   localStorage.setItem('chat_annonce', annonceId);
   location.href = 'chat.html';
@@ -128,6 +151,7 @@ function voirProfil(prestataireId){
   localStorage.setItem('fiche_prestataire_id', prestataireId);
   location.href = 'fiche-prestataire.html';
 }
+afficherBandeauRole();
 chargerAnnonces();
 </script>
 </body>
