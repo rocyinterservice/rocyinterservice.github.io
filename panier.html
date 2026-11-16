@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Panier - Rocyinter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
+body{background:#f6f7f9;color:#111;padding:16px}
+.top{max-width:520px;margin:0 auto}
+.back{color:#64748b;font-size:13px;cursor:pointer}
+h1{font-size:22px;margin:14px 0 12px} h1 span{color:#f59e0b}
+.card{background:#fff;border-radius:16px;padding:14px;margin-bottom:12px}
+.card h3{font-size:15px} .card p{font-size:13px;color:#64748b;margin:6px 0}
+.btn{width:100%;background:#f59e0b;border:none;padding:12px;border-radius:10px;font-weight:800;cursor:pointer;margin-top:8px}
+.btn-dark{background:#0f172a;color:#fff}
+.info{background:#fffbe6;border:1px solid #fde68a;border-radius:12px;padding:12px;font-size:13px;line-height:1.6}
+</style></head>
+<body><div class="top">
+<div class="back" onclick="location.href='index.html'">← Accueil</div>
+<h1>🛒 Mon <span>Panier</span></h1>
+<div class="info">Ton panier, c'est tes propositions acceptées en attente de paiement en Escrow. Tu paies à Rocyinter, pas au prestataire.</div>
+<div id="liste" style="margin-top:12px">Chargement...</div>
+</div>
+<script>
+function charger(){
+  const uid = localStorage.getItem('rocy_user_id');
+  if(!uid){location.href='connexion.html';return;}
+  const panier = JSON.parse(localStorage.getItem('rocy_panier')||'[]');
+  if(!panier.length){document.getElementById('liste').innerHTML='<p style="text-align:center;color:#64748b;padding:20px;background:#fff;border-radius:16px">Panier vide.<br>Discute avec un prestataire, accepte sa proposition, elle apparaîtra ici.</p>';return;}
+  document.getElementById('liste').innerHTML = panier.map((p,i)=>`<div class="card"><h3>${p.titre||'Proposition'}</h3><p>Montant : <b>${Number(p.montant||0).toLocaleString()} FCFA</b><br>Prestataire : ${p.prestataire||''}</p><button class="btn" onclick="payer(${i})">Payer en Escrow</button><button class="btn btn-dark" onclick="retirer(${i})">Retirer</button></div>`).join('');
+}
+function payer(i){const p=JSON.parse(localStorage.getItem('rocy_panier')||'[]')[i]; localStorage.setItem('paiement_montant',p.montant); localStorage.setItem('paiement_prestataire',p.prestataire_id||''); location.href='paiement.html';}
+function retirer(i){let p=JSON.parse(localStorage.getItem('rocy_panier')||'[]'); p.splice(i,1); localStorage.setItem('rocy_panier',JSON.stringify(p)); charger();}
+charger();
+</script></body></html>
