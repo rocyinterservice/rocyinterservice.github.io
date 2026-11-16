@@ -6,21 +6,15 @@ window.ROCY_PAYS = [
 {p:'Inde', d:'🇮🇳'}, {p:'Chine', d:'🇨🇳'}, {p:'Japon', d:'🇯🇵'}, {p:'Corée du Sud', d:'🇰🇷'}, {p:'Vietnam', d:'🇻🇳'}, {p:'Thaïlande', d:'🇹🇭'}, {p:'Indonésie', d:'🇮🇩'}, {p:'Philippines', d:'🇵🇭'}, {p:'Malaisie', d:'🇲🇾'}, {p:'Singapour', d:'🇸🇬'}, {p:'Myanmar', d:'🇲🇲'}, {p:'Cambodge', d:'🇰🇭'}, {p:'Laos', d:'🇱🇦'}, {p:'Bangladesh', d:'🇧🇩'}, {p:'Pakistan', d:'🇵🇰'}, {p:'Sri Lanka', d:'🇱🇰'}, {p:'Népal', d:'🇳🇵'}, {p:'Afghanistan', d:'🇦🇫'}, {p:'Iran', d:'🇮🇷'}, {p:'Irak', d:'🇮🇶'}, {p:'Émirats', d:'🇦🇪'}, {p:'Arabie Saoudite', d:'🇸🇦'}, {p:'Qatar', d:'🇶🇦'}, {p:'Koweït', d:'🇰🇼'}, {p:'Bahreïn', d:'🇧🇭'}, {p:'Oman', d:'🇴🇲'}, {p:'Jordanie', d:'🇯🇴'}, {p:'Liban', d:'🇱🇧'}, {p:'Syrie', d:'🇸🇾'}, {p:'Israël', d:'🇮🇱'}, {p:'Palestine', d:'🇵🇸'}, {p:'Yémen', d:'🇾🇪'},
 {p:'Australie', d:'🇦🇺'}, {p:'Nouvelle-Zélande', d:'🇳🇿'}, {p:'Fidji', d:'🇫🇯'}, {p:'Papouasie', d:'🇵🇬'}, {p:'Îles Salomon', d:'🇸🇧'}, {p:'Vanuatu', d:'🇻🇺'}, {p:'Îles Cook', d:'🇨🇰'}, {p:'Nouvelle-Calédonie', d:'🇳🇨'}, {p:'Polynésie', d:'🇵🇫'}
 ];
-
-// Pour retrouver le drapeau d'un pays : rocyDrapeauPays('Bénin') -> 🇧🇯
 window.rocyDrapeauPays = function(nomPays){
   if(!nomPays) return '';
   const trouve = window.ROCY_PAYS.find(x => x.p === nomPays);
   return trouve ? trouve.d : '';
 };
-
 window.rocyRemplirPays = function(selectId){
   const sel = document.getElementById(selectId);
-  if(!sel){ console.log('ROCY: select introuvable', selectId); return; }
+  if(!sel) return;
   const actuel = sel.value;
-  // On affiche le drapeau + le nom dans chaque option
   sel.innerHTML = '<option value="">🌍 Tous les pays</option>' + window.ROCY_PAYS.map(x=>`<option value="${x.p}">${x.d} ${x.p}</option>`).join('');
   if(actuel) sel.value = actuel;
-  console.log('ROCY: pays remplis avec drapeaux =', window.ROCY_PAYS.length);
 };
-console.log('ROCY: pays.js chargé avec drapeaux, pays =', window.ROCY_PAYS.length);
