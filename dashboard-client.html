@@ -83,10 +83,19 @@ function badgeStatus(s){
   return `<span class="badge attente">${s}</span>`;
 }
 function stepsHtml(s){
+  if(s==='litige') return `<p style="color:#991b1b">⚠️ Litige en cours - Argent bloqué. L'Admin va trancher.</p>`;
   const order = ['en_attente','paye','en_cours','valide','libere'];
   const idx = order.indexOf(s);
   const labels = ['Créée','Payée','En cours','Validée','Libérée'];
   return `<div class="steps">${labels.map((l,i)=>`<div class="step ${i<idx?'done':''} ${i===idx?'active':''}">${l}</div>`).join('')}</div>`;
+}
+// CORRECTION V3 : texte commission réel par univers
+function texteCommission(c){
+  if(c.univers==='domicile') return `Commission 8% : ${Number(c.commission).toLocaleString()} FCFA`;
+  if(c.univers==='pro') return `Commission 5 000 FCFA fixe`;
+  if(c.univers==='manger') return `Commission 12% : ${Number(c.commission).toLocaleString()} FCFA`;
+  if(c.univers==='sejour') return `Commission 12% : ${Number(c.commission).toLocaleString()} FCFA`;
+  return `Commission : ${Number(c.commission||0).toLocaleString()} FCFA`;
 }
 
 async function charger(){
@@ -100,14 +109,16 @@ async function charger(){
       ${badgeStatus(c.status)}
       <h3 style="margin-top:8px">${c.titre}</h3>
       <p>📍 ${c.localite || ''} - ${c.ville || ''}<br>
-      Total : <b>${Number(c.montant_total).toLocaleString()} FCFA</b> • Acompte : ${Number(c.acompte||0).toLocaleString()} FCFA<br>
-      Prestataire reçoit : ${Number(c.montant_prestataire).toLocaleString()} FCFA (après commission 12%)</p>
+      Total : <b>${Number(c.montant_total).toLocaleString()} FCFA</b><br>
+      Prestataire reçoit : ${Number(c.montant_prestataire).toLocaleString()} FCFA (${texteCommission(c)})<br>
+      <span style="color:#16a34a;font-weight:700">🔒 Escrow : argent bloqué chez Rocyinter jusqu'à validation</span></p>
       ${stepsHtml(c.status)}
-      ${c.status==='en_attente' ? `<button class="btn btn-green" onclick="payer('${c.id}')">💳 Payer maintenant (Simulé)</button>` : ''}
-      ${c.status==='en_cours' ? `<button class="btn btn-green" onclick="valider('${c.id}')">✅ Valider le service terminé</button>` : ''}
+      ${c.status==='en_attente' ? `<button class="btn btn-green" onclick="payer('${c.id}')">💳 Payer en escrow sécurisé</button>` : ''}
       ${c.status==='paye' ? `<button class="btn btn-dark" onclick="demarrer('${c.id}')">🔧 Confirmer le début du service</button>` : ''}
+      ${c.status==='en_cours' ? `<button class="btn btn-green" onclick="valider('${c.id}')">✅ Valider le service terminé</button>` : ''}
+      ${c.status==='valide' ? `<button class="btn" onclick="noter('${c.id}','${c.prestataire_id}')">⭐ Noter le prestataire</button><p style="color:#166534">⏳ Libération dans 48h pour Services, lundi pour Manger / Hôtels.</p>` : ''}
+      ${['paye','en_cours'].includes(c.status) ? `<button class="btn btn-red" onclick="signalerLitige('${c.id}')">⚠️ Signaler un litige</button>` : ''}
       <button class="btn btn-dark" onclick="voirConversation('${c.conversation_id}','${c.annonce_id}')">Ouvrir le chat</button>
-      ${c.status==='valide' ? `<button class="btn" onclick="noter('${c.id}','${c.prestataire_id}')">⭐ Noter le prestataire</button>` : ''}
     </div>`).join('');
   }
 
@@ -120,20 +131,27 @@ async function charger(){
   }
 }
 
-async function payer(id){
-  if(!confirm('Simuler le paiement ? En vrai, ici ce sera Mobile Money / Carte.')) return;
-  await supabase.from('commandes').update({status:'paye'}).eq('id', id);
-  alert('✅ Paiement simulé ! Argent bloqué en escrow.');
-  charger();
+// CORRECTION V3 : Payer passe par LA Page Paiement unique, pas un update direct
+function payer(id){
+  localStorage.setItem('paiement_commande_id', id);
+  location.href='paiement.html';
 }
 async function demarrer(id){
   await supabase.from('commandes').update({status:'en_cours'}).eq('id', id);
   charger();
 }
 async function valider(id){
-  if(!confirm('Le service est bien terminé ?')) return;
+  if(!confirm('Le service est bien terminé ? Après validation, l’argent sera libéré au prestataire.')) return;
   await supabase.from('commandes').update({status:'valide'}).eq('id', id);
   alert('✅ Service validé ! Le prestataire sera payé. Tu peux le noter.');
+  charger();
+}
+// CORRECTION V3 : Litige = argent reste bloqué, Admin tranche
+async function signalerLitige(id){
+  const raison = prompt('Décris le problème :', 'Prestataire non venu / travail non terminé...');
+  if(!raison) return;
+  await supabase.from('commandes').update({status:'litige', litige_raison: raison}).eq('id', id);
+  alert('⚠️ Litige signalé. Argent bloqué. L’Admin va trancher dans la Page Litiges.');
   charger();
 }
 function noter(cmdId, prestaId){
@@ -146,7 +164,6 @@ function noter(cmdId, prestaId){
   });
 }
 function voirConversation(convId, annonceId){
-  // On a besoin du prestataire_id, on le récupère via la commande ou la conversation
   supabase.from('conversations').select('*').eq('id', convId).single().then(({data})=>{
     if(data) localStorage.setItem('chat_prestataire', data.prestataire_id);
     localStorage.setItem('chat_annonce', annonceId);
