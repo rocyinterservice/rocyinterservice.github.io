@@ -3,12 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Paiement sécurisé - Rocyinter</title>
+<title data-i18n="paiementTitre">Paiement sécurisé - Rocyinter</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="pays.js"></script>
+<script src="rocy-layout.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
-body{background:#f6f7f9;color:#111;padding:16px}
-.top{max-width:480px;margin:0 auto}
+body{background:#f6f7f9;color:#111}
+.top{max-width:480px;margin:0 auto;padding:16px}
 .back{color:#64748b;font-size:13px;cursor:pointer}
 h1{font-size:22px;margin:14px 0 4px} h1 span{color:#f59e0b}
 p.sub{color:#64748b;font-size:13px;margin-bottom:14px;line-height:1.5}
@@ -27,6 +29,7 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px;line-height:1.5}
 .btn-dark{background:#0f172a;color:#fff}
 .btn-grey{background:#f1f5f9;color:#94a3b8;cursor:not-allowed}
 .btn-whatsapp{background:#25D366;color:#fff}
+.btn:disabled{opacity:.5;cursor:not-allowed}
 .msg{text-align:center;font-size:13px;padding:10px;border-radius:10px;display:none}
 .msg.ok{display:block;background:#dcfce7;color:#166534}
 .msg.err{display:block;background:#fee2e2;color:#991b1b}
@@ -35,73 +38,85 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
 </head>
 <body>
 <div class="top">
-<div class="back" onclick="location.href='dashboard-client.html'">← Mes commandes</div>
-<h1>💳 <span>Paiement sécurisé</span></h1>
-<p class="sub">Escrow Rocyinter : tu paies à Rocyinter, Rocyinter bloque l'argent, le prestataire fait le travail, tu valides, Rocyinter libère l'argent. Commission prélevée à la libération, pas avant.</p>
+<div class="back" onclick="location.href='dashboard-client.html'">← <span data-i18n="mesCommandes">Mes commandes</span></div>
+<h1>💳 <span data-i18n="paiementSecurise">Paiement sécurisé</span></h1>
+<p class="sub" data-i18n="paiementSous">Escrow Rocyinter : tu paies à Rocyinter, Rocyinter bloque l'argent, le prestataire fait le travail, tu valides, Rocyinter libère l'argent. Commission prélevée à la libération, pas avant.</p>
 
 <div class="card" id="resume">Chargement de la commande...</div>
 
-<div class="escrow">🔒 <b>Escrow 100%</b> - Aucun paiement direct. Si litige, l'argent reste bloqué, l'Admin tranche. Ne paie jamais en dehors de Rocyinter.</div>
+<div class="escrow">🔒 <b data-i18n="escrow100">Escrow 100%</b> - <span data-i18n="escrowSous">Aucun paiement direct. Si litige, l'argent reste bloqué, l'Admin tranche. Ne paie jamais en dehors de Rocyinter.</span></div>
 
-<div class="card">
-  <h3>Choisis ton moyen de paiement</h3>
-  <div class="bientot">⏳ <b>Fedapay bientôt disponible.</b> MTN MoMo, Moov Money, Celtiis, Carte bancaire seront ici. En attendant, utilise Espèces ou WhatsApp ci-dessous.</div>
+<div class="card" id="blocPaiement">
+  <h3 data-i18n="choisisPaiement">Choisis ton moyen de paiement</h3>
+  <div class="bientot">⏳ <b data-i18n="fedapayBientot">Fedapay bientôt disponible.</b> <span data-i18n="fedapaySous">MTN MoMo, Moov Money, Celtiis, Carte bancaire seront ici. En attendant, utilise Espèces ou WhatsApp ci-dessous.</span></div>
 
-  <button class="btn btn-grey">📱 MTN MoMo - Bientôt</button>
-  <button class="btn btn-grey">📱 Moov Money - Bientôt</button>
-  <button class="btn btn-grey">📱 Celtiis Money - Bientôt</button>
-  <button class="btn btn-grey">💳 Carte bancaire - Bientôt</button>
+  <button class="btn btn-grey" disabled>📱 MTN MoMo - <span data-i18n="bientot">Bientôt</span></button>
+  <button class="btn btn-grey" disabled>📱 Moov Money - <span data-i18n="bientot">Bientôt</span></button>
+  <button class="btn btn-grey" disabled>📱 Celtiis Money - <span data-i18n="bientot">Bientôt</span></button>
+  <button class="btn btn-grey" disabled>💳 <span data-i18n="carte">Carte bancaire</span> - <span data-i18n="bientot">Bientôt</span></button>
 
   <div id="zoneEspeces" style="display:none">
-    <button class="btn btn-yellow" onclick="payerEspeces()">💵 Payer en espèces à la livraison (+ 500 FCFA)</button>
-    <p style="font-size:12px;color:#64748b;margin-top:6px">Uniquement pour Manger. Tu paies en espèces quand le livreur arrive. Supplément 500 FCFA pour la livraison.</p>
+    <button class="btn btn-yellow" id="btnEspeces" onclick="payerEspeces()">💵 <span data-i18n="payerEspeces">Payer en espèces à la livraison (+ 500 FCFA)</span></button>
+    <p style="font-size:12px;color:#64748b;margin-top:6px" data-i18n="especesAide">Uniquement pour Manger. Tu paies en espèces quand le livreur arrive. Supplément 500 FCFA pour la livraison.</p>
   </div>
 
-  <button class="btn btn-whatsapp" onclick="payerWhatsApp()">💬 Payer via WhatsApp Rocyinter</button>
-  <button class="btn btn-dark" onclick="payerTest()">🧪 TEST - Simuler un paiement Mobile Money (pour tester maintenant)</button>
+  <button class="btn btn-whatsapp" id="btnWhatsapp" onclick="payerWhatsApp()">💬 <span data-i18n="payerWhatsapp">Payer via WhatsApp Rocyinter</span></button>
+  <button class="btn btn-dark" id="btnTest" onclick="payerTest()">🧪 <span data-i18n="payerTest">TEST - Simuler un paiement Mobile Money (pour tester maintenant)</span></button>
   <div id="msg" class="msg"></div>
 </div>
 
 <div class="card">
-  <h3>Comment ça marche ?</h3>
-  <p>1. Tu paies ici<br>2. Rocyinter bloque l'argent<br>3. Le prestataire commence<br>4. Tu valides quand c'est terminé<br>5. Rocyinter libère l'argent au prestataire moins la commission<br><br><b>Si litige :</b> Argent bloqué, Admin tranche dans la Page Litiges.</p>
+  <h3 data-i18n="commentMarche">Comment ça marche ?</h3>
+  <p data-i18n="commentMarcheTexte">1. Tu paies ici<br>2. Rocyinter bloque l'argent<br>3. Le prestataire commence<br>4. Tu valides quand c'est terminé<br>5. Rocyinter libère l'argent au prestataire moins la commission<br><br><b>Si litige :</b> Argent bloqué, Admin tranche dans la Page Litiges.</p>
 </div>
-<small>En payant, tu acceptes les règles Rocyinter : pas de paiement en dehors de la plateforme.<br><a href="index.html">Retour à l'accueil</a></small>
+<small data-i18n="paiementFooter">En payant, tu acceptes les règles Rocyinter : pas de paiement en dehors de la plateforme.<br><a href="index.html">Retour à l'accueil</a></small>
 </div>
 
 <script>
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const WHATSAPP_ROCY = '2290191478460';
 
 const uid = localStorage.getItem('rocy_user_id');
+const roleUser = localStorage.getItem('rocy_user_type') || localStorage.getItem('rocy_role') || '';
 const commandeId = localStorage.getItem('paiement_commande_id');
 let commande = null;
 
-if(!uid){ alert('Connecte-toi d’abord.'); location.href='connexion.html'; }
-if(!commandeId){ document.getElementById('resume').innerHTML = 'Aucune commande à payer. Va dans Mes commandes.'; }
+if(!uid){ location.href='connexion.html'; }
+if(roleUser==='prestataire' || roleUser==='livreur'){ location.href='dashboard-prestataire.html'; }
+if(roleUser==='admin'){ location.href='admin.html'; }
+if(!commandeId){ document.getElementById('resume').innerHTML = 'Aucune commande à payer. Va dans Mes commandes.'; document.getElementById('blocPaiement').style.display='none'; }
 
 function showMsg(txt, ok){
   const m = document.getElementById('msg');
   m.textContent = txt;
   m.className = 'msg ' + (ok ? 'ok' : 'err');
 }
-
 function texteCommission(c){
   if(c.univers==='domicile') return 'Commission 8%';
   if(c.univers==='pro') return 'Commission 5 000 FCFA fixe';
   if(c.univers==='manger') return 'Commission 12%';
   if(c.univers==='sejour') return 'Commission 12%';
+  if(c.univers==='livreur') return 'Commission 20% (Livreur 80%)';
   return 'Commission';
 }
 
 async function charger(){
   if(!commandeId) return;
   const {data, error} = await supabase.from('commandes').select('*').eq('id', commandeId).single();
-  if(error || !data){ document.getElementById('resume').innerHTML = 'Commande introuvable.'; return; }
+  if(error || !data){ document.getElementById('resume').innerHTML = 'Commande introuvable.'; document.getElementById('blocPaiement').style.display='none'; return; }
+  // --- SÉCURITÉ : c'est bien MA commande ? ---
+  if(data.client_id !== uid){
+    document.getElementById('resume').innerHTML = `<b>⛔ Accès refusé.</b><p>Cette commande ne t'appartient pas.</p><button class="btn btn-dark" onclick="location.href='dashboard-client.html'">Voir mes commandes</button>`;
+    document.getElementById('blocPaiement').style.display='none';
+    return;
+  }
   commande = data;
+  // --- Anti double-paiement ---
   if(data.status !== 'en_attente'){
     document.getElementById('resume').innerHTML = `<b>${data.titre}</b><p>Cette commande est déjà : <b>${data.status}</b>. Pas besoin de payer 2 fois.</p><button class="btn btn-dark" onclick="location.href='dashboard-client.html'">Voir mes commandes</button>`;
+    document.getElementById('blocPaiement').style.display='none';
     return;
   }
   const supplement = data.univers === 'manger' ? 500 : 0;
@@ -115,45 +130,42 @@ async function charger(){
     <div class="row"><span>Prestataire recevra</span><b>${Number(data.montant_prestataire).toLocaleString()} FCFA</b></div>
     <div class="row total"><span>Tu paies maintenant</span><b>${total.toLocaleString()} FCFA</b></div>
   `;
+  // Espèces uniquement pour Manger
   if(data.univers === 'manger') document.getElementById('zoneEspeces').style.display = 'block';
 }
 
 async function confirmerPaiement(mode){
   if(!commande) return;
-  const {error} = await supabase.from('commandes').update({
-    status: 'paye',
-    mode_paiement: mode,
-    paye_le: new Date().toISOString()
-  }).eq('id', commande.id);
+  // Double sécurité : on ne paie que si toujours en_attente
+  const {data: frais} = await supabase.from('commandes').select('status').eq('id', commande.id).single();
+  if(!frais || frais.status !== 'en_attente'){ showMsg('Cette commande a déjà été payée.', false); setTimeout(()=>location.href='dashboard-client.html', 1000); return; }
+  const {error} = await supabase.from('commandes').update({status: 'paye', mode_paiement: mode, paye_le: new Date().toISOString()}).eq('id', commande.id).eq('client_id', uid).eq('status', 'en_attente');
   if(error){ showMsg('Erreur : ' + error.message, false); return; }
   if(commande.conversation_id){
-    await supabase.from('messages').insert([{
-      conversation_id: commande.conversation_id,
-      sender_id: uid,
-      contenu: `💳 Paiement reçu (${mode}) - ${Number(commande.montant_total).toLocaleString()} FCFA bloqué en escrow. Tu peux commencer le service.`,
-      type: 'texte'
-    }]);
+    await supabase.from('messages').insert([{conversation_id: commande.conversation_id, sender_id: uid, contenu: `💳 Paiement reçu (${mode}) - ${Number(commande.montant_total).toLocaleString()} FCFA bloqué en escrow. Tu peux commencer le service.`, type: 'texte'}]);
   }
   showMsg('✅ Paiement confirmé ! Argent bloqué en escrow. Redirection...', true);
   setTimeout(()=> location.href='dashboard-client.html', 1200);
 }
 
 async function payerEspeces(){
+  // Espèces = Manger seulement
+  if(!commande || commande.univers !== 'manger'){ showMsg('Espèces uniquement pour Manger.', false); return; }
   if(!confirm('Payer en espèces à la livraison (+ 500 FCFA) ? Le livreur te demandera le paiement à l’arrivée.')) return;
   await confirmerPaiement('especes_livraison');
 }
 function payerWhatsApp(){
-  const num = '2290191478460';
-  const txt = encodeURIComponent(`Bonjour Rocyinter, je veux payer ma commande "${commande?.titre}" - ${Number(commande?.montant_total||0).toLocaleString()} FCFA en escrow. Commande ID : ${commande?.id}`);
-  window.open('https://wa.me/' + num + '?text=' + txt, '_blank');
+  if(!commande) return;
+  const txt = encodeURIComponent(`Bonjour Rocyinter, je veux payer ma commande "${commande.titre}" - ${Number(commande.montant_total||0).toLocaleString()} FCFA en escrow. Commande ID : ${commande.id}`);
+  window.open('https://wa.me/' + WHATSAPP_ROCY + '?text=' + txt, '_blank');
   showMsg('WhatsApp ouvert. Après ton paiement WhatsApp, l’Admin confirmera ton paiement ici.', true);
 }
 async function payerTest(){
   if(!confirm('Simuler un paiement Mobile Money pour TESTER ? En vrai, ici ce sera Fedapay.')) return;
   await confirmerPaiement('test_mobile_money');
 }
-
 charger();
+if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 </script>
 </body>
 </html>
