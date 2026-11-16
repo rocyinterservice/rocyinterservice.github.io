@@ -43,9 +43,7 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:12px;line-height:1.5}
 <h1>🍽️ <span data-i18n="mangerTitre">Se nourrir</span></h1>
 <p class="sub" data-i18n="mangerSous">Vrais traiteurs, restaurants, livraison repas validés par Rocyinter.</p>
 <div class="info-commission">💰 Commission Manger : 12% prélevée à la libération. Espèces à la livraison : + 500 FCFA. Ne paie jamais en dehors de Rocyinter.</div>
-
 <div id="bandeauRole"></div>
-
 <div class="filters">
   <div><label data-i18n="pays">PAYS</label>
   <select id="filtrePays" onchange="charger()">
@@ -215,10 +213,7 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:12px;line-height:1.5}
   <div><label data-i18n="ville">VILLE / LOCALITÉ</label><input id="filtreLocalite" data-i18n-ph="villePh" placeholder="Ex: Calavi, Cotonou, Godomey..." oninput="afficher()"></div>
   <div><label data-i18n="rechercher">RECHERCHER UN SERVICE</label><input id="search" data-i18n-ph="searchPh" placeholder="Ex: Traiteur, Grillades, Pizza..." oninput="afficher()"></div>
 </div>
-
-<div class="filtres" id="filtres">
-  <button class="active" data-cat="" onclick="setCat('')" data-i18n="tous">Tous</button>
-</div>
+<div class="filtres" id="filtres"><button class="active" data-cat="" onclick="setCat('')" data-i18n="tous">Tous</button></div>
 <div id="liste"><span data-i18n="chargement">Chargement...</span></div>
 </div>
 <script>
@@ -228,7 +223,6 @@ let supabaseClient = null;
 try{ supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); }catch(e){}
 let catActuelle = '';
 let toutesAnnonces = [];
-
 function afficherBandeauRole(){
   const box = document.getElementById('bandeauRole');
   if(!box) return;
@@ -240,11 +234,7 @@ function afficherBandeauRole(){
   else if(type==='admin') box.innerHTML = `<div class="bandeau-role bandeau-presta">🛡️ ${t('bandeauAdmin')}</div>`;
   else box.innerHTML = `<div class="bandeau-role bandeau-client">🛒 ${t('bandeauClient')}</div>`;
 }
-function setCat(c){
-  catActuelle = c;
-  document.querySelectorAll('#filtres button').forEach(b=> b.classList.toggle('active', b.dataset.cat === c));
-  afficher();
-}
+function setCat(c){ catActuelle = c; document.querySelectorAll('#filtres button').forEach(b=> b.classList.toggle('active', b.dataset.cat === c)); afficher(); }
 function construireFiltres(){
   const cats = [...new Set(toutesAnnonces.map(a=>a.categorie).filter(Boolean))].sort();
   const box = document.getElementById('filtres');
@@ -320,7 +310,7 @@ function voirFiche(prestaId, annonceId){
   if(!prestaId) return;
   localStorage.setItem('fiche_prestataire_id', prestaId);
   if(annonceId) localStorage.setItem('fiche_annonce_id', annonceId);
-  location.href='fiche-restaurant.html';
+  location.href='fiche-prestataire.html';
 }
 function discuter(prestaId, annonceId){
   const uid = localStorage.getItem('rocy_user_id');
