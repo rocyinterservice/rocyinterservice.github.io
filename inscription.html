@@ -1,19 +1,22 @@
 <!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Inscription - Rocyinter</title>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title data-i18n="inscriptionTitre">Inscription - Rocyinter</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="pays.js"></script>
+<script src="rocy-layout.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
-body{background:#f6f7f9;color:#111;padding:16px}
-.top{max-width:480px;margin:0 auto}
+body{background:#f6f7f9;color:#111}
+.top{max-width:480px;margin:0 auto;padding:16px}
 .back{color:#64748b;font-size:13px;cursor:pointer}
 h1{font-size:24px;margin:14px 0 4px} h1 span{color:#f59e0b}
-p.sub{color:#64748b;font-size:14px;margin-bottom:16px}
+p.sub{color:#64748b;font-size:14px;margin-bottom:16px;line-height:1.5}
 .card{background:#fff;border-radius:16px;padding:16px;box-shadow:0 4px 20px rgba(0,0,0,.06);display:grid;gap:12px}
 label{font-size:12px;font-weight:700;color:#475569;display:block;margin-bottom:4px}
 input,select,textarea{width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;background:#fff}
 input.err{border-color:#ef4444;background:#fef2f2}
 textarea{min-height:70px;resize:vertical}
-.choix{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.choix button{padding:14px;border:2px solid #e2e8f0;background:#fff;border-radius:12px;cursor:pointer;font-weight:700}
+.choix{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.choix button{padding:14px 6px;border:2px solid #e2e8f0;background:#fff;border-radius:12px;cursor:pointer;font-weight:700;font-size:13px}
 .choix button.active{border-color:#f59e0b;background:#fffbeb}
 #blocPrestataire{display:none;gap:12px}
 #blocPrestataire.show{display:grid}
@@ -29,375 +32,59 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
 .photoBox{border:2px dashed #e2e8f0;border-radius:12px;padding:12px;text-align:center;cursor:pointer}
 .photoBox img{width:90px;height:90px;object-fit:cover;border-radius:50%;display:none;margin:0 auto 8px}
 .photoBox.hasImg img{display:block}
-/* OEIL MOT DE PASSE */
 .pwdWrap{position:relative}
 .pwdWrap input{padding-right:46px}
 .eyeBtn{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:none;background:transparent;cursor:pointer;font-size:19px;line-height:1;border-radius:8px}
 .eyeBtn:active{background:#f1f5f9}
 </style></head>
 <body><div class="top">
-<div class="back" onclick="location.href='index.html'">← Retour à l'accueil</div>
-<h1>Créez votre compte <span>Rocyinter</span></h1>
-<p class="sub">Client ou Prestataire ? En 1 minute, sans faux profil.</p>
+<div class="back" onclick="location.href='index.html'">← <span data-i18n="accueil">Accueil</span></div>
+<h1><span data-i18n="inscriptionTitre">Créez votre compte</span> <span>Rocyinter</span></h1>
+<p class="sub" data-i18n="inscriptionSous">Client, Fournisseur ou Livreur ? En 1 minute, sans faux profil.</p>
 <div class="card">
-<div><label>VOUS ÊTES ?</label><div class="choix">
-<button type="button" id="btnClient" class="active" onclick="setType('client')">🙋‍♂️ Client<br><small>Je cherche un service</small></button>
-<button type="button" id="btnPresta" onclick="setType('prestataire')">💼 Prestataire<br><small>Je propose un service</small></button>
+<div><label data-i18n="vousEtes">VOUS ÊTES ?</label><div class="choix">
+<button type="button" id="btnClient" class="active" onclick="setType('client')">🙋‍♂️ <span data-i18n="typeClient">Client</span><br><small data-i18n="typeClientSous">Je cherche un service</small></button>
+<button type="button" id="btnPresta" onclick="setType('prestataire')">💼 <span data-i18n="typePresta">Fournisseur</span><br><small data-i18n="typePrestaSous">Je propose un service</small></button>
+<button type="button" id="btnLivreur" onclick="setType('livreur')">🛵 <span data-i18n="typeLivreur">Livreur</span><br><small data-i18n="typeLivreurSous">Je livre</small></button>
 </div></div>
 
-<div><label>NOM COMPLET *</label><input id="nom" placeholder="Ex: Jean Kouassi" oninput="clearErr(this)"></div>
+<div><label data-i18n="nomComplet">NOM COMPLET *</label><input id="nom" data-i18n-ph="nomPh" placeholder="Ex: Jean Kouassi" oninput="clearErr(this)"></div>
 
-<div><label>WHATSAPP *</label>
+<div><label data-i18n="whatsapp">WHATSAPP *</label>
 <div class="telRow">
 <select id="indicatif" onchange="majIndicatif()">
 <option value="+229" selected>🇧🇯 +229 Bénin</option>
-<option value="+213">🇩🇿 +213 Algérie</option>
-<option value="+244">🇦🇴 +244 Angola</option>
-<option value="+226">🇧🇫 +226 Burkina Faso</option>
-<option value="+257">🇧🇮 +257 Burundi</option>
-<option value="+237">🇨🇲 +237 Cameroun</option>
-<option value="+238">🇨🇻 +238 Cap-Vert</option>
-<option value="+236">🇨🇫 +236 Centrafrique</option>
-<option value="+235">🇹🇩 +235 Tchad</option>
-<option value="+269">🇰🇲 +269 Comores</option>
-<option value="+242">🇨🇬 +242 Congo</option>
-<option value="+243">🇨🇩 +243 Congo RDC</option>
-<option value="+225">🇨🇮 +225 Côte d'Ivoire</option>
-<option value="+253">🇩🇯 +253 Djibouti</option>
-<option value="+20">🇪🇬 +20 Égypte</option>
-<option value="+240">🇬🇶 +240 Guinée Équatoriale</option>
-<option value="+291">🇪🇷 +291 Érythrée</option>
-<option value="+251">🇪🇹 +251 Éthiopie</option>
-<option value="+241">🇬🇦 +241 Gabon</option>
-<option value="+220">🇬🇲 +220 Gambie</option>
-<option value="+233">🇬🇭 +233 Ghana</option>
-<option value="+224">🇬🇳 +224 Guinée</option>
-<option value="+245">🇬🇼 +245 Guinée-Bissau</option>
-<option value="+254">🇰🇪 +254 Kenya</option>
-<option value="+266">🇱🇸 +266 Lesotho</option>
-<option value="+231">🇱🇷 +231 Liberia</option>
-<option value="+218">🇱🇾 +218 Libye</option>
-<option value="+261">🇲🇬 +261 Madagascar</option>
-<option value="+265">🇲🇼 +265 Malawi</option>
-<option value="+223">🇲🇱 +223 Mali</option>
-<option value="+212">🇲🇦 +212 Maroc</option>
-<option value="+230">🇲🇺 +230 Maurice</option>
-<option value="+222">🇲🇷 +222 Mauritanie</option>
-<option value="+258">🇲🇿 +258 Mozambique</option>
-<option value="+264">🇳🇦 +264 Namibie</option>
-<option value="+227">🇳🇪 +227 Niger</option>
-<option value="+234">🇳🇬 +234 Nigeria</option>
-<option value="+250">🇷🇼 +250 Rwanda</option>
-<option value="+239">🇸🇹 +239 Sao Tomé</option>
-<option value="+221">🇸🇳 +221 Sénégal</option>
-<option value="+248">🇸🇨 +248 Seychelles</option>
-<option value="+232">🇸🇱 +232 Sierra Leone</option>
-<option value="+252">🇸🇴 +252 Somalie</option>
-<option value="+27">🇿🇦 +27 Afrique du Sud</option>
-<option value="+211">🇸🇸 +211 Soudan du Sud</option>
-<option value="+249">🇸🇩 +249 Soudan</option>
-<option value="+268">🇸🇿 +268 Eswatini</option>
-<option value="+255">🇹🇿 +255 Tanzanie</option>
-<option value="+228">🇹🇬 +228 Togo</option>
-<option value="+216">🇹🇳 +216 Tunisie</option>
-<option value="+256">🇺🇬 +256 Ouganda</option>
-<option value="+260">🇿🇲 +260 Zambie</option>
-<option value="+263">🇿🇼 +263 Zimbabwe</option>
-<option value="+33">🇫🇷 +33 France</option>
-<option value="+32">🇧🇪 +32 Belgique</option>
-<option value="+41">🇨🇭 +41 Suisse</option>
-<option value="+352">🇱🇺 +352 Luxembourg</option>
-<option value="+39">🇮🇹 +39 Italie</option>
-<option value="+34">🇪🇸 +34 Espagne</option>
-<option value="+351">🇵🇹 +351 Portugal</option>
-<option value="+49">🇩🇪 +49 Allemagne</option>
-<option value="+44">🇬🇧 +44 Royaume-Uni</option>
-<option value="+31">🇳🇱 +31 Pays-Bas</option>
-<option value="+43">🇦🇹 +43 Autriche</option>
-<option value="+45">🇩🇰 +45 Danemark</option>
-<option value="+46">🇸🇪 +46 Suède</option>
-<option value="+47">🇳🇴 +47 Norvège</option>
-<option value="+358">🇫🇮 +358 Finlande</option>
-<option value="+353">🇮🇪 +353 Irlande</option>
-<option value="+30">🇬🇷 +30 Grèce</option>
-<option value="+48">🇵🇱 +48 Pologne</option>
-<option value="+40">🇷🇴 +40 Roumanie</option>
-<option value="+36">🇭🇺 +36 Hongrie</option>
-<option value="+420">🇨🇿 +420 Tchéquie</option>
-<option value="+421">🇸🇰 +421 Slovaquie</option>
-<option value="+385">🇭🇷 +385 Croatie</option>
-<option value="+386">🇸🇮 +386 Slovénie</option>
-<option value="+387">🇧🇦 +387 Bosnie</option>
-<option value="+381">🇷🇸 +381 Serbie</option>
-<option value="+382">🇲🇪 +382 Monténégro</option>
-<option value="+355">🇦🇱 +355 Albanie</option>
-<option value="+359">🇧🇬 +359 Bulgarie</option>
-<option value="+380">🇺🇦 +380 Ukraine</option>
-<option value="+375">🇧🇾 +375 Biélorussie</option>
-<option value="+370">🇱🇹 +370 Lituanie</option>
-<option value="+371">🇱🇻 +371 Lettonie</option>
-<option value="+372">🇪🇪 +372 Estonie</option>
-<option value="+354">🇮🇸 +354 Islande</option>
-<option value="+356">🇲🇹 +356 Malte</option>
-<option value="+357">🇨🇾 +357 Chypre</option>
-<option value="+7">🇷🇺 +7 Russie / Kazakhstan</option>
-<option value="+90">🇹🇷 +90 Turquie</option>
-<option value="+374">🇦🇲 +374 Arménie</option>
-<option value="+994">🇦🇿 +994 Azerbaïdjan</option>
-<option value="+995">🇬🇪 +995 Géorgie</option>
-<option value="+373">🇲🇩 +373 Moldavie</option>
-<option value="+1">🇺🇸 +1 USA</option>
-<option value="+1">🇨🇦 +1 Canada</option>
-<option value="+52">🇲🇽 +52 Mexique</option>
-<option value="+55">🇧🇷 +55 Brésil</option>
-<option value="+54">🇦🇷 +54 Argentine</option>
-<option value="+57">🇨🇴 +57 Colombie</option>
-<option value="+51">🇵🇪 +51 Pérou</option>
-<option value="+56">🇨🇱 +56 Chili</option>
-<option value="+58">🇻🇪 +58 Venezuela</option>
-<option value="+593">🇪🇨 +593 Équateur</option>
-<option value="+591">🇧🇴 +591 Bolivie</option>
-<option value="+595">🇵🇾 +595 Paraguay</option>
-<option value="+598">🇺🇾 +598 Uruguay</option>
-<option value="+502">🇬🇹 +502 Guatemala</option>
-<option value="+503">🇸🇻 +503 Salvador</option>
-<option value="+504">🇭🇳 +504 Honduras</option>
-<option value="+505">🇳🇮 +505 Nicaragua</option>
-<option value="+506">🇨🇷 +506 Costa Rica</option>
-<option value="+507">🇵🇦 +507 Panama</option>
-<option value="+509">🇭🇹 +509 Haïti</option>
-<option value="+53">🇨🇺 +53 Cuba</option>
-<option value="+1">🇩🇴 +1 République Dominicaine</option>
-<option value="+1">🇯🇲 +1 Jamaïque</option>
-<option value="+1">🇹🇹 +1 Trinité-et-Tobago</option>
-<option value="+91">🇮🇳 +91 Inde</option>
-<option value="+86">🇨🇳 +86 Chine</option>
-<option value="+81">🇯🇵 +81 Japon</option>
-<option value="+82">🇰🇷 +82 Corée du Sud</option>
-<option value="+84">🇻🇳 +84 Vietnam</option>
-<option value="+66">🇹🇭 +66 Thaïlande</option>
-<option value="+62">🇮🇩 +62 Indonésie</option>
-<option value="+63">🇵🇭 +63 Philippines</option>
-<option value="+60">🇲🇾 +60 Malaisie</option>
-<option value="+65">🇸🇬 +65 Singapour</option>
-<option value="+95">🇲🇲 +95 Myanmar</option>
-<option value="+855">🇰🇭 +855 Cambodge</option>
-<option value="+856">🇱🇦 +856 Laos</option>
-<option value="+880">🇧🇩 +880 Bangladesh</option>
-<option value="+92">🇵🇰 +92 Pakistan</option>
-<option value="+94">🇱🇰 +94 Sri Lanka</option>
-<option value="+977">🇳🇵 +977 Népal</option>
-<option value="+93">🇦🇫 +93 Afghanistan</option>
-<option value="+98">🇮🇷 +98 Iran</option>
-<option value="+964">🇮🇶 +964 Irak</option>
-<option value="+971">🇦🇪 +971 Émirats</option>
-<option value="+966">🇸🇦 +966 Arabie Saoudite</option>
-<option value="+974">🇶🇦 +974 Qatar</option>
-<option value="+965">🇰🇼 +965 Koweït</option>
-<option value="+973">🇧🇭 +973 Bahreïn</option>
-<option value="+968">🇴🇲 +968 Oman</option>
-<option value="+962">🇯🇴 +962 Jordanie</option>
-<option value="+961">🇱🇧 +961 Liban</option>
-<option value="+963">🇸🇾 +963 Syrie</option>
-<option value="+972">🇮🇱 +972 Israël</option>
-<option value="+970">🇵🇸 +970 Palestine</option>
-<option value="+61">🇦🇺 +61 Australie</option>
-<option value="+64">🇳🇿 +64 Nouvelle-Zélande</option>
-<option value="+679">🇫🇯 +679 Fidji</option>
-<option value="+675">🇵🇬 +675 Papouasie</option>
-<option value="+677">🇸🇧 +677 Îles Salomon</option>
-<option value="+678">🇻🇺 +678 Vanuatu</option>
-<option value="+682">🇨🇰 +682 Îles Cook</option>
-<option value="+687">🇳🇨 +687 Nouvelle-Calédonie</option>
-<option value="+689">🇵🇫 +689 Polynésie</option>
+<option value="+213">🇩🇿 +213 Algérie</option><option value="+244">🇦🇴 +244 Angola</option><option value="+226">🇧🇫 +226 Burkina Faso</option><option value="+257">🇧🇮 +257 Burundi</option><option value="+237">🇨🇲 +237 Cameroun</option><option value="+238">🇨🇻 +238 Cap-Vert</option><option value="+236">🇨🇫 +236 Centrafrique</option><option value="+235">🇹🇩 +235 Tchad</option><option value="+269">🇰🇲 +269 Comores</option><option value="+242">🇨🇬 +242 Congo</option><option value="+243">🇨🇩 +243 Congo RDC</option><option value="+225">🇨🇮 +225 Côte d'Ivoire</option><option value="+253">🇩🇯 +253 Djibouti</option><option value="+20">🇪🇬 +20 Égypte</option><option value="+240">🇬🇶 +240 Guinée Équatoriale</option><option value="+291">🇪🇷 +291 Érythrée</option><option value="+251">🇪🇹 +251 Éthiopie</option><option value="+241">🇬🇦 +241 Gabon</option><option value="+220">🇬🇲 +220 Gambie</option><option value="+233">🇬🇭 +233 Ghana</option><option value="+224">🇬🇳 +224 Guinée</option><option value="+245">🇬🇼 +245 Guinée-Bissau</option><option value="+254">🇰🇪 +254 Kenya</option><option value="+266">🇱🇸 +266 Lesotho</option><option value="+231">🇱🇷 +231 Liberia</option><option value="+218">🇱🇾 +218 Libye</option><option value="+261">🇲🇬 +261 Madagascar</option><option value="+265">🇲🇼 +265 Malawi</option><option value="+223">🇲🇱 +223 Mali</option><option value="+212">🇲🇦 +212 Maroc</option><option value="+230">🇲🇺 +230 Maurice</option><option value="+222">🇲🇷 +222 Mauritanie</option><option value="+258">🇲🇿 +258 Mozambique</option><option value="+264">🇳🇦 +264 Namibie</option><option value="+227">🇳🇪 +227 Niger</option><option value="+234">🇳🇬 +234 Nigeria</option><option value="+250">🇷🇼 +250 Rwanda</option><option value="+239">🇸🇹 +239 Sao Tomé</option><option value="+221">🇸🇳 +221 Sénégal</option><option value="+248">🇸🇨 +248 Seychelles</option><option value="+232">🇸🇱 +232 Sierra Leone</option><option value="+252">🇸🇴 +252 Somalie</option><option value="+27">🇿🇦 +27 Afrique du Sud</option><option value="+211">🇸🇸 +211 Soudan du Sud</option><option value="+249">🇸🇩 +249 Soudan</option><option value="+268">🇸🇿 +268 Eswatini</option><option value="+255">🇹🇿 +255 Tanzanie</option><option value="+228">🇹🇬 +228 Togo</option><option value="+216">🇹🇳 +216 Tunisie</option><option value="+256">🇺🇬 +256 Ouganda</option><option value="+260">🇿🇲 +260 Zambie</option><option value="+263">🇿🇼 +263 Zimbabwe</option>
+<option value="+33">🇫🇷 +33 France</option><option value="+32">🇧🇪 +32 Belgique</option><option value="+41">🇨🇭 +41 Suisse</option><option value="+352">🇱🇺 +352 Luxembourg</option><option value="+39">🇮🇹 +39 Italie</option><option value="+34">🇪🇸 +34 Espagne</option><option value="+351">🇵🇹 +351 Portugal</option><option value="+49">🇩🇪 +49 Allemagne</option><option value="+44">🇬🇧 +44 Royaume-Uni</option><option value="+31">🇳🇱 +31 Pays-Bas</option><option value="+43">🇦🇹 +43 Autriche</option><option value="+45">🇩🇰 +45 Danemark</option><option value="+46">🇸🇪 +46 Suède</option><option value="+47">🇳🇴 +47 Norvège</option><option value="+358">🇫🇮 +358 Finlande</option><option value="+353">🇮🇪 +353 Irlande</option><option value="+30">🇬🇷 +30 Grèce</option><option value="+48">🇵🇱 +48 Pologne</option><option value="+40">🇷🇴 +40 Roumanie</option><option value="+36">🇭🇺 +36 Hongrie</option><option value="+420">🇨🇿 +420 Tchéquie</option><option value="+421">🇸🇰 +421 Slovaquie</option><option value="+385">🇭🇷 +385 Croatie</option><option value="+386">🇸🇮 +386 Slovénie</option><option value="+387">🇧🇦 +387 Bosnie</option><option value="+381">🇷🇸 +381 Serbie</option><option value="+382">🇲🇪 +382 Monténégro</option><option value="+355">🇦🇱 +355 Albanie</option><option value="+359">🇧🇬 +359 Bulgarie</option><option value="+380">🇺🇦 +380 Ukraine</option><option value="+375">🇧🇾 +375 Biélorussie</option><option value="+370">🇱🇹 +370 Lituanie</option><option value="+371">🇱🇻 +371 Lettonie</option><option value="+372">🇪🇪 +372 Estonie</option><option value="+354">🇮🇸 +354 Islande</option><option value="+356">🇲🇹 +356 Malte</option><option value="+357">🇨🇾 +357 Chypre</option><option value="+7">🇷🇺 +7 Russie</option><option value="+90">🇹🇷 +90 Turquie</option><option value="+374">🇦🇲 +374 Arménie</option><option value="+994">🇦🇿 +994 Azerbaïdjan</option><option value="+995">🇬🇪 +995 Géorgie</option><option value="+373">🇲🇩 +373 Moldavie</option>
+<option value="+1">🇺🇸 +1 USA</option><option value="+1">🇨🇦 +1 Canada</option><option value="+52">🇲🇽 +52 Mexique</option><option value="+55">🇧🇷 +55 Brésil</option><option value="+54">🇦🇷 +54 Argentine</option><option value="+57">🇨🇴 +57 Colombie</option><option value="+51">🇵🇪 +51 Pérou</option><option value="+56">🇨🇱 +56 Chili</option><option value="+58">🇻🇪 +58 Venezuela</option><option value="+593">🇪🇨 +593 Équateur</option><option value="+591">🇧🇴 +591 Bolivie</option><option value="+595">🇵🇾 +595 Paraguay</option><option value="+598">🇺🇾 +598 Uruguay</option><option value="+502">🇬🇹 +502 Guatemala</option><option value="+503">🇸🇻 +503 Salvador</option><option value="+504">🇭🇳 +504 Honduras</option><option value="+505">🇳🇮 +505 Nicaragua</option><option value="+506">🇨🇷 +506 Costa Rica</option><option value="+507">🇵🇦 +507 Panama</option><option value="+509">🇭🇹 +509 Haïti</option><option value="+53">🇨🇺 +53 Cuba</option><option value="+1">🇩🇴 +1 République Dominicaine</option><option value="+1">🇯🇲 +1 Jamaïque</option><option value="+1">🇹🇹 +1 Trinité-et-Tobago</option>
+<option value="+91">🇮🇳 +91 Inde</option><option value="+86">🇨🇳 +86 Chine</option><option value="+81">🇯🇵 +81 Japon</option><option value="+82">🇰🇷 +82 Corée du Sud</option><option value="+84">🇻🇳 +84 Vietnam</option><option value="+66">🇹🇭 +66 Thaïlande</option><option value="+62">🇮🇩 +62 Indonésie</option><option value="+63">🇵🇭 +63 Philippines</option><option value="+60">🇲🇾 +60 Malaisie</option><option value="+65">🇸🇬 +65 Singapour</option><option value="+95">🇲🇲 +95 Myanmar</option><option value="+855">🇰🇭 +855 Cambodge</option><option value="+856">🇱🇦 +856 Laos</option><option value="+880">🇧🇩 +880 Bangladesh</option><option value="+92">🇵🇰 +92 Pakistan</option><option value="+94">🇱🇰 +94 Sri Lanka</option><option value="+977">🇳🇵 +977 Népal</option><option value="+93">🇦🇫 +93 Afghanistan</option><option value="+98">🇮🇷 +98 Iran</option><option value="+964">🇮🇶 +964 Irak</option><option value="+971">🇦🇪 +971 Émirats</option><option value="+966">🇸🇦 +966 Arabie Saoudite</option><option value="+974">🇶🇦 +974 Qatar</option><option value="+965">🇰🇼 +965 Koweït</option><option value="+973">🇧🇭 +973 Bahreïn</option><option value="+968">🇴🇲 +968 Oman</option><option value="+962">🇯🇴 +962 Jordanie</option><option value="+961">🇱🇧 +961 Liban</option><option value="+963">🇸🇾 +963 Syrie</option><option value="+972">🇮🇱 +972 Israël</option><option value="+970">🇵🇸 +970 Palestine</option><option value="+61">🇦🇺 +61 Australie</option><option value="+64">🇳🇿 +64 Nouvelle-Zélande</option><option value="+679">🇫🇯 +679 Fidji</option><option value="+675">🇵🇬 +675 Papouasie</option><option value="+677">🇸🇧 +677 Îles Salomon</option><option value="+678">🇻🇺 +678 Vanuatu</option><option value="+682">🇨🇰 +682 Îles Cook</option><option value="+687">🇳🇨 +687 Nouvelle-Calédonie</option><option value="+689">🇵🇫 +689 Polynésie</option>
 </select>
 <input id="whatsappNum" placeholder="01 97 00 00 00" inputmode="numeric" oninput="verifTel(this)">
 </div>
 <div id="errTel" class="errTxt">❌ Numéro incorrect. Ex Bénin : 01 97 00 00 00 (10 chiffres)</div>
-<p style="font-size:11px;color:#64748b;margin-top:4px">Bénin : 10 chiffres. Si tu tapes ton ancien numéro à 8 chiffres, on ajoute 01 automatiquement. Tu tapes juste ton numéro sans le +229.</p>
+<p style="font-size:11px;color:#64748b;margin-top:4px" data-i18n="telAide">Bénin : 10 chiffres. Si tu tapes ton ancien numéro à 8 chiffres, on ajoute 01 automatiquement.</p>
 </div>
 
-<div><label>MOT DE PASSE *</label><div class="pwdWrap"><input id="password" type="password" placeholder="Min 6 caractères" oninput="verifMdp()"><button type="button" class="eyeBtn" onclick="togglePwd('password', this)" aria-label="Voir le mot de passe">👁️</button></div></div>
-<div><label>CONFIRME TON MOT DE PASSE *</label><div class="pwdWrap"><input id="password2" type="password" placeholder="Retape le même mot de passe" oninput="verifMdp()"><button type="button" class="eyeBtn" onclick="togglePwd('password2', this)" aria-label="Voir le mot de passe">👁️</button></div>
-<div id="errMdp" class="errTxt">❌ Les 2 mots de passe ne sont pas identiques</div>
+<div><label data-i18n="mdp">MOT DE PASSE *</label><div class="pwdWrap"><input id="password" type="password" data-i18n-ph="mdpPh" placeholder="Min 6 caractères" oninput="verifMdp()"><button type="button" class="eyeBtn" onclick="togglePwd('password', this)">👁️</button></div></div>
+<div><label data-i18n="mdp2">CONFIRME TON MOT DE PASSE *</label><div class="pwdWrap"><input id="password2" type="password" data-i18n-ph="mdp2Ph" placeholder="Retape le même mot de passe" oninput="verifMdp()"><button type="button" class="eyeBtn" onclick="togglePwd('password2', this)">👁️</button></div>
+<div id="errMdp" class="errTxt" data-i18n="mdpErreur">❌ Les 2 mots de passe ne sont pas identiques</div>
 </div>
 
-<div><label>EMAIL (optionnel)</label><input id="email" type="email" placeholder="Ex: jean@gmail.com"></div>
+<div><label data-i18n="email">EMAIL (optionnel)</label><input id="email" type="email" placeholder="Ex: jean@gmail.com"></div>
 
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-<div><label>PAYS *</label><select id="pays" onchange="syncPaysVersIndicatif()">
-<option value="Bénin" selected>🇧🇯 Bénin</option>
-<option value="Algérie">🇩🇿 Algérie</option>
-<option value="Angola">🇦🇴 Angola</option>
-<option value="Burkina Faso">🇧🇫 Burkina Faso</option>
-<option value="Burundi">🇧🇮 Burundi</option>
-<option value="Cameroun">🇨🇲 Cameroun</option>
-<option value="Cap-Vert">🇨🇻 Cap-Vert</option>
-<option value="Centrafrique">🇨🇫 Centrafrique</option>
-<option value="Tchad">🇹🇩 Tchad</option>
-<option value="Comores">🇰🇲 Comores</option>
-<option value="Congo">🇨🇬 Congo</option>
-<option value="Congo RDC">🇨🇩 Congo RDC</option>
-<option value="Côte d'Ivoire">🇨🇮 Côte d'Ivoire</option>
-<option value="Djibouti">🇩🇯 Djibouti</option>
-<option value="Égypte">🇪🇬 Égypte</option>
-<option value="Guinée Équatoriale">🇬🇶 Guinée Équatoriale</option>
-<option value="Érythrée">🇪🇷 Érythrée</option>
-<option value="Éthiopie">🇪🇹 Éthiopie</option>
-<option value="Gabon">🇬🇦 Gabon</option>
-<option value="Gambie">🇬🇲 Gambie</option>
-<option value="Ghana">🇬🇭 Ghana</option>
-<option value="Guinée">🇬🇳 Guinée</option>
-<option value="Guinée-Bissau">🇬🇼 Guinée-Bissau</option>
-<option value="Kenya">🇰🇪 Kenya</option>
-<option value="Lesotho">🇱🇸 Lesotho</option>
-<option value="Liberia">🇱🇷 Liberia</option>
-<option value="Libye">🇱🇾 Libye</option>
-<option value="Madagascar">🇲🇬 Madagascar</option>
-<option value="Malawi">🇲🇼 Malawi</option>
-<option value="Mali">🇲🇱 Mali</option>
-<option value="Maroc">🇲🇦 Maroc</option>
-<option value="Maurice">🇲🇺 Maurice</option>
-<option value="Mauritanie">🇲🇷 Mauritanie</option>
-<option value="Mozambique">🇲🇿 Mozambique</option>
-<option value="Namibie">🇳🇦 Namibie</option>
-<option value="Niger">🇳🇪 Niger</option>
-<option value="Nigeria">🇳🇬 Nigeria</option>
-<option value="Rwanda">🇷🇼 Rwanda</option>
-<option value="Sao Tomé">🇸🇹 Sao Tomé</option>
-<option value="Sénégal">🇸🇳 Sénégal</option>
-<option value="Seychelles">🇸🇨 Seychelles</option>
-<option value="Sierra Leone">🇸🇱 Sierra Leone</option>
-<option value="Somalie">🇸🇴 Somalie</option>
-<option value="Afrique du Sud">🇿🇦 Afrique du Sud</option>
-<option value="Soudan du Sud">🇸🇸 Soudan du Sud</option>
-<option value="Soudan">🇸🇩 Soudan</option>
-<option value="Eswatini">🇸🇿 Eswatini</option>
-<option value="Tanzanie">🇹🇿 Tanzanie</option>
-<option value="Togo">🇹🇬 Togo</option>
-<option value="Tunisie">🇹🇳 Tunisie</option>
-<option value="Ouganda">🇺🇬 Ouganda</option>
-<option value="Zambie">🇿🇲 Zambie</option>
-<option value="Zimbabwe">🇿🇼 Zimbabwe</option>
-<option value="France">🇫🇷 France</option>
-<option value="Belgique">🇧🇪 Belgique</option>
-<option value="Suisse">🇨🇭 Suisse</option>
-<option value="Luxembourg">🇱🇺 Luxembourg</option>
-<option value="Italie">🇮🇹 Italie</option>
-<option value="Espagne">🇪🇸 Espagne</option>
-<option value="Portugal">🇵🇹 Portugal</option>
-<option value="Allemagne">🇩🇪 Allemagne</option>
-<option value="Royaume-Uni">🇬🇧 Royaume-Uni</option>
-<option value="Pays-Bas">🇳🇱 Pays-Bas</option>
-<option value="Autriche">🇦🇹 Autriche</option>
-<option value="Danemark">🇩🇰 Danemark</option>
-<option value="Suède">🇸🇪 Suède</option>
-<option value="Norvège">🇳🇴 Norvège</option>
-<option value="Finlande">🇫🇮 Finlande</option>
-<option value="Irlande">🇮🇪 Irlande</option>
-<option value="Grèce">🇬🇷 Grèce</option>
-<option value="Pologne">🇵🇱 Pologne</option>
-<option value="Roumanie">🇷🇴 Roumanie</option>
-<option value="Hongrie">🇭🇺 Hongrie</option>
-<option value="Tchéquie">🇨🇿 Tchéquie</option>
-<option value="Slovaquie">🇸🇰 Slovaquie</option>
-<option value="Croatie">🇭🇷 Croatie</option>
-<option value="Slovénie">🇸🇮 Slovénie</option>
-<option value="Bosnie">🇧🇦 Bosnie</option>
-<option value="Serbie">🇷🇸 Serbie</option>
-<option value="Monténégro">🇲🇪 Monténégro</option>
-<option value="Albanie">🇦🇱 Albanie</option>
-<option value="Bulgarie">🇧🇬 Bulgarie</option>
-<option value="Ukraine">🇺🇦 Ukraine</option>
-<option value="Biélorussie">🇧🇾 Biélorussie</option>
-<option value="Lituanie">🇱🇹 Lituanie</option>
-<option value="Lettonie">🇱🇻 Lettonie</option>
-<option value="Estonie">🇪🇪 Estonie</option>
-<option value="Islande">🇮🇸 Islande</option>
-<option value="Malte">🇲🇹 Malte</option>
-<option value="Chypre">🇨🇾 Chypre</option>
-<option value="Russie">🇷🇺 Russie</option>
-<option value="Turquie">🇹🇷 Turquie</option>
-<option value="Arménie">🇦🇲 Arménie</option>
-<option value="Azerbaïdjan">🇦🇿 Azerbaïdjan</option>
-<option value="Géorgie">🇬🇪 Géorgie</option>
-<option value="Moldavie">🇲🇩 Moldavie</option>
-<option value="USA">🇺🇸 USA</option>
-<option value="Canada">🇨🇦 Canada</option>
-<option value="Mexique">🇲🇽 Mexique</option>
-<option value="Brésil">🇧🇷 Brésil</option>
-<option value="Argentine">🇦🇷 Argentine</option>
-<option value="Colombie">🇨🇴 Colombie</option>
-<option value="Pérou">🇵🇪 Pérou</option>
-<option value="Chili">🇨🇱 Chili</option>
-<option value="Venezuela">🇻🇪 Venezuela</option>
-<option value="Équateur">🇪🇨 Équateur</option>
-<option value="Bolivie">🇧🇴 Bolivie</option>
-<option value="Paraguay">🇵🇾 Paraguay</option>
-<option value="Uruguay">🇺🇾 Uruguay</option>
-<option value="Guatemala">🇬🇹 Guatemala</option>
-<option value="Salvador">🇸🇻 Salvador</option>
-<option value="Honduras">🇭🇳 Honduras</option>
-<option value="Nicaragua">🇳🇮 Nicaragua</option>
-<option value="Costa Rica">🇨🇷 Costa Rica</option>
-<option value="Panama">🇵🇦 Panama</option>
-<option value="Haïti">🇭🇹 Haïti</option>
-<option value="Cuba">🇨🇺 Cuba</option>
-<option value="République Dominicaine">🇩🇴 République Dominicaine</option>
-<option value="Jamaïque">🇯🇲 Jamaïque</option>
-<option value="Trinité-et-Tobago">🇹🇹 Trinité-et-Tobago</option>
-<option value="Inde">🇮🇳 Inde</option>
-<option value="Chine">🇨🇳 Chine</option>
-<option value="Japon">🇯🇵 Japon</option>
-<option value="Corée du Sud">🇰🇷 Corée du Sud</option>
-<option value="Vietnam">🇻🇳 Vietnam</option>
-<option value="Thaïlande">🇹🇭 Thaïlande</option>
-<option value="Indonésie">🇮🇩 Indonésie</option>
-<option value="Philippines">🇵🇭 Philippines</option>
-<option value="Malaisie">🇲🇾 Malaisie</option>
-<option value="Singapour">🇸🇬 Singapour</option>
-<option value="Myanmar">🇲🇲 Myanmar</option>
-<option value="Cambodge">🇰🇭 Cambodge</option>
-<option value="Laos">🇱🇦 Laos</option>
-<option value="Bangladesh">🇧🇩 Bangladesh</option>
-<option value="Pakistan">🇵🇰 Pakistan</option>
-<option value="Sri Lanka">🇱🇰 Sri Lanka</option>
-<option value="Népal">🇳🇵 Népal</option>
-<option value="Afghanistan">🇦🇫 Afghanistan</option>
-<option value="Iran">🇮🇷 Iran</option>
-<option value="Irak">🇮🇶 Irak</option>
-<option value="Émirats">🇦🇪 Émirats</option>
-<option value="Arabie Saoudite">🇸🇦 Arabie Saoudite</option>
-<option value="Qatar">🇶🇦 Qatar</option>
-<option value="Koweït">🇰🇼 Koweït</option>
-<option value="Bahreïn">🇧🇭 Bahreïn</option>
-<option value="Oman">🇴🇲 Oman</option>
-<option value="Jordanie">🇯🇴 Jordanie</option>
-<option value="Liban">🇱🇧 Liban</option>
-<option value="Syrie">🇸🇾 Syrie</option>
-<option value="Israël">🇮🇱 Israël</option>
-<option value="Palestine">🇵🇸 Palestine</option>
-<option value="Australie">🇦🇺 Australie</option>
-<option value="Nouvelle-Zélande">🇳🇿 Nouvelle-Zélande</option>
-<option value="Fidji">🇫🇯 Fidji</option>
-<option value="Papouasie">🇵🇬 Papouasie</option>
-<option value="Îles Salomon">🇸🇧 Îles Salomon</option>
-<option value="Vanuatu">🇻🇺 Vanuatu</option>
-<option value="Îles Cook">🇨🇰 Îles Cook</option>
-<option value="Nouvelle-Calédonie">🇳🇨 Nouvelle-Calédonie</option>
-<option value="Polynésie">🇵🇫 Polynésie</option>
-</select></div>
-<div><label>VILLE *</label>
-<input id="ville" placeholder="Ex: Abomey-Calavi" list="listeVilles" oninput="verifVille(this)" autocomplete="off">
+<div><label data-i18n="pays">PAYS *</label><select id="pays" onchange="syncPaysVersIndicatif()"></select></div>
+<div><label data-i18n="ville">VILLE *</label>
+<input id="ville" data-i18n-ph="villePh" placeholder="Ex: Abomey-Calavi" list="listeVilles" oninput="verifVille(this)" autocomplete="off">
 <datalist id="listeVilles"></datalist>
-<div id="errVille" class="errTxt">❌ Cette ville n'existe pas dans ce pays. Choisis une ville dans la liste.</div>
+<div id="errVille" class="errTxt" data-i18n="villeErreur">❌ Cette ville n'existe pas dans ce pays. Choisis une ville dans la liste.</div>
 </div>
 </div>
-<div><label>LOCALITÉ / QUARTIER *</label><input id="localite" placeholder="Ex: Godomey" oninput="clearErr(this)"></div>
+<div><label data-i18n="localite">LOCALITÉ / QUARTIER *</label><input id="localite" data-i18n-ph="localitePh" placeholder="Ex: Godomey" oninput="clearErr(this)"></div>
 
 <div id="blocPrestataire">
-<div><label>CATÉGORIE DE SERVICE *</label><select id="categorie" onchange="checkAutreInscription()">
-<option value="">Choisir...</option>
+<div><label data-i18n="categorieService">CATÉGORIE DE SERVICE *</label><select id="categorie" onchange="checkAutreInscription()">
+<option value="" data-i18n="choisir">Choisir...</option>
 <optgroup label="🍽️ Se nourrir"><option value="Traiteur">Traiteur</option><option value="Restaurant">Restaurant / Maquis</option><option value="Livraison repas">Livraison repas</option><option value="Pâtisserie">Pâtisserie</option><option value="Jus / Boissons">Jus / Boissons</option></optgroup>
 <optgroup label="🏠 Domicile"><option value="Nettoyage / Ménage">Nettoyage / Ménage</option><option value="Plomberie">Plomberie</option><option value="Électricité">Électricité</option><option value="Climatisation">Climatisation</option><option value="Menuiserie">Menuiserie</option><option value="Peinture">Peinture</option><option value="Jardinage">Jardinage</option><option value="Mécanique">Mécanique</option><option value="Déménagement">Déménagement</option></optgroup>
 <optgroup label="💼 Pro"><option value="Design">Design / Graphisme</option><option value="Développement">Développement Web</option><option value="Marketing">Marketing / Réseaux sociaux</option><option value="Comptabilité">Comptabilité</option><option value="Traduction">Traduction</option><option value="Cours">Cours / Coaching</option></optgroup>
@@ -405,33 +92,59 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
 <optgroup label="🏘️ Immobilier"><option value="Location maison / Appartement">Location maison / Appartement</option><option value="Vente maison / Terrain">Vente maison / Terrain</option><option value="Location chambre / Studio">Location chambre / Studio</option></optgroup>
 <optgroup label="➕ Autre"><option value="__AUTRE__">➕ Autre - Écrire ma catégorie...</option></optgroup>
 </select></div>
-<div id="blocAutreInscription" style="display:none"><label>ÉCRIS TA CATÉGORIE *</label><input id="autreCategorie" placeholder="Ex: Nettoyage, Désinfection..."></div>
-<div><label>DÉCRIVEZ VOTRE SERVICE *</label><textarea id="description" placeholder="Ex: Je suis plombier à Calavi depuis 5 ans..."></textarea></div>
+<div id="blocAutreInscription" style="display:none"><label data-i18n="ecrisCategorie">ÉCRIS TA CATÉGORIE *</label><input id="autreCategorie" data-i18n-ph="categoriePh" placeholder="Ex: Nettoyage, Désinfection..."></div>
+<div><label data-i18n="decrisService">DÉCRIVEZ VOTRE SERVICE *</label><textarea id="description" data-i18n-ph="descriptionPh" placeholder="Ex: Je suis plombier à Calavi depuis 5 ans..."></textarea></div>
 </div>
 
-<div><label>PHOTO DE PROFIL (optionnel)</label>
+<div><label data-i18n="photoProfil">PHOTO DE PROFIL (optionnel)</label>
 <div class="photoBox" id="photoBox" onclick="document.getElementById('photoFile').click()">
 <img id="photoPreview" src="">
 <div style="font-size:28px">📷</div>
-<div style="font-weight:700;font-size:14px">Choisir une photo</div>
-<div style="font-size:12px;color:#94a3b8">Ça ouvre les fichiers / galerie de ton téléphone</div>
+<div style="font-weight:700;font-size:14px" data-i18n="choisirPhoto">Choisir une photo</div>
+<div style="font-size:12px;color:#94a3b8" data-i18n="photoAide">Ça ouvre les fichiers / galerie de ton téléphone</div>
 </div>
 <input type="file" id="photoFile" accept="image/*" style="display:none" onchange="previewPhoto(this)">
-<p style="font-size:11px;color:#64748b;margin-top:4px">Ta photo reste sur ton profil, elle aide les clients à te faire confiance.</p>
 </div>
 
 <div id="msg" class="msg"></div>
-<button class="btn" id="btnInscrire" type="button" onclick="inscrire()">Créer mon compte →</button>
-<small>Déjà inscrit ? <a href="connexion.html">Connectez-vous</a></small>
+<button class="btn" id="btnInscrire" type="button" onclick="inscrire()" data-i18n="creerCompte">Créer mon compte →</button>
+<small><span data-i18n="dejaInscrit">Déjà inscrit ?</span> <a href="connexion.html" data-i18n="connectezVous">Connectez-vous</a></small>
 </div></div>
 
 <script>
 let typeCompte='client'; let photoBase64='';
-function setType(t){ typeCompte=t; document.getElementById('btnClient').classList.toggle('active', t==='client'); document.getElementById('btnPresta').classList.toggle('active', t==='prestataire'); document.getElementById('blocPrestataire').classList.toggle('show', t==='prestataire'); }
+function setType(t){ typeCompte=t; document.getElementById('btnClient').classList.toggle('active', t==='client'); document.getElementById('btnPresta').classList.toggle('active', t==='prestataire'); document.getElementById('btnLivreur').classList.toggle('active', t==='livreur'); document.getElementById('blocPrestataire').classList.toggle('show', t==='prestataire'); }
 function checkAutreInscription(){ const s=document.getElementById('categorie'); document.getElementById('blocAutreInscription').style.display = s.value==='__AUTRE__' ? 'block' : 'none'; }
 function showMsg(txt, ok){ const m=document.getElementById('msg'); m.textContent=txt; m.className='msg '+(ok?'ok':'err'); m.style.display='block'; }
 function clearErr(el){ el.classList.remove('err'); }
 function togglePwd(id, btn){ const inp=document.getElementById(id); const show = inp.type==='password'; inp.type = show ? 'text' : 'password'; btn.textContent = show ? '🙈' : '👁️'; inp.focus(); }
+
+// --- Cahier : catégorie -> univers ---
+function universPourCategorie(cat){
+  const manger=['Traiteur','Restaurant','Restaurant / Maquis','Livraison repas','Pâtisserie','Jus / Boissons'];
+  const domicile=['Nettoyage / Ménage','Plomberie','Électricité','Climatisation','Menuiserie','Peinture','Jardinage','Mécanique','Déménagement'];
+  const pro=['Design','Design / Graphisme','Développement','Développement Web','Marketing','Marketing / Réseaux sociaux','Comptabilité','Traduction','Cours','Cours / Coaching'];
+  const sejour=['Hôtel','Hôtel / Appartement','Location voiture','Guide touristique','Transport','Transport / Moto','Location salle'];
+  const immo=['Location maison / Appartement','Vente maison / Terrain','Location chambre / Studio'];
+  if(manger.includes(cat)) return 'manger';
+  if(domicile.includes(cat)) return 'domicile';
+  if(pro.includes(cat)) return 'pro';
+  if(sejour.includes(cat)) return 'sejour';
+  if(immo.includes(cat)) return 'immobilier';
+  return 'domicile';
+}
+
+// --- Déjà connecté -> dashboard, pas inscription ---
+function redirigerSiDejaConnecte(){
+  const uid = localStorage.getItem('rocy_user_id');
+  const type = localStorage.getItem('rocy_user_type') || localStorage.getItem('rocy_role');
+  if(!uid) return;
+  if(type==='prestataire') location.href='dashboard-prestataire.html';
+  else if(type==='livreur') location.href='dashboard-prestataire.html';
+  else if(type==='admin') location.href='admin.html';
+  else location.href='dashboard-client.html';
+}
+
 const MAP_PAYS_CODE = {
   'Bénin':'+229','Algérie':'+213','Angola':'+244','Burkina Faso':'+226','Burundi':'+257','Cameroun':'+237','Cap-Vert':'+238','Centrafrique':'+236','Tchad':'+235','Comores':'+269','Congo':'+242','Congo RDC':'+243',"Côte d'Ivoire":'+225','Djibouti':'+253','Égypte':'+20','Guinée Équatoriale':'+240','Érythrée':'+291','Éthiopie':'+251','Gabon':'+241','Gambie':'+220','Ghana':'+233','Guinée':'+224','Guinée-Bissau':'+245','Kenya':'+254','Lesotho':'+266','Liberia':'+231','Libye':'+218','Madagascar':'+261','Malawi':'+265','Mali':'+223','Maroc':'+212','Maurice':'+230','Mauritanie':'+222','Mozambique':'+258','Namibie':'+264','Niger':'+227','Nigeria':'+234','Rwanda':'+250','Sao Tomé':'+239','Sénégal':'+221','Seychelles':'+248','Sierra Leone':'+232','Somalie':'+252','Afrique du Sud':'+27','Soudan du Sud':'+211','Soudan':'+249','Eswatini':'+268','Tanzanie':'+255','Togo':'+228','Tunisie':'+216','Ouganda':'+256','Zambie':'+260','Zimbabwe':'+263',
   'France':'+33','Belgique':'+32','Suisse':'+41','Luxembourg':'+352','Italie':'+39','Espagne':'+34','Portugal':'+351','Allemagne':'+49','Royaume-Uni':'+44','Pays-Bas':'+31','Autriche':'+43','Danemark':'+45','Suède':'+46','Norvège':'+47','Finlande':'+358','Irlande':'+353','Grèce':'+30','Pologne':'+48','Roumanie':'+40','Hongrie':'+36','Tchéquie':'+420','Slovaquie':'+421','Croatie':'+385','Slovénie':'+386','Bosnie':'+387','Serbie':'+381','Monténégro':'+382','Albanie':'+355','Bulgarie':'+359','Ukraine':'+380','Biélorussie':'+375','Lituanie':'+370','Lettonie':'+371','Estonie':'+372','Islande':'+354','Malte':'+356','Chypre':'+357','Russie':'+7','Turquie':'+90','Arménie':'+374','Azerbaïdjan':'+994','Géorgie':'+995','Moldavie':'+373',
@@ -480,9 +193,7 @@ function majListeVilles(){
   const villes = VILLES_PAR_PAYS[pays] || [];
   dl.innerHTML = villes.map(v => `<option value="${v}">`).join('');
   const villeInput = document.getElementById('ville');
-  if(villeInput.value && villes.length>0 && !villes.some(v => normaliseVille(v) === normaliseVille(villeInput.value.trim()))){
-    villeInput.value = '';
-  }
+  if(villeInput.value && villes.length>0 && !villes.some(v => normaliseVille(v) === normaliseVille(villeInput.value.trim()))){ villeInput.value = ''; }
   verifVille(villeInput);
 }
 function normaliseVille(s){ return s.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/-/g,' ').replace(/\s+/g,' ').trim(); }
@@ -525,27 +236,13 @@ function verifTel(el){
   const indic = document.getElementById('indicatif').value;
   let num = el.value.replace(/[^0-9]/g,'');
   el.value = num;
-  let ok = false;
-  let msg = '❌ Numéro incorrect.';
-  if(indic==='+229'){
-    if(num.length===10 && num.startsWith('01')){ ok=true; }
-    else if(num.length===8){ ok=true; msg=''; }
-    else { msg='❌ Bénin : 10 chiffres. Ex : 01 97 00 00 00. Si tu tapes 8 chiffres (97 00 00 00), on ajoute 01.'; }
-  } else if(indic==='+228' || indic==='+225' || indic==='+221' || indic==='+226' || indic==='+227' || indic==='+223'){
-    ok = num.length===8;
-    msg='❌ Ce pays : 8 chiffres. Ex : 97 00 00 00';
-  } else if(indic==='+33'){
-    ok = num.length===9 || num.length===10;
-    msg='❌ France : 9 ou 10 chiffres.';
-  } else if(indic==='+1'){
-    ok = num.length===10;
-    msg='❌ USA / Canada : 10 chiffres.';
-  } else if(indic==='+234' || indic==='+233'){
-    ok = num.length===10;
-    msg='❌ Ce pays : 10 chiffres.';
-  } else {
-    ok = num.length>=7 && num.length<=12;
-  }
+  let ok = false; let msg = '❌ Numéro incorrect.';
+  if(indic==='+229'){ if(num.length===10 && num.startsWith('01')){ ok=true; } else if(num.length===8){ ok=true; msg=''; } else { msg='❌ Bénin : 10 chiffres. Ex : 01 97 00 00 00.'; } }
+  else if(['+228','+225','+221','+226','+227','+223'].includes(indic)){ ok = num.length===8; msg='❌ Ce pays : 8 chiffres.'; }
+  else if(indic==='+33'){ ok = num.length===9 || num.length===10; }
+  else if(indic==='+1'){ ok = num.length===10; }
+  else if(['+234','+233'].includes(indic)){ ok = num.length===10; }
+  else { ok = num.length>=7 && num.length<=12; }
   const errEl = document.getElementById('errTel');
   errEl.textContent = msg;
   errEl.classList.toggle('show', num.length>0 && !ok);
@@ -585,10 +282,9 @@ async function inscrire(){
   let categorie=document.getElementById('categorie').value;
   const description=document.getElementById('description').value.trim();
   const btn=document.getElementById('btnInscrire');
-
   if(!nom || !numSeul || !ville || !localite){ showMsg('Remplis Nom + WhatsApp + Ville + Localité', false); return; }
-  if(!verifTel(document.getElementById('whatsappNum'))){ showMsg('❌ Numéro WhatsApp incorrect. Bénin : 10 chiffres, ex 01 97 00 00 00.', false); return; }
-  if(!verifVille(document.getElementById('ville'))){ showMsg('❌ Cette ville n\'existe pas dans le pays choisi. Choisis une ville dans la liste.', false); return; }
+  if(!verifTel(document.getElementById('whatsappNum'))){ showMsg('❌ Numéro WhatsApp incorrect.', false); return; }
+  if(!verifVille(document.getElementById('ville'))){ showMsg('❌ Cette ville n\'existe pas dans le pays choisi.', false); return; }
   if(!password || password.length<6){ showMsg('Mot de passe : min 6 caractères', false); return; }
   if(password!==password2){ showMsg('❌ Les 2 mots de passe ne sont pas identiques', false); return; }
   if(typeCompte==='prestataire'){
@@ -609,29 +305,42 @@ async function inscrire(){
     if(existe){ localStorage.setItem('rocy_user_id', existe.id); localStorage.setItem('rocy_user_nom', existe.nom||existe.full_name); localStorage.setItem('rocy_user_type', existe.type||typeCompte); localStorage.setItem('rocy_role', existe.type||typeCompte); localStorage.setItem('rocy_user_whatsapp', whatsapp); localStorage.setItem('rocy_user_pays', existe.pays||pays); localStorage.setItem('rocy_user_ville', existe.ville||ville); localStorage.setItem('rocy_user_localite', existe.localite||localite); showMsg('✅ Ce WhatsApp existe déjà, on te connecte...', true); setTimeout(()=>{ location.href=(existe.type==='prestataire'?'creer-annonce.html':'index.html'); },1000); return; }
     const newId=(crypto.randomUUID?crypto.randomUUID():'id-'+Date.now());
     const emailFinal=(email||(chiffres+'@rocyinter.com')).toLowerCase();
+    const univers = typeCompte==='prestataire' ? universPourCategorie(categorie) : null;
+    const activites = typeCompte==='prestataire' ? [categorie] : (typeCompte==='livreur' ? ['Livraison'] : []);
     const {data,error}=await supabase.from('profiles').insert([{
-      id:newId,
-      nom, full_name: nom,
-      whatsapp, phone: whatsapp,
+      id:newId, nom, full_name: nom, whatsapp, phone: whatsapp,
       email:emailFinal, password:password,
       type:typeCompte, type_compte:typeCompte, role:typeCompte,
-      pays, country: pays,
-      ville, city: ville,
-      localite,
+      pays, country: pays, ville, city: ville, localite,
       description:description||null, description_profil:description||null,
       photo_url:photoBase64||null, avatar_url:photoBase64||null,
       categorie:typeCompte==='prestataire'?categorie:null,
       categorie_prestataire:typeCompte==='prestataire'?categorie:null,
+      activites:activites,
+      univers:univers,
       statut_validation:typeCompte==='prestataire'?'en_attente':'valide',
       status_prestataire:typeCompte==='prestataire'?'en_attente':'valide'
     }]).select().single();
     if(error){ showMsg('Erreur profil : '+error.message, false); btn.disabled=false; btn.textContent='Créer mon compte →'; return; }
     localStorage.setItem('rocy_user_id', data.id); localStorage.setItem('rocy_user_nom', nom); localStorage.setItem('rocy_user_type', typeCompte); localStorage.setItem('rocy_role', typeCompte); localStorage.setItem('rocy_user_whatsapp', whatsapp); localStorage.setItem('rocy_user_ville', ville); localStorage.setItem('rocy_user_localite', localite);
     showMsg('✅ Compte créé ! Redirection...', true);
-    setTimeout(()=>{ if(typeCompte==='prestataire') location.href='creer-annonce.html'; else location.href='index.html'; },1200);
+    setTimeout(()=>{ if(typeCompte==='prestataire') location.href='creer-annonce.html'; else if(typeCompte==='livreur') location.href='dashboard-prestataire.html'; else location.href='index.html'; },1200);
   }catch(e){ showMsg('Erreur : '+e.message, false); btn.disabled=false; btn.textContent='Créer mon compte →'; }
 }
-document.addEventListener('DOMContentLoaded', majListeVilles);
+// --- Init : pays via pays.js + type URL + déjà connecté ---
+document.addEventListener('DOMContentLoaded', ()=>{
+  // Pays via pays.js si dispo, sinon garde Bénin par défaut
+  const sel = document.getElementById('pays');
+  if(window.ROCY_PAYS && window.ROCY_PAYS.length){
+    sel.innerHTML = window.ROCY_PAYS.map(p=>`<option value="${p.nom}" ${p.nom==='Bénin'?'selected':''}>${p.drapeau} ${p.nom}</option>`).join('');
+  }
+  const params = new URLSearchParams(location.search);
+  const t = params.get('type');
+  if(t==='prestataire' || t==='livreur' || t==='client') setType(t);
+  // Ne pas rediriger si on vient juste de se déconnecter / on veut créer un 2e compte : seulement si flag explicite ? Cahier : déjà connecté -> dashboard
+  redirigerSiDejaConnecte();
+  majListeVilles();
+  if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
+});
 </script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </body></html>
