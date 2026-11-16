@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Notifications - Rocyinter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
+body{background:#f6f7f9;color:#111;padding:16px}
+.top{max-width:520px;margin:0 auto}
+.back{color:#64748b;font-size:13px;cursor:pointer}
+h1{font-size:22px;margin:14px 0 12px} h1 span{color:#f59e0b}
+.card{background:#fff;border-radius:16px;padding:14px;margin-bottom:12px}
+.card p{font-size:13px;color:#64748b;line-height:1.6}
+.btn{width:100%;background:#0f172a;color:#fff;border:none;padding:11px;border-radius:10px;font-weight:800;cursor:pointer;margin-top:8px}
+</style></head>
+<body><div class="top">
+<div class="back" onclick="location.href='index.html'">← Accueil</div>
+<h1>🔔 <span>Notifications</span></h1>
+<div id="liste">Chargement...</div>
+</div>
+<script>
+function charger(){
+  const uid = localStorage.getItem('rocy_user_id');
+  if(!uid){location.href='connexion.html';return;}
+  const notifs = JSON.parse(localStorage.getItem('rocy_notifications')||'[]');
+  if(!notifs.length){
+    document.getElementById('liste').innerHTML = `<div class="card"><p><b>👋 Bienvenue sur Rocyinter</b><br>Tu recevras ici : nouveau message, proposition de prix, paiement reçu, validation, litige.</p></div><div class="card"><p><b>💡 Astuce :</b> Active WhatsApp pour recevoir les alertes. On t'écrit sur 2290191478460.</p></div>`;
+    return;
+  }
+  document.getElementById('liste').innerHTML = notifs.map(n=>`<div class="card"><p>${n}</p></div>`).join('') + `<button class="btn" onclick="effacer()">Tout effacer</button>`;
+}
+function effacer(){localStorage.removeItem('rocy_notifications'); charger();}
+charger();
+</script></body></html>
