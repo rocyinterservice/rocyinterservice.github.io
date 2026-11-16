@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Inscription - Rocyinter Services</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
 body{background:#f6f7f9;color:#111;padding:16px}
@@ -142,7 +141,6 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
       </select>
     </div>
 
-    <!-- CORRECTION V3 : Si la catégorie n'existe pas, il l'écrit lui-même -->
     <div id="blocAutreInscription" style="display:none">
       <label>ÉCRIS TA CATÉGORIE *</label>
       <input id="autreCategorie" placeholder="Ex: Nettoyage, Désinfection, Nettoyage après chantier...">
@@ -160,16 +158,13 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
   </div>
 
   <div id="msg" class="msg"></div>
-  <button class="btn" id="btnInscrire" onclick="inscrire()">Créer mon compte →</button>
+  <button class="btn" id="btnInscrire" type="button" onclick="inscrire()">Créer mon compte →</button>
   <small>Déjà inscrit ? <a href="connexion.html">Connectez-vous</a><br>En vous inscrivant, vous acceptez les règles Rocyinter : pas de faux profil, paiement sécurisé.</small>
 </div>
 </div>
 
 <script>
-const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
-const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
+// ÉTAPE 1 : FONCTIONS D'ABORD - ELLES MARCHENT MÊME SANS INTERNET
 let typeCompte = 'client';
 function setType(t){
   typeCompte = t;
@@ -177,18 +172,21 @@ function setType(t){
   document.getElementById('btnPresta').classList.toggle('active', t==='prestataire');
   document.getElementById('blocPrestataire').classList.toggle('show', t==='prestataire');
 }
-
 function checkAutreInscription(){
   const sel = document.getElementById('categorie');
   document.getElementById('blocAutreInscription').style.display = sel.value === '__AUTRE__' ? 'block' : 'none';
 }
-
 function showMsg(txt, ok){
   const m = document.getElementById('msg');
   m.textContent = txt;
   m.className = 'msg ' + (ok ? 'ok' : 'err');
+  m.style.display = 'block';
 }
-
+function getClient(){
+  if(!window.supabase){ return null; }
+  try{ return window.supabase.createClient("https://gdwgjsloivrpxxvggxyz.supabase.co", "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF"); }
+  catch(e){ return null; }
+}
 async function inscrire(){
   const nom = document.getElementById('nom').value.trim();
   const whatsapp = document.getElementById('whatsapp').value.trim();
@@ -204,8 +202,6 @@ async function inscrire(){
 
   if(!nom || !whatsapp || !ville || !localite){ showMsg('Remplis Nom + WhatsApp + Ville + Localité', false); return; }
   if(!password || password.length < 6){ showMsg('Mot de passe : min 6 caractères', false); return; }
-
-  // Si Autre, on prend ce que le prestataire a écrit
   if(typeCompte==='prestataire'){
     if(categorie === '__AUTRE__'){
       const autre = document.getElementById('autreCategorie').value.trim();
@@ -216,59 +212,67 @@ async function inscrire(){
   }
 
   btn.disabled = true; btn.textContent = 'Création...';
+  const supabase = getClient();
+  if(!supabase){ showMsg('Pas de connexion internet. Recharge la page et réessaie.', false); btn.disabled=false; btn.textContent='Créer mon compte →'; return; }
 
-  const chiffres = whatsapp.replace(/[^0-9]/g,'');
-  const emailAuth = (email || (chiffres + '@rocyinter.com')).toLowerCase();
+  try{
+    const chiffres = whatsapp.replace(/[^0-9]/g,'');
+    const emailAuth = (email || (chiffres + '@rocyinter.com')).toLowerCase();
+    let userId = null;
+    const {data:signUp, error:errSignUp} = await supabase.auth.signUp({email: emailAuth, password});
+    if(signUp?.user?.id) userId = signUp.user.id;
+    if(!userId){
+      const {data:login} = await supabase.auth.signInWithPassword({email: emailAuth, password});
+      if(login?.user?.id) userId = login.user.id;
+    }
+    if(!userId){ showMsg('Erreur création compte. Ce WhatsApp / Email est peut-être déjà utilisé. Va sur Connexion.', false); btn.disabled=false; btn.textContent='Créer mon compte →'; return; }
 
-  let userId = null;
-  const {data:signUp, error:errSignUp} = await supabase.auth.signUp({email: emailAuth, password});
-  if(signUp?.user?.id) userId = signUp.user.id;
-  if(!userId){
-    const {data:login} = await supabase.auth.signInWithPassword({email: emailAuth, password});
-    if(login?.user?.id) userId = login.user.id;
-  }
-  if(!userId){ showMsg('Erreur création compte. Ce WhatsApp / Email est peut-être déjà utilisé.', false); btn.disabled=false; btn.textContent='Créer mon compte →'; return; }
-
-  const {data, error} = await supabase.from('profiles').insert([{
-    id: userId, nom, whatsapp, email: email||null,
-    type: typeCompte,
-    type_compte: typeCompte,
-    pays, ville, localite,
-    description: description||null,
-    description_profil: description||null,
-    photo_url: photo||null,
-    categorie: typeCompte==='prestataire' ? categorie : null,
-    categorie_prestataire: typeCompte==='prestataire' ? categorie : null,
-    statut_validation: typeCompte==='prestataire' ? 'en_attente' : 'valide',
-    status_prestataire: typeCompte==='prestataire' ? 'en_attente' : 'valide'
-  }]).select().single();
-
-  if(error){
-    const {data:upd} = await supabase.from('profiles').update({
-      nom, whatsapp, pays, ville, localite, type: typeCompte, type_compte: typeCompte,
-      description: description||null, description_profil: description||null, photo_url: photo||null,
+    const {data, error} = await supabase.from('profiles').insert([{
+      id: userId, nom, whatsapp, email: email||null,
+      type: typeCompte,
+      type_compte: typeCompte,
+      pays, ville, localite,
+      description: description||null,
+      description_profil: description||null,
+      photo_url: photo||null,
       categorie: typeCompte==='prestataire' ? categorie : null,
       categorie_prestataire: typeCompte==='prestataire' ? categorie : null,
       statut_validation: typeCompte==='prestataire' ? 'en_attente' : 'valide',
       status_prestataire: typeCompte==='prestataire' ? 'en_attente' : 'valide'
-    }).eq('id', userId).select().single();
-    if(!upd){ showMsg('Erreur profil : ' + error.message, false); btn.disabled=false; btn.textContent='Créer mon compte →'; return; }
+    }]).select().single();
+
+    if(error){
+      const {data:upd} = await supabase.from('profiles').update({
+        nom, whatsapp, pays, ville, localite, type: typeCompte, type_compte: typeCompte,
+        description: description||null, description_profil: description||null, photo_url: photo||null,
+        categorie: typeCompte==='prestataire' ? categorie : null,
+        categorie_prestataire: typeCompte==='prestataire' ? categorie : null,
+        statut_validation: typeCompte==='prestataire' ? 'en_attente' : 'valide',
+        status_prestataire: typeCompte==='prestataire' ? 'en_attente' : 'valide'
+      }).eq('id', userId).select().single();
+      if(!upd){ showMsg('Erreur profil : ' + error.message, false); btn.disabled=false; btn.textContent='Créer mon compte →'; return; }
+    }
+
+    localStorage.setItem('rocy_user_id', userId);
+    localStorage.setItem('rocy_user_nom', nom);
+    localStorage.setItem('rocy_user_type', typeCompte);
+    localStorage.setItem('rocy_role', typeCompte);
+    localStorage.setItem('rocy_user_whatsapp', whatsapp);
+    localStorage.setItem('rocy_user_pays', pays);
+    localStorage.setItem('rocy_user_ville', ville);
+    localStorage.setItem('rocy_user_localite', localite);
+
+    showMsg('✅ Compte créé ! Redirection...', true);
+    setTimeout(()=>{
+      if(typeCompte==='prestataire') location.href='creer-annonce.html';
+      else location.href='index.html';
+    }, 1200);
+  }catch(e){
+    showMsg('Erreur : '+e.message, false);
+    btn.disabled=false; btn.textContent='Créer mon compte →';
   }
-
-  localStorage.setItem('rocy_user_id', userId);
-  localStorage.setItem('rocy_user_nom', nom);
-  localStorage.setItem('rocy_user_type', typeCompte);
-  localStorage.setItem('rocy_user_whatsapp', whatsapp);
-  localStorage.setItem('rocy_user_pays', pays);
-  localStorage.setItem('rocy_user_ville', ville);
-  localStorage.setItem('rocy_user_localite', localite);
-
-  showMsg('✅ Compte créé ! Redirection...', true);
-  setTimeout(()=>{
-    if(typeCompte==='prestataire') location.href='creer-annonce.html';
-    else location.href='index.html';
-  }, 1200);
 }
 </script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </body>
 </html>
