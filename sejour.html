@@ -29,15 +29,10 @@ input,select{width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:10px
 <div class="top">
 <div class="back" onclick="location.href='index.html'">← Accueil</div>
 <h1>✈️ <span>Séjour</span></h1>
-<p class="sub">Vrais hôtels, locations, guides, transports... validés par Rocyinter.</p>
+<p class="sub">Vrais hôtels, locations, guides, transports... validés par Rocyinter. Commission 12% par nuit réservée.</p>
 
-<div class="filtres">
-  <button class="active" onclick="setCat('')">Tous</button>
-  <button onclick="setCat('Hôtel / Hébergement')">Hôtel</button>
-  <button onclick="setCat('Location appartement')">Location</button>
-  <button onclick="setCat('Guide touristique')">Guide</button>
-  <button onclick="setCat('Transport / Chauffeur')">Transport</button>
-  <button onclick="setCat('Location voiture')">Voiture</button>
+<div class="filtres" id="filtres">
+  <button class="active" data-cat="" onclick="setCat('')">Tous</button>
 </div>
 
 <select id="filtrePays" onchange="charger()">
@@ -53,7 +48,7 @@ input,select{width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:10px
   <option value="Canada">🇨🇦 Canada</option>
 </select>
 
-<input id="search" placeholder="🔍 Chercher : Cotonou, Ouidah, Hôtel..." oninput="charger()">
+<input id="search" placeholder="🔍 Chercher : Cotonou, Ouidah, Hôtel..." oninput="afficher()">
 <div id="liste">Chargement...</div>
 </div>
 
@@ -62,24 +57,27 @@ const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let catActuelle = '';
+let toutesAnnonces = [];
 
 function setCat(c){
   catActuelle = c;
-  document.querySelectorAll('.filtres button').forEach(b=>b.classList.remove('active'));
-  event.target.classList.add('active');
-  charger();
+  document.querySelectorAll('.filtres button').forEach(b=> b.classList.toggle('active', b.dataset.cat === c));
+  afficher();
 }
 
-async function charger(){
+function construireFiltres(){
+  const cats = [...new Set(toutesAnnonces.map(a=>a.categorie).filter(Boolean))].sort();
+  const box = document.getElementById('filtres');
+  box.innerHTML = `<button class="active" data-cat="" onclick="setCat('')">Tous</button>` + cats.map(c=>`<button data-cat="${c}" onclick="setCat('${c.replace(/'/g,"\\'")}')">${c}</button>`).join('');
+  document.querySelectorAll('.filtres button').forEach(b=> b.classList.toggle('active', b.dataset.cat === catActuelle));
+}
+
+function afficher(){
   const q = document.getElementById('search').value.trim().toLowerCase();
-  const pays = document.getElementById('filtrePays').value;
-  let query = supabase.from('annonces').select('*, profiles(nom, whatsapp)').eq('univers','sejour').eq('status','valide').order('created_at',{ascending:false});
-  if(catActuelle) query = query.eq('categorie', catActuelle);
-  if(pays) query = query.eq('pays', pays);
-  const {data} = await query;
   const box = document.getElementById('liste');
-  let list = data||[];
-  if(q) list = list.filter(a=>(a.titre+' '+a.ville+' '+a.localite+' '+a.categorie+' '+(a.profiles?.nom||'')).toLowerCase().includes(q));
+  let list = toutesAnnonces;
+  if(catActuelle) list = list.filter(a=> a.categorie === catActuelle);
+  if(q) list = list.filter(a=>(a.titre+' '+a.ville+' '+a.localite+' '+a.categorie+' '+(a.profiles?.nom||'')+' '+(a.description||'')).toLowerCase().includes(q));
   if(!list.length){
     box.innerHTML=`<p style="text-align:center;color:#64748b;padding:20px;background:#fff;border-radius:16px">Aucun séjour validé pour l'instant.<br><br><button class="btn" onclick="location.href='creer-annonce.html'">Proposer un hébergement / séjour</button></p>`;
     return;
@@ -88,6 +86,16 @@ async function charger(){
     const img = a.photo_url || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80';
     return `<div class="card"><img src="${img}"><div class="card-body"><span class="badge">✅ Vérifié</span> <span style="font-size:11px;color:#94a3b8">${a.categorie}</span><h3 style="margin-top:8px">${a.titre}</h3><p>👤 ${a.profiles?.nom}<br>📍 ${a.localite} - ${a.ville} • ${a.pays}<br>${a.prix_fixe ? '<b>'+Number(a.prix_indicatif).toLocaleString()+' FCFA</b> - Prix fixe' : (a.prix_indicatif>0 ? 'À partir de '+Number(a.prix_indicatif).toLocaleString()+' FCFA' : '💬 Prix à discuter')}<br>${a.description ? a.description.substring(0,120)+'...' : ''}</p><button class="btn" onclick="voirPresta('${a.prestataire_id}')">Voir le prestataire</button><button class="btn btn-dark" onclick="discuter('${a.prestataire_id}','${a.id}')">💬 Discuter</button></div></div>`;
   }).join('');
+}
+
+async function charger(){
+  const pays = document.getElementById('filtrePays').value;
+  let query = supabase.from('annonces').select('*, profiles(nom, whatsapp)').eq('univers','sejour').eq('status','valide').order('created_at',{ascending:false});
+  if(pays) query = query.eq('pays', pays);
+  const {data} = await query;
+  toutesAnnonces = data || [];
+  construireFiltres();
+  afficher();
 }
 
 function voirPresta(id){ localStorage.setItem('fiche_prestataire_id', id); location.href='fiche-prestataire.html'; }
