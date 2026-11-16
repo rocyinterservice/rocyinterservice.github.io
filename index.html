@@ -30,6 +30,7 @@ body{background:#f6f7f9;color:#111}
 .price{font-weight:800;margin-top:8px}
 .card-actions{display:flex;gap:8px;margin-top:10px} .card-actions button{flex:1;padding:10px;border-radius:10px;border:none;font-weight:700;cursor:pointer}
 .btn-chat{background:#0f172a;color:#fff} .btn-voir{background:#f1f5f9}
+.btn-mine{background:#e2e8f0;color:#64748b;cursor:not-allowed}
 .empty{background:#fff;border:1px dashed #cbd5e1;border-radius:16px;padding:24px;text-align:center;color:#64748b} .empty b{color:#111;display:block;margin-bottom:6px}
 .bandeau-role{margin:0 16px 16px;padding:12px;border-radius:12px;font-size:13px;font-weight:600;text-align:center;line-height:1.5}
 .bandeau-visiteur{background:#fef3c7;color:#92400e}
@@ -232,7 +233,6 @@ let supabase = null;
 try{ supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); }catch(e){}
 
 // ON NE TOUCHE PLUS A LA CASE PAYS - ELLE EST DEJA REMPLIE EN DUR DANS LE HTML
-// Cette fonction ne fait plus rien, juste pour ne pas casser si elle est appelée ailleurs
 function remplirPaysIndex(){ return; }
 
 function afficherBandeauRole(){
@@ -242,7 +242,7 @@ function afficherBandeauRole(){
   const type = localStorage.getItem('rocy_user_type') || localStorage.getItem('rocy_role') || '';
   const t = window.rocyT || (k=>k);
   if(!uid) box.innerHTML = `<div class="bandeau-role bandeau-visiteur">👁️ ${t('bandeauVisiteur')}</div>`;
-  else if(type==='prestataire' || type==='livreur') box.innerHTML = `<div class="bandeau-role bandeau-presta">🛠️ ${t('bandeauPresta')} <a href="creer-annonce.html" style="color:#1e40af">${t('creerAnnonce')} →</a></div>`;
+  else if(type==='prestataire' || type==='livreur') box.innerHTML = `<div class="bandeau-role bandeau-presta">🛠️ ${t('bandeauPresta')} <a href="creer-annonce.html" style="color:#1e40af">${t('creerAnnonce')} →</a><br><small style="font-weight:400">Sans abonnement à jour, tu ne peux pas publier. Prix fixe, jamais d'augmentation.</small></div>`;
   else if(type==='admin') box.innerHTML = `<div class="bandeau-role bandeau-presta">🛡️ ${t('bandeauAdmin')} <a href="admin.html" style="color:#1e40af">Panel Admin →</a></div>`;
   else box.innerHTML = `<div class="bandeau-role bandeau-client">🛒 ${t('bandeauClient')}</div>`;
 }
@@ -251,6 +251,7 @@ async function chargerAnnonces(){
   const box = document.getElementById('listeAnnonces');
   if(!box) return;
   const t = window.rocyT || (k=>k);
+  const moiId = localStorage.getItem('rocy_user_id') || '';
   try{
     const pays = document.getElementById('filtrePays').value;
     const loc = document.getElementById('filtreLocalite').value.trim().toLowerCase();
@@ -261,9 +262,12 @@ async function chargerAnnonces(){
     const {data, error} = await q;
     if(error) throw error;
     let filtres = data || [];
+    // --- Seules les annonces validées / publiées ---
     filtres = filtres.filter(a => {
-      const s = (a.status || a.statut || 'valide').toLowerCase();
-      return s.includes('valide') || s.includes('valid') || s.includes('publi') || s.includes('actif') || s === '';
+      const s = String(a.status || a.statut || '').toLowerCase().trim();
+      // Si pas de statut, on considère valide (anciennes annonces). Sinon, il faut valide/publié/actif
+      if(!s) return true;
+      return s==='valide' || s==='valid' || s==='publie' || s==='publié' || s==='publiee' || s==='actif' || s==='active';
     });
     if(loc) filtres = filtres.filter(a => (a.localite||'').toLowerCase().includes(loc) || (a.ville||'').toLowerCase().includes(loc));
     if(search) filtres = filtres.filter(a => (a.titre||'').toLowerCase().includes(search) || (a.categorie||'').toLowerCase().includes(search) || (a.description||'').toLowerCase().includes(search));
@@ -278,6 +282,10 @@ async function chargerAnnonces(){
       const prixVal = a.prix_indicatif || a.prix || a.montant || 0;
       const prixTxt = a.prix_fixe ? `${window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal+' FCFA'} - ${t('prixFixe')}` : (prixVal>0 ? `${t('aPartir')} ${window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal+' FCFA'}` : t('prixDiscuter'));
       const prestaId = a.prestataire_id || a.user_id || a.profiles_id || '';
+      const cestMoi = prestaId && moiId && String(prestaId)===String(moiId);
+      const btnChat = cestMoi
+        ? `<button type="button" class="btn-mine" disabled>C'est ton annonce</button>`
+        : `<button type="button" class="btn-chat" onclick="allerChat('${prestaId}','${a.id}')">${t('discuter')}</button>`;
       return `<div class="card">
         <img src="${img}" onclick="voirProfil('${prestaId}')" style="cursor:pointer" onerror="this.src='https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&q=80'">
         <div class="card-body">
@@ -287,7 +295,7 @@ async function chargerAnnonces(){
           <p>${(a.description||'').slice(0,90)}...</p>
           <div class="price">${prixTxt}</div>
           <div class="card-actions">
-            <button type="button" class="btn-chat" onclick="allerChat('${prestaId}','${a.id}')">${t('discuter')}</button>
+            ${btnChat}
             <button type="button" class="btn-voir" onclick="voirProfil('${prestaId}')">${t('voirEntreprise')}</button>
           </div>
         </div>
@@ -300,18 +308,25 @@ async function chargerAnnonces(){
 }
 function allerChat(prestataireId, annonceId){
   const uid = localStorage.getItem('rocy_user_id');
+  const type = localStorage.getItem('rocy_user_type') || localStorage.getItem('rocy_role') || '';
   const t = window.rocyT || (k=>k);
   if(!uid){ alert(t('connectePourCommander')); location.href='connexion.html'; return; }
+  if(type==='admin'){ alert('Admin : tu ne peux pas chatter, tu gères dans Admin.'); return; }
+  if(!prestataireId){ alert('Annonce sans prestataire.'); return; }
+  // --- On ne se parle jamais à soi-même ---
+  if(String(prestataireId)===String(uid)){ alert("C'est ton annonce. Tu ne peux pas te parler à toi-même."); return; }
   localStorage.setItem('chat_prestataire', prestataireId);
   localStorage.setItem('chat_annonce', annonceId);
   location.href = 'chat.html';
 }
 function voirProfil(prestataireId){
+  if(!prestataireId) return;
   localStorage.setItem('fiche_prestataire_id', prestataireId);
   location.href = 'fiche-prestataire.html';
 }
 afficherBandeauRole();
 chargerAnnonces();
+if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 </script>
 </body>
 </html>
