@@ -3,17 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mes commandes - Rocyinter</title>
+<title data-i18n="dashboardClientTitre">Mes commandes - Rocyinter</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="pays.js"></script>
+<script src="rocy-layout.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
-body{background:#f6f7f9;color:#111;padding:16px}
-.top{max-width:560px;margin:0 auto}
-header{display:flex;justify-content:space-between;align-items:center}
-header b{font-size:20px} header b span{color:#f59e0b}
-header button{background:#fff;border:1px solid #e2e8f0;padding:8px 12px;border-radius:999px;cursor:pointer;font-size:12px}
+body{background:#f6f7f9;color:#111}
+.top{max-width:560px;margin:0 auto;padding:16px}
 h1{font-size:22px;margin:16px 0 4px}
-p.sub{color:#64748b;font-size:13px;margin-bottom:14px}
+p.sub{color:#64748b;font-size:13px;margin-bottom:14px;line-height:1.5}
 .card{background:#fff;border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
 .card h3{font-size:15px}
 .card p{font-size:13px;color:#64748b;margin:6px 0;line-height:1.5}
@@ -27,6 +26,7 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px}
 .btn-dark{background:#0f172a;color:#fff}
 .btn-green{background:#16a34a;color:#fff}
 .btn-red{background:#fee2e2;color:#991b1b}
+.btn-gris{background:#f1f5f9;color:#111}
 .section h2{font-size:17px;margin:18px 0 10px}
 .empty{background:#fff;border:1px dashed #cbd5e1;border-radius:14px;padding:20px;text-align:center;color:#64748b;font-size:13px}
 .steps{display:flex;gap:4px;margin:10px 0}
@@ -37,28 +37,23 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px}
 </head>
 <body>
 <div class="top">
-<header>
-  <b>Rocy<span>inter</span></b>
-  <div style="display:flex;gap:6px">
-    <button onclick="location.href='index.html'">Accueil</button>
-    <button onclick="deconnecter()">Déconnexion</button>
-  </div>
-</header>
+<h1><span data-i18n="bonjour">Bonjour</span> <span id="nomUser">Client</span> 👋</h1>
+<p class="sub" data-i18n="dashboardClientSous">Suivez vos commandes en temps réel. Votre argent est en sécurité jusqu'à la fin du service.</p>
 
-<h1>Bonjour <span id="nomUser">Client</span> 👋</h1>
-<p class="sub">Suivez vos commandes en temps réel. Votre argent est en sécurité jusqu'à la fin du service.</p>
-
-<button class="btn" onclick="location.href='index.html'">🔍 Trouver un service</button>
+<button class="btn" onclick="location.href='index.html'">🔍 <span data-i18n="trouverService">Trouver un service</span></button>
+<button class="btn btn-gris" onclick="location.href='inscription.html?type=prestataire'">💼 <span data-i18n="devenirPresta">Devenir Fournisseur aussi ? Publier mes services →</span></button>
 
 <div class="section">
-  <h2>📦 Mes commandes</h2>
+  <h2>📦 <span data-i18n="mesCommandes">Mes commandes</span></h2>
   <div id="listeCommandes"></div>
 </div>
 
 <div class="section">
-  <h2>💬 Mes conversations</h2>
+  <h2>💬 <span data-i18n="mesConversations">Mes conversations</span></h2>
   <div id="listeConvs"></div>
 </div>
+
+<button class="btn btn-dark" style="margin-top:16px" onclick="deconnecter()" data-i18n="deconnexion">Déconnexion</button>
 </div>
 
 <script>
@@ -67,11 +62,20 @@ const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const uid = localStorage.getItem('rocy_user_id');
+const roleUser = localStorage.getItem('rocy_user_type') || localStorage.getItem('rocy_role') || '';
 const nom = localStorage.getItem('rocy_user_nom') || 'Client';
-if(!uid){ alert('Connecte-toi d’abord.'); location.href='connexion.html'; }
+if(!uid){ location.href='connexion.html'; }
+if(roleUser==='prestataire' || roleUser==='livreur'){ location.href='dashboard-prestataire.html'; }
+if(roleUser==='admin'){ location.href='admin.html'; }
 document.getElementById('nomUser').textContent = nom;
 
-function deconnecter(){ localStorage.clear(); location.href='index.html'; }
+function deconnecter(){
+  // Cahier : on garde rocy_langue
+  const langue = localStorage.getItem('rocy_langue');
+  localStorage.clear();
+  if(langue) localStorage.setItem('rocy_langue', langue);
+  location.href='index.html';
+}
 
 function badgeStatus(s){
   if(s==='en_attente') return '<span class="badge attente">⏳ En attente</span>';
@@ -89,7 +93,6 @@ function stepsHtml(s){
   const labels = ['Créée','Payée','En cours','Validée','Libérée'];
   return `<div class="steps">${labels.map((l,i)=>`<div class="step ${i<idx?'done':''} ${i===idx?'active':''}">${l}</div>`).join('')}</div>`;
 }
-// CORRECTION V3 : texte commission réel par univers
 function texteCommission(c){
   if(c.univers==='domicile') return `Commission 8% : ${Number(c.commission).toLocaleString()} FCFA`;
   if(c.univers==='pro') return `Commission 5 000 FCFA fixe`;
@@ -129,9 +132,9 @@ async function charger(){
   } else {
     boxV.innerHTML = convs.map(cv=>`<div class="card"><b>${cv.annonces?.titre || 'Discussion'}</b><p>${new Date(cv.created_at).toLocaleDateString('fr-FR')}</p><button class="btn btn-dark" onclick="voirConversation('${cv.id}','${cv.annonce_id}')">Ouvrir le chat</button></div>`).join('');
   }
+  if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 }
 
-// CORRECTION V3 : Payer passe par LA Page Paiement unique, pas un update direct
 function payer(id){
   localStorage.setItem('paiement_commande_id', id);
   location.href='paiement.html';
@@ -146,7 +149,6 @@ async function valider(id){
   alert('✅ Service validé ! Le prestataire sera payé. Tu peux le noter.');
   charger();
 }
-// CORRECTION V3 : Litige = argent reste bloqué, Admin tranche
 async function signalerLitige(id){
   const raison = prompt('Décris le problème :', 'Prestataire non venu / travail non terminé...');
   if(!raison) return;
@@ -170,7 +172,6 @@ function voirConversation(convId, annonceId){
     location.href='chat.html';
   });
 }
-
 charger();
 </script>
 </body>
