@@ -26,12 +26,9 @@ input{width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:10px;margin
 <div class="top">
 <div class="back" onclick="location.href='index.html'">← Accueil</div>
 <h1>🍽️ Se <span>nourrir</span></h1>
-<p class="sub">Vrais traiteurs, restos, livraison repas validés par Rocyinter.</p>
+<p class="sub">Vrais traiteurs, restos, livraison repas validés par Rocyinter. Commission 12% - Espèces à la livraison + 500 FCFA possible.</p>
 <div class="filtres" id="filtres">
-  <button class="active" onclick="setCat('')">Tous</button>
-  <button onclick="setCat('Traiteur')">Traiteur</button>
-  <button onclick="setCat('Restaurant / Maquis')">Restaurant</button>
-  <button onclick="setCat('Livraison repas')">Livraison</button>
+  <button class="active" data-cat="" onclick="setCat('')">Tous</button>
 </div>
 <input id="search" placeholder="🔍 Chercher : Calavi, Godomey, Traiteur..." oninput="charger()">
 <div id="liste">Chargement...</div>
@@ -41,20 +38,45 @@ const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let catActuelle = '';
-function setCat(c){ catActuelle=c; document.querySelectorAll('.filtres button').forEach(b=>b.classList.toggle('active', b.textContent.trim()===(c||'Tous') || (c===''&&b.textContent.trim()==='Tous'))); charger(); }
-async function charger(){
+let toutesAnnonces = [];
+
+function setCat(c){
+  catActuelle = c;
+  document.querySelectorAll('.filtres button').forEach(b=> b.classList.toggle('active', b.dataset.cat === c));
+  afficher();
+}
+
+// CORRECTION V3 : On construit les filtres à partir des catégories qui existent vraiment
+// Si un prestataire a écrit "Grillades", le bouton "Grillades" apparaît tout seul
+function construireFiltres(){
+  const cats = [...new Set(toutesAnnonces.map(a=>a.categorie).filter(Boolean))].sort();
+  const box = document.getElementById('filtres');
+  box.innerHTML = `<button class="active" data-cat="" onclick="setCat('')">Tous</button>` + cats.map(c=>`<button data-cat="${c}" onclick="setCat('${c.replace(/'/g,"\\'")}')">${c}</button>`).join('');
+  // Remet le bon bouton actif
+  document.querySelectorAll('.filtres button').forEach(b=> b.classList.toggle('active', b.dataset.cat === catActuelle));
+}
+
+function afficher(){
   const q = document.getElementById('search').value.trim().toLowerCase();
-  let query = supabase.from('annonces').select('*, profiles(nom, whatsapp)').eq('univers','manger').eq('status','valide').order('created_at',{ascending:false});
-  if(catActuelle) query = query.eq('categorie', catActuelle);
-  const {data} = await query;
   const box = document.getElementById('liste');
-  let list = data||[];
-  if(q) list = list.filter(a=>(a.titre+' '+a.ville+' '+a.localite+' '+a.categorie).toLowerCase().includes(q));
+  let list = toutesAnnonces;
+  if(catActuelle) list = list.filter(a=> a.categorie === catActuelle);
+  if(q) list = list.filter(a=>(a.titre+' '+a.ville+' '+a.localite+' '+a.categorie+' '+(a.description||'')).toLowerCase().includes(q));
   if(!list.length){ box.innerHTML=`<p style="text-align:center;color:#64748b;padding:20px">Aucun service pour l'instant dans cet univers.<br><button class="btn" onclick="location.href='creer-annonce.html'">Devenir prestataire</button></p>`; return; }
-  box.innerHTML = list.map(a=>`<div class="card"><h3>${a.titre}</h3><p>👤 ${a.profiles?.nom} • ${a.categorie}<br>📍 ${a.localite} - ${a.ville}<br>${a.prix_fixe ? Number(a.prix_indicatif).toLocaleString()+' FCFA' : 'Prix à discuter'}</p><button class="btn" onclick="voirPresta('${a.prestataire_id}')">Voir le prestataire</button><button class="btn btn-dark" onclick="discuter('${a.prestataire_id}','${a.id}')">💬 Discuter</button></div>`).join('');
+  box.innerHTML = list.map(a=>`<div class="card"><h3>${a.titre}</h3><p>👤 ${a.profiles?.nom} • ${a.categorie}<br>📍 ${a.localite} - ${a.ville}<br>${a.prix_fixe ? Number(a.prix_indicatif).toLocaleString()+' FCFA' : (a.prix_indicatif>0 ? 'À partir de '+Number(a.prix_indicatif).toLocaleString()+' FCFA' : 'Prix à discuter')}</p><button class="btn" onclick="voirPresta('${a.prestataire_id}')">Voir le prestataire</button><button class="btn btn-dark" onclick="discuter('${a.prestataire_id}','${a.id}')">💬 Discuter</button></div>`).join('');
+}
+
+async function charger(){
+  const {data} = await supabase.from('annonces').select('*, profiles(nom, whatsapp)').eq('univers','manger').eq('status','valide').order('created_at',{ascending:false});
+  toutesAnnonces = data || [];
+  construireFiltres();
+  afficher();
 }
 function voirPresta(id){ localStorage.setItem('fiche_prestataire_id', id); location.href='fiche-prestataire.html'; }
-function discuter(prestaId, annonceId){ localStorage.setItem('chat_prestataire', prestaId); localStorage.setItem('chat_annonce', annonceId); location.href='chat.html'; }
+function discuter(prestaId, annonceId){ 
+  if(!localStorage.getItem('rocy_user_id')){ location.href='connexion.html'; return; }
+  localStorage.setItem('chat_prestataire', prestaId); localStorage.setItem('chat_annonce', annonceId); location.href='chat.html'; 
+}
 charger();
 </script>
 </body>
