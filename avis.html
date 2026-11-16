@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Avis - Rocyinter</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
+body{background:#f6f7f9;color:#111;padding:16px}
+.top{max-width:520px;margin:0 auto}
+.back{color:#64748b;font-size:13px;cursor:pointer}
+h1{font-size:22px;margin:14px 0 12px} h1 span{color:#f59e0b}
+.card{background:#fff;border-radius:16px;padding:16px;margin-bottom:12px}
+select,textarea{width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:10px;margin:6px 0}
+.btn{width:100%;background:#f59e0b;border:none;padding:12px;border-radius:10px;font-weight:800;cursor:pointer}
+</style></head>
+<body><div class="top">
+<div class="back" onclick="history.back()">← Retour</div>
+<h1>⭐ Laisser un <span>avis</span></h1>
+<div class="card">
+<select id="note"><option value="5">⭐⭐⭐⭐⭐ - Excellent</option><option value="4">⭐⭐⭐⭐ - Très bien</option><option value="3">⭐⭐⭐ - Moyen</option><option value="2">⭐⭐ - Décevant</option><option value="1">⭐ - Mauvais</option></select>
+<textarea id="commentaire" rows="4" placeholder="Raconte ton expérience..."></textarea>
+<button class="btn" onclick="envoyer()">Envoyer l'avis</button>
+</div>
+</div>
+<script>
+const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
+const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+async function envoyer(){
+  const uid = localStorage.getItem('rocy_user_id');
+  if(!uid){location.href='connexion.html';return;}
+  const prestaId = localStorage.getItem('chat_prestataire') || localStorage.getItem('fiche_prestataire_id');
+  if(!prestaId){alert('Choisis un prestataire d’abord');return;}
+  const {error} = await supabase.from('avis').insert({prestataire_id:prestaId, client_id:uid, note:Number(document.getElementById('note').value), commentaire:document.getElementById('commentaire').value});
+  if(error){alert('Erreur : '+error.message);return;}
+  alert('Merci ! Ton avis est publié.'); location.href='fiche-prestataire.html';
+}
+</script></body></html>
