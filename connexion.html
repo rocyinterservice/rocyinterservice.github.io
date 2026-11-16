@@ -44,13 +44,11 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
 <div class="back" onclick="location.href='index.html'">← <span data-i18n="accueil">Accueil</span></div>
 <h1><span data-i18n="bonRetour">Bon retour</span> <span>chez Rocyinter</span></h1>
 <p class="sub" data-i18n="connexionSous">Connectez-vous avec votre WhatsApp ou Email + Mot de passe utilisés à l'inscription.</p>
-
 <div class="card">
   <div class="tabs">
     <button type="button" id="tabWhats" class="active" onclick="setMode('whatsapp')">📱 <span data-i18n="viaWhats">WhatsApp</span></button>
     <button type="button" id="tabEmail" onclick="setMode('email')">📧 <span data-i18n="viaEmail">Email</span></button>
   </div>
-
   <div id="blocWhats">
     <label data-i18n="votreWhats">VOTRE WHATSAPP *</label>
     <div class="telRow">
@@ -66,28 +64,23 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
     <div id="errTel" class="errTxt">❌ Bénin : 10 chiffres. Ex : 01 97 00 00 00</div>
     <p style="font-size:11px;color:#64748b;margin-top:4px" data-i18n="connexionTelAide">Même numéro qu'à l'inscription. Bénin : 10 chiffres.</p>
   </div>
-
   <div id="blocEmail" style="display:none">
     <label data-i18n="votreEmail">VOTRE EMAIL *</label>
     <input id="emailInput" type="email" placeholder="Ex: jean@gmail.com">
   </div>
-
   <div>
     <label data-i18n="votreMdp">VOTRE MOT DE PASSE *</label>
     <div class="pwdWrap"><input id="password" type="password" data-i18n-ph="mdpPh" placeholder="Votre mot de passe"><button type="button" class="eyeBtn" onclick="togglePwd('password', this)">👁️</button></div>
   </div>
   <div class="link-mdp"><a href="mot-de-passe-oublie.html" data-i18n="mdpOublie">Mot de passe oublié ?</a></div>
-
   <div id="msg" class="msg"></div>
   <button class="btn" id="btnCo" type="button" onclick="connecter()" data-i18n="seConnecter">Se connecter →</button>
-
   <div class="info">💡 <b data-i18n="pasCompte">Pas encore de compte ?</b><br><span data-i18n="pasCompteSous">Créez un compte en 1 minute. Votre WhatsApp + mot de passe = votre identité.</span></div>
-
   <small><span data-i18n="pasCompte2">Pas de compte ?</span> <a href="inscription.html" data-i18n="creezIci">Créez-en un ici</a></small>
 </div>
 </div>
-
 <script>
+const ADMIN_EMAIL = 'rocyinter@gmail.com';
 let modeConnexion='whatsapp';
 function setMode(m){
   modeConnexion=m;
@@ -135,7 +128,6 @@ function verifTelConnexion(){
   el.classList.toggle('err', num.length>0 && !ok);
   return ok;
 }
-
 async function connecter(){
   const password = document.getElementById('password').value;
   const btn = document.getElementById('btnCo');
@@ -155,7 +147,8 @@ async function connecter(){
   const supabase = getClient();
   if(!supabase){ showMsg('Pas de connexion internet. Recharge la page.', false); btn.disabled=false; btn.textContent='Se connecter →'; return; }
   try{
-    const {data: all, error} = await supabase.from('profiles').select('*');
+    // On ne prend que les champs utiles, pas de select('*') large
+    const {data: all, error} = await supabase.from('profiles').select('id,nom,full_name,email,whatsapp,phone,password,type,type_compte,role,pays,country,ville,city,localite');
     if(error){ showMsg('Erreur : ' + error.message, false); btn.disabled=false; btn.textContent='Se connecter →'; return; }
     let userProfil = null;
     if(modeConnexion==='whatsapp'){
@@ -175,12 +168,18 @@ async function connecter(){
       const {data: login, error: errLogin} = await supabase.auth.signInWithPassword({email: emailAuth, password});
       if(errLogin || !login?.user){ showMsg('Mot de passe incorrect. Réessaie.', false); btn.disabled = false; btn.textContent = 'Se connecter →'; return; }
     }
-    const typeFinal = userProfil.type || userProfil.type_compte || userProfil.role || 'client';
+    // --- CORRIGÉ ADMIN : mail admin = admin, même si base dit client ---
+    const emailFinal = String(userProfil.email || emailCherche || '').toLowerCase().trim();
+    let typeFinal = userProfil.type || userProfil.type_compte || userProfil.role || 'client';
+    if(emailFinal === ADMIN_EMAIL) typeFinal = 'admin';
+
     const nomFinal = userProfil.nom || userProfil.full_name || '';
-    // Cahier : on garde rocy_langue, on ne la remet jamais à zéro à la connexion
     const langueAvant = localStorage.getItem('rocy_langue');
     localStorage.setItem('rocy_user_id', userProfil.id);
     localStorage.setItem('rocy_user_nom', nomFinal);
+    // --- CORRIGÉ : on stocke l'email pour admin.html ---
+    localStorage.setItem('rocy_user_email', emailFinal);
+    localStorage.setItem('rocy_email', emailFinal);
     localStorage.setItem('rocy_user_type', typeFinal);
     localStorage.setItem('rocy_role', typeFinal);
     localStorage.setItem('rocy_user_whatsapp', userProfil.whatsapp || userProfil.phone || '');
