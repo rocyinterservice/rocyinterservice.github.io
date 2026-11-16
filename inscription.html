@@ -53,6 +53,10 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
     <input id="whatsapp" placeholder="Ex: +229 97 00 00 00">
   </div>
   <div>
+    <label>MOT DE PASSE *</label>
+    <input id="password" type="password" placeholder="Min 6 caractères">
+  </div>
+  <div>
     <label>EMAIL (optionnel)</label>
     <input id="email" type="email" placeholder="Ex: jean@gmail.com">
   </div>
@@ -154,6 +158,7 @@ function showMsg(txt, ok){
 async function inscrire(){
   const nom = document.getElementById('nom').value.trim();
   const whatsapp = document.getElementById('whatsapp').value.trim();
+  const password = document.getElementById('password').value;
   const email = document.getElementById('email').value.trim();
   const pays = document.getElementById('pays').value;
   const ville = document.getElementById('ville').value.trim();
@@ -164,28 +169,56 @@ async function inscrire(){
   const btn = document.getElementById('btnInscrire');
 
   if(!nom || !whatsapp || !ville || !localite){ showMsg('Remplis Nom + WhatsApp + Ville + Localité', false); return; }
+  if(!password || password.length < 6){ showMsg('Mot de passe : min 6 caractères', false); return; }
   if(typeCompte==='prestataire' && (!categorie || !description)){ showMsg('Prestataire : choisis ta catégorie + décris ton service', false); return; }
 
   btn.disabled = true; btn.textContent = 'Création...';
 
+  // CORRECTION V3 : On utilise Supabase Auth avec un email fictif basé sur WhatsApp
+  // Comme ça connexion.html pourra vraiment vérifier le mot de passe
+  const chiffres = whatsapp.replace(/[^0-9]/g,'');
+  const emailAuth = (email || (chiffres + '@rocyinter.com')).toLowerCase();
+
+  // Si cet email existe déjà, on essaie de se connecter direct
+  let userId = null;
+  const {data:signUp, error:errSignUp} = await supabase.auth.signUp({email: emailAuth, password});
+  if(signUp?.user?.id) userId = signUp.user.id;
+  if(!userId){
+    const {data:login} = await supabase.auth.signInWithPassword({email: emailAuth, password});
+    if(login?.user?.id) userId = login.user.id;
+  }
+  if(!userId){ showMsg('Erreur création compte. Ce WhatsApp / Email est peut-être déjà utilisé.', false); btn.disabled=false; btn.textContent='Créer mon compte →'; return; }
+
+  // CORRECTION V3 : Noms de colonnes unifiés pour tout le site
+  // type / categorie / statut_validation / description / photo_url
   const {data, error} = await supabase.from('profiles').insert([{
-    nom, whatsapp, email: email||null, type_compte: typeCompte,
+    id: userId, nom, whatsapp, email: email||null,
+    type: typeCompte,
     pays, ville, localite,
-    description_profil: description||null,
-    photo_profil: photo||null,
-    categorie_prestataire: typeCompte==='prestataire' ? categorie : null,
-    status_prestataire: typeCompte==='prestataire' ? 'en_attente' : null
+    description: description||null,
+    photo_url: photo||null,
+    categorie: typeCompte==='prestataire' ? categorie : null,
+    statut_validation: typeCompte==='prestataire' ? 'en_attente' : 'valide'
   }]).select().single();
 
-  if(error){ showMsg('Erreur : ' + error.message, false); btn.disabled=false; btn.textContent='Créer mon compte →'; return; }
+  if(error){
+    // Si profil existe déjà (ancien compte), on le met à jour au lieu de bloquer
+    const {data:upd} = await supabase.from('profiles').update({
+      nom, whatsapp, pays, ville, localite, type: typeCompte,
+      description: description||null, photo_url: photo||null,
+      categorie: typeCompte==='prestataire' ? categorie : null,
+      statut_validation: typeCompte==='prestataire' ? 'en_attente' : 'valide'
+    }).eq('id', userId).select().single();
+    if(!upd){ showMsg('Erreur profil : ' + error.message, false); btn.disabled=false; btn.textContent='Créer mon compte →'; return; }
+  }
 
-  localStorage.setItem('rocy_user_id', data.id);
-  localStorage.setItem('rocy_user_nom', data.nom);
-  localStorage.setItem('rocy_user_type', data.type_compte);
-  localStorage.setItem('rocy_user_whatsapp', data.whatsapp);
-  localStorage.setItem('rocy_user_pays', data.pays);
-  localStorage.setItem('rocy_user_ville', data.ville);
-  localStorage.setItem('rocy_user_localite', data.localite);
+  localStorage.setItem('rocy_user_id', userId);
+  localStorage.setItem('rocy_user_nom', nom);
+  localStorage.setItem('rocy_user_type', typeCompte);
+  localStorage.setItem('rocy_user_whatsapp', whatsapp);
+  localStorage.setItem('rocy_user_pays', pays);
+  localStorage.setItem('rocy_user_ville', ville);
+  localStorage.setItem('rocy_user_localite', localite);
 
   showMsg('✅ Compte créé ! Redirection...', true);
   setTimeout(()=>{
