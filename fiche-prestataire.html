@@ -43,19 +43,26 @@ if(!prestaId){ document.getElementById('contenu').innerHTML='Prestataire introuv
 async function charger(){
   const {data: p} = await supabase.from('profiles').select('*').eq('id', prestaId).single();
   if(!p){ document.getElementById('contenu').innerHTML='Prestataire introuvable.'; return; }
+
+  // CORRECTION V3 : On lit les 2 noms de colonnes possibles, on prend celui qui existe
+  // photo_url OU photo_profil / description OU description_profil / categorie OU categorie_prestataire
+  const photo = p.photo_url || p.photo_profil || p.photo || '';
+  const description = p.description_profil || p.description || '';
+  const categorie = p.categorie_prestataire || p.categorie || '';
   const initiale = (p.nom||'R').charAt(0).toUpperCase();
+
   const {data: annonces} = await supabase.from('annonces').select('*').eq('prestataire_id', prestaId).eq('status','valide');
   const {data: avis} = await supabase.from('avis').select('*').eq('prestataire_id', prestaId).order('created_at',{ascending:false});
   let moyenne = 0; if(avis && avis.length) moyenne = (avis.reduce((a,b)=>a+Number(b.note||0),0)/avis.length).toFixed(1);
 
   document.getElementById('contenu').innerHTML = `
     <div class="profil">
-      <div class="avatar">${p.photo_profil ? `<img src="${p.photo_profil}">` : initiale}</div>
+      <div class="avatar">${photo ? `<img src="${photo}">` : initiale}</div>
       <h1>${p.nom}</h1>
       <p>📍 ${p.localite} - ${p.ville} • ${p.pays}</p>
-      <p>${p.categorie_prestataire || ''}</p>
+      <p>${categorie}</p>
       <span class="badge">✅ Profil vérifié Rocyinter</span>
-      <p style="margin-top:10px;text-align:left">${p.description_profil || ''}</p>
+      <p style="margin-top:10px;text-align:left">${description}</p>
       <button class="btn" onclick="contacter('${annonces && annonces[0] ? annonces[0].id : ''}')">💬 Discuter avec ${p.nom}</button>
       <button class="btn btn-dark" onclick="location.href='index.html'">Voir d'autres services</button>
     </div>
@@ -65,15 +72,15 @@ async function charger(){
       <div class="stat"><b>${annonces?.length||0}</b><small>Annonces</small></div>
     </div>`;
 
-  document.getElementById('annonces').innerHTML = `<h3 style="margin:10px 0">📋 Ses services</h3>` + (annonces && annonces.length ? annonces.map(a=>`<div class="card"><h3>${a.titre}</h3><p>${a.categorie} • ${a.localite} - ${a.ville}<br>${a.prix_fixe ? Number(a.prix_indicatif).toLocaleString()+' FCFA' : 'Prix à discuter'}<br>${a.description}</p><button class="btn" onclick="contacter('${a.id}')">Discuter pour cette annonce</button></div>`).join('') : '<p style="color:#64748b;font-size:13px">Aucune annonce validée pour l’instant.</p>');
+  document.getElementById('annonces').innerHTML = `<h3 style="margin:10px 0">📋 Ses services</h3>` + (annonces && annonces.length ? annonces.map(a=>`<div class="card"><h3>${a.titre}</h3><p>${a.categorie} • ${a.localite} - ${a.ville}<br>${a.prix_fixe ? Number(a.prix_indicatif).toLocaleString()+' FCFA' : (a.prix_indicatif>0 ? 'À partir de '+Number(a.prix_indicatif).toLocaleString()+' FCFA' : 'Prix à discuter')}<br>${a.description}</p><button class="btn" onclick="contacter('${a.id}')">Discuter pour cette annonce</button></div>`).join('') : '<p style="color:#64748b;font-size:13px">Aucune annonce validée pour l’instant.</p>');
 
   document.getElementById('avis').innerHTML = `<h3 style="margin:14px 0 10px">⭐ Avis clients (${avis?.length||0})</h3>` + (avis && avis.length ? avis.map(a=>`<div class="avis">${'⭐'.repeat(a.note||5)}<br>${a.commentaire||''}</div>`).join('') : '<p style="color:#64748b;font-size:13px">Aucun avis pour l’instant. Sois le premier à commander.</p>');
 }
 function contacter(annonceId){
-  localStorage.setItem('chat_prestataire', prestaId);
-  if(annonceId) localStorage.setItem('chat_annonce', annonceId);
   const uid = localStorage.getItem('rocy_user_id');
   if(!uid){ location.href='connexion.html'; return; }
+  localStorage.setItem('chat_prestataire', prestaId);
+  if(annonceId) localStorage.setItem('chat_annonce', annonceId);
   location.href='chat.html';
 }
 charger();
