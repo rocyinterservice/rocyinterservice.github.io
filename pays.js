@@ -1,15 +1,26 @@
-// pays.js - LA SEULE LISTE DE PAYS POUR TOUT LE SITE
+// pays.js - LA SEULE LISTE DE PAYS POUR TOUT LE SITE - AVEC DRAPEAUX
 window.ROCY_PAYS = [
-"Bénin","Togo","Côte d'Ivoire","Sénégal","Cameroun","Nigeria","Ghana","Mali","Burkina Faso","Niger","Guinée","Guinée-Bissau","Guinée Équatoriale","Gambie","Sierra Leone","Liberia","Cap-Vert","Mauritanie","Maroc","Algérie","Tunisie","Libye","Égypte","Soudan","Soudan du Sud","Éthiopie","Érythrée","Djibouti","Somalie","Kenya","Ouganda","Tanzanie","Rwanda","Burundi","Congo","Congo RDC","Gabon","Centrafrique","Tchad","Angola","Zambie","Zimbabwe","Mozambique","Malawi","Madagascar","Maurice","Seychelles","Comores","Afrique du Sud","Namibie","Botswana","Lesotho","Eswatini",
-"France","Belgique","Suisse","Luxembourg","Italie","Espagne","Portugal","Allemagne","Royaume-Uni","Pays-Bas","Autriche","Danemark","Suède","Norvège","Finlande","Irlande","Grèce","Pologne","Roumanie","Hongrie","Tchéquie","Slovaquie","Croatie","Slovénie","Bosnie","Serbie","Monténégro","Albanie","Bulgarie","Ukraine","Biélorussie","Lituanie","Lettonie","Estonie","Islande","Malte","Chypre","Russie","Turquie","Arménie","Azerbaïdjan","Géorgie","Moldavie",
-"USA","Canada","Mexique","Brésil","Argentine","Colombie","Pérou","Chili","Venezuela","Équateur","Bolivie","Paraguay","Uruguay","Guatemala","Salvador","Honduras","Nicaragua","Costa Rica","Panama","Haïti","Cuba","République Dominicaine","Jamaïque","Trinité-et-Tobago",
-"Inde","Chine","Japon","Corée du Sud","Vietnam","Thaïlande","Indonésie","Philippines","Malaisie","Singapour","Myanmar","Cambodge","Laos","Bangladesh","Pakistan","Sri Lanka","Népal","Afghanistan","Iran","Irak","Émirats","Arabie Saoudite","Qatar","Koweït","Bahreïn","Oman","Jordanie","Liban","Syrie","Israël","Palestine","Yémen",
-"Australie","Nouvelle-Zélande","Fidji","Papouasie","Îles Salomon","Vanuatu","Îles Cook","Nouvelle-Calédonie","Polynésie"
+{p:'Bénin', d:'🇧🇯'}, {p:'Togo', d:'🇹🇬'}, {p:'Côte d\'Ivoire', d:'🇨🇮'}, {p:'Sénégal', d:'🇸🇳'}, {p:'Cameroun', d:'🇨🇲'}, {p:'Nigeria', d:'🇳🇬'}, {p:'Ghana', d:'🇬🇭'}, {p:'Mali', d:'🇲🇱'}, {p:'Burkina Faso', d:'🇧🇫'}, {p:'Niger', d:'🇳🇪'}, {p:'Guinée', d:'🇬🇳'}, {p:'Guinée-Bissau', d:'🇬🇼'}, {p:'Guinée Équatoriale', d:'🇬🇶'}, {p:'Gambie', d:'🇬🇲'}, {p:'Sierra Leone', d:'🇸🇱'}, {p:'Liberia', d:'🇱🇷'}, {p:'Cap-Vert', d:'🇨🇻'}, {p:'Mauritanie', d:'🇲🇷'}, {p:'Maroc', d:'🇲🇦'}, {p:'Algérie', d:'🇩🇿'}, {p:'Tunisie', d:'🇹🇳'}, {p:'Libye', d:'🇱🇾'}, {p:'Égypte', d:'🇪🇬'}, {p:'Soudan', d:'🇸🇩'}, {p:'Soudan du Sud', d:'🇸🇸'}, {p:'Éthiopie', d:'🇪🇹'}, {p:'Érythrée', d:'🇪🇷'}, {p:'Djibouti', d:'🇩🇯'}, {p:'Somalie', d:'🇸🇴'}, {p:'Kenya', d:'🇰🇪'}, {p:'Ouganda', d:'🇺🇬'}, {p:'Tanzanie', d:'🇹🇿'}, {p:'Rwanda', d:'🇷🇼'}, {p:'Burundi', d:'🇧🇮'}, {p:'Congo', d:'🇨🇬'}, {p:'Congo RDC', d:'🇨🇩'}, {p:'Gabon', d:'🇬🇦'}, {p:'Centrafrique', d:'🇨🇫'}, {p:'Tchad', d:'🇹🇩'}, {p:'Angola', d:'🇦🇴'}, {p:'Zambie', d:'🇿🇲'}, {p:'Zimbabwe', d:'🇿🇼'}, {p:'Mozambique', d:'🇲🇿'}, {p:'Malawi', d:'🇲🇼'}, {p:'Madagascar', d:'🇲🇬'}, {p:'Maurice', d:'🇲🇺'}, {p:'Seychelles', d:'🇸🇨'}, {p:'Comores', d:'🇰🇲'}, {p:'Afrique du Sud', d:'🇿🇦'}, {p:'Namibie', d:'🇳🇦'}, {p:'Botswana', d:'🇧🇼'}, {p:'Lesotho', d:'🇱🇸'}, {p:'Eswatini', d:'🇸🇿'},
+{p:'France', d:'🇫🇷'}, {p:'Belgique', d:'🇧🇪'}, {p:'Suisse', d:'🇨🇭'}, {p:'Luxembourg', d:'🇱🇺'}, {p:'Italie', d:'🇮🇹'}, {p:'Espagne', d:'🇪🇸'}, {p:'Portugal', d:'🇵🇹'}, {p:'Allemagne', d:'🇩🇪'}, {p:'Royaume-Uni', d:'🇬🇧'}, {p:'Pays-Bas', d:'🇳🇱'}, {p:'Autriche', d:'🇦🇹'}, {p:'Danemark', d:'🇩🇰'}, {p:'Suède', d:'🇸🇪'}, {p:'Norvège', d:'🇳🇴'}, {p:'Finlande', d:'🇫🇮'}, {p:'Irlande', d:'🇮🇪'}, {p:'Grèce', d:'🇬🇷'}, {p:'Pologne', d:'🇵🇱'}, {p:'Roumanie', d:'🇷🇴'}, {p:'Hongrie', d:'🇭🇺'}, {p:'Tchéquie', d:'🇨🇿'}, {p:'Slovaquie', d:'🇸🇰'}, {p:'Croatie', d:'🇭🇷'}, {p:'Slovénie', d:'🇸🇮'}, {p:'Bosnie', d:'🇧🇦'}, {p:'Serbie', d:'🇷🇸'}, {p:'Monténégro', d:'🇲🇪'}, {p:'Albanie', d:'🇦🇱'}, {p:'Bulgarie', d:'🇧🇬'}, {p:'Ukraine', d:'🇺🇦'}, {p:'Biélorussie', d:'🇧🇾'}, {p:'Lituanie', d:'🇱🇹'}, {p:'Lettonie', d:'🇱🇻'}, {p:'Estonie', d:'🇪🇪'}, {p:'Islande', d:'🇮🇸'}, {p:'Malte', d:'🇲🇹'}, {p:'Chypre', d:'🇨🇾'}, {p:'Russie', d:'🇷🇺'}, {p:'Turquie', d:'🇹🇷'}, {p:'Arménie', d:'🇦🇲'}, {p:'Azerbaïdjan', d:'🇦🇿'}, {p:'Géorgie', d:'🇬🇪'}, {p:'Moldavie', d:'🇲🇩'},
+{p:'USA', d:'🇺🇸'}, {p:'Canada', d:'🇨🇦'}, {p:'Mexique', d:'🇲🇽'}, {p:'Brésil', d:'🇧🇷'}, {p:'Argentine', d:'🇦🇷'}, {p:'Colombie', d:'🇨🇴'}, {p:'Pérou', d:'🇵🇪'}, {p:'Chili', d:'🇨🇱'}, {p:'Venezuela', d:'🇻🇪'}, {p:'Équateur', d:'🇪🇨'}, {p:'Bolivie', d:'🇧🇴'}, {p:'Paraguay', d:'🇵🇾'}, {p:'Uruguay', d:'🇺🇾'}, {p:'Guatemala', d:'🇬🇹'}, {p:'Salvador', d:'🇸🇻'}, {p:'Honduras', d:'🇭🇳'}, {p:'Nicaragua', d:'🇳🇮'}, {p:'Costa Rica', d:'🇨🇷'}, {p:'Panama', d:'🇵🇦'}, {p:'Haïti', d:'🇭🇹'}, {p:'Cuba', d:'🇨🇺'}, {p:'République Dominicaine', d:'🇩🇴'}, {p:'Jamaïque', d:'🇯🇲'}, {p:'Trinité-et-Tobago', d:'🇹🇹'},
+{p:'Inde', d:'🇮🇳'}, {p:'Chine', d:'🇨🇳'}, {p:'Japon', d:'🇯🇵'}, {p:'Corée du Sud', d:'🇰🇷'}, {p:'Vietnam', d:'🇻🇳'}, {p:'Thaïlande', d:'🇹🇭'}, {p:'Indonésie', d:'🇮🇩'}, {p:'Philippines', d:'🇵🇭'}, {p:'Malaisie', d:'🇲🇾'}, {p:'Singapour', d:'🇸🇬'}, {p:'Myanmar', d:'🇲🇲'}, {p:'Cambodge', d:'🇰🇭'}, {p:'Laos', d:'🇱🇦'}, {p:'Bangladesh', d:'🇧🇩'}, {p:'Pakistan', d:'🇵🇰'}, {p:'Sri Lanka', d:'🇱🇰'}, {p:'Népal', d:'🇳🇵'}, {p:'Afghanistan', d:'🇦🇫'}, {p:'Iran', d:'🇮🇷'}, {p:'Irak', d:'🇮🇶'}, {p:'Émirats', d:'🇦🇪'}, {p:'Arabie Saoudite', d:'🇸🇦'}, {p:'Qatar', d:'🇶🇦'}, {p:'Koweït', d:'🇰🇼'}, {p:'Bahreïn', d:'🇧🇭'}, {p:'Oman', d:'🇴🇲'}, {p:'Jordanie', d:'🇯🇴'}, {p:'Liban', d:'🇱🇧'}, {p:'Syrie', d:'🇸🇾'}, {p:'Israël', d:'🇮🇱'}, {p:'Palestine', d:'🇵🇸'}, {p:'Yémen', d:'🇾🇪'},
+{p:'Australie', d:'🇦🇺'}, {p:'Nouvelle-Zélande', d:'🇳🇿'}, {p:'Fidji', d:'🇫🇯'}, {p:'Papouasie', d:'🇵🇬'}, {p:'Îles Salomon', d:'🇸🇧'}, {p:'Vanuatu', d:'🇻🇺'}, {p:'Îles Cook', d:'🇨🇰'}, {p:'Nouvelle-Calédonie', d:'🇳🇨'}, {p:'Polynésie', d:'🇵🇫'}
 ];
+
+// Pour retrouver le drapeau d'un pays : rocyDrapeauPays('Bénin') -> 🇧🇯
+window.rocyDrapeauPays = function(nomPays){
+  if(!nomPays) return '';
+  const trouve = window.ROCY_PAYS.find(x => x.p === nomPays);
+  return trouve ? trouve.d : '';
+};
+
 window.rocyRemplirPays = function(selectId){
   const sel = document.getElementById(selectId);
-  if(!sel) return;
+  if(!sel){ console.log('ROCY: select introuvable', selectId); return; }
   const actuel = sel.value;
-  sel.innerHTML = '<option value="">Tous les pays</option>' + window.ROCY_PAYS.map(p=>`<option value="${p}">${p}</option>`).join('');
+  // On affiche le drapeau + le nom dans chaque option
+  sel.innerHTML = '<option value="">🌍 Tous les pays</option>' + window.ROCY_PAYS.map(x=>`<option value="${x.p}">${x.d} ${x.p}</option>`).join('');
   if(actuel) sel.value = actuel;
+  console.log('ROCY: pays remplis avec drapeaux =', window.ROCY_PAYS.length);
 };
+console.log('ROCY: pays.js chargé avec drapeaux, pays =', window.ROCY_PAYS.length);
