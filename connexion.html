@@ -25,6 +25,11 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
 .info{background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:12px;font-size:13px;line-height:1.5;color:#92400e}
 .errTxt{color:#ef4444;font-size:12px;display:none}
 .errTxt.show{display:block}
+/* OEIL MOT DE PASSE - pareil que inscription */
+.pwdWrap{position:relative}
+.pwdWrap input{padding-right:46px}
+.eyeBtn{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:none;background:transparent;cursor:pointer;font-size:19px;line-height:1;border-radius:8px}
+.eyeBtn:active{background:#f1f5f9}
 </style>
 </head>
 <body>
@@ -38,7 +43,6 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
     <label>VOTRE WHATSAPP *</label>
     <div class="telRow">
       <select id="indicatif" onchange="verifTelConnexion()">
-        <!-- AFRIQUE -->
         <option value="+229" selected>🇧🇯 +229 Bénin</option>
         <option value="+213">🇩🇿 +213 Algérie</option>
         <option value="+244">🇦🇴 +244 Angola</option>
@@ -92,7 +96,6 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
         <option value="+256">🇺🇬 +256 Ouganda</option>
         <option value="+260">🇿🇲 +260 Zambie</option>
         <option value="+263">🇿🇼 +263 Zimbabwe</option>
-        <!-- EUROPE -->
         <option value="+33">🇫🇷 +33 France</option>
         <option value="+32">🇧🇪 +32 Belgique</option>
         <option value="+41">🇨🇭 +41 Suisse</option>
@@ -136,7 +139,6 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
         <option value="+994">🇦🇿 +994 Azerbaïdjan</option>
         <option value="+995">🇬🇪 +995 Géorgie</option>
         <option value="+373">🇲🇩 +373 Moldavie</option>
-        <!-- AMÉRIQUES -->
         <option value="+1">🇺🇸 +1 USA</option>
         <option value="+1">🇨🇦 +1 Canada</option>
         <option value="+52">🇲🇽 +52 Mexique</option>
@@ -161,7 +163,6 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
         <option value="+1">🇩🇴 +1 République Dominicaine</option>
         <option value="+1">🇯🇲 +1 Jamaïque</option>
         <option value="+1">🇹🇹 +1 Trinité-et-Tobago</option>
-        <!-- ASIE / MOYEN-ORIENT / OCÉANIE -->
         <option value="+91">🇮🇳 +91 Inde</option>
         <option value="+86">🇨🇳 +86 Chine</option>
         <option value="+81">🇯🇵 +81 Japon</option>
@@ -210,7 +211,7 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
   </div>
   <div>
     <label>VOTRE MOT DE PASSE *</label>
-    <input id="password" type="password" placeholder="Votre mot de passe">
+    <div class="pwdWrap"><input id="password" type="password" placeholder="Votre mot de passe"><button type="button" class="eyeBtn" onclick="togglePwd('password', this)" aria-label="Voir le mot de passe">👁️</button></div>
   </div>
 
   <div id="msg" class="msg"></div>
@@ -223,7 +224,6 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
 </div>
 
 <script>
-// FONCTIONS EN PREMIER - LE BOUTON RÉAGIT TOUJOURS
 function showMsg(txt, ok){
   const m = document.getElementById('msg');
   m.textContent = txt;
@@ -235,17 +235,16 @@ function getClient(){
   try{ return window.supabase.createClient("https://gdwgjsloivrpxxvggxyz.supabase.co", "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF"); }
   catch(e){ return null; }
 }
-// CORRECTION BÉNIN 10 CHIFFRES : on NE coupe plus le 0 du 01
+function togglePwd(id, btn){ const inp=document.getElementById(id); const show = inp.type==='password'; inp.type = show ? 'text' : 'password'; btn.textContent = show ? '🙈' : '👁️'; inp.focus(); }
 function normaliseWhatsApp(){
   let num = document.getElementById('whatsappNum').value.replace(/[^0-9]/g,'');
   const indic = document.getElementById('indicatif').value;
   if(indic==='+229'){
-    if(num.length===8) num = '01' + num; // ancien 8 chiffres -> nouveau 10 chiffres
-    if(num.length===13 && num.startsWith('229')) num = num.slice(3); // 2290197000000 -> 0197000000
-    if(num.length===11 && num.startsWith('229')) num = num.slice(3); // 22997000000 -> 97000000 -> on rajoute 01 ci-dessous
+    if(num.length===8) num = '01' + num;
+    if(num.length===13 && num.startsWith('229')) num = num.slice(3);
+    if(num.length===11 && num.startsWith('229')) num = num.slice(3);
     if(num.length===8) num = '01' + num;
   } else {
-    // Pour les autres pays, on enlève le 0 du début si l'utilisateur l'a tapé
     if(num.startsWith('0')) num = num.slice(1);
   }
   return { num: num, whatsapp: indic + ' ' + num, chiffres: (indic + num).replace(/[^0-9]/g,'') };
@@ -284,7 +283,6 @@ async function connecter(){
   try{
     const {data: all, error} = await supabase.from('profiles').select('*');
     if(error){ showMsg('Erreur : ' + error.message, false); btn.disabled=false; btn.textContent='Se connecter →'; return; }
-    // On compare par chiffres + par les 8 derniers chiffres pour retrouver les anciens comptes à 8 chiffres
     const last8 = chiffres.slice(-8);
     const userProfil = (all||[]).find(p => {
       const c = (p.whatsapp||'').replace(/[^0-9]/g,'');
@@ -336,7 +334,6 @@ async function connecter(){
   }
 }
 
-// Pré-remplir WhatsApp si déjà connu : on garde le 01 du Bénin
 (function(){
   const w = localStorage.getItem('rocy_user_whatsapp');
   if(w){
