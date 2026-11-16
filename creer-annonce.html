@@ -22,6 +22,7 @@ textarea{min-height:90px;resize:vertical}
 .toggle{display:flex;gap:8px}
 .toggle button{flex:1;padding:12px;border:2px solid #e2e8f0;background:#fff;border-radius:10px;cursor:pointer;font-weight:700}
 .toggle button.active{border-color:#0f172a;background:#0f172a;color:#fff}
+.info-commission{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px;font-size:12px;line-height:1.5;color:#92400e;display:none}
 .btn{background:#f59e0b;color:#000;border:none;padding:14px;border-radius:12px;font-weight:800;cursor:pointer;font-size:15px;width:100%}
 .btn:disabled{opacity:.6}
 .msg{text-align:center;font-size:13px;padding:10px;border-radius:10px;display:none}
@@ -34,7 +35,7 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:8p
 <div class="top">
 <div class="back" onclick="location.href='index.html'">← Retour</div>
 <h1>Publiez votre <span>vrai service</span></h1>
-<p class="sub">Décrivez ce que vous savez vraiment faire. Pas de faux service, les clients vont vous noter.</p>
+<p class="sub">Décrivez ce que vous savez vraiment faire. Si ton service n'existe pas dans la liste, tu l'écris toi-même.</p>
 
 <div class="card">
   <div>
@@ -44,14 +45,23 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:8p
       <button type="button" id="u-domicile" onclick="setUnivers('domicile')">🏠 Domicile</button>
       <button type="button" id="u-pro" onclick="setUnivers('pro')">💼 Pro</button>
       <button type="button" id="u-sejour" onclick="setUnivers('sejour')">✈️ Séjour</button>
+      <button type="button" id="u-immobilier" onclick="setUnivers('immobilier')" style="grid-column:1 / -1">🏘️ Immobilier</button>
     </div>
+    <div id="infoCommission" class="info-commission"></div>
   </div>
 
   <div>
     <label>CATÉGORIE *</label>
-    <select id="categorie">
+    <select id="categorie" onchange="checkAutre()">
       <option value="">D'abord choisis l'univers...</option>
     </select>
+  </div>
+
+  <!-- CORRECTION V3 : Si la catégorie n'existe pas, le prestataire l'écrit lui-même -->
+  <div id="blocAutreCategorie" style="display:none">
+    <label>ÉCRIS TA CATÉGORIE * (elle n'existait pas)</label>
+    <input id="autreCategorie" placeholder="Ex: Nettoyage, Désinfection, Nettoyage après chantier...">
+    <p style="font-size:11px;color:#64748b;margin-top:4px">Exemple : tu choisis Domicile → Autre → tu écris « Nettoyage ». Ton annonce sera créée avec la catégorie « Nettoyage ».</p>
   </div>
 
   <div>
@@ -101,6 +111,7 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:8p
   <div>
     <label>LOCALITÉ / QUARTIER *</label>
     <input id="localite" placeholder="Ex: Godomey, Cococodji...">
+    <p style="font-size:11px;color:#64748b;margin-top:4px">Écris ta localité toi-même, ne choisis pas dans une liste.</p>
   </div>
 
   <div>
@@ -124,18 +135,47 @@ let prixFixe = false;
 
 const categories = {
   manger: ["Traiteur","Restaurant / Maquis","Livraison repas","Pâtisserie","Jus / Boissons"],
-  domicile: ["Ménage / Repassage","Plomberie","Électricité","Climatisation","Menuiserie","Peinture","Jardinage","Mécanique"],
-  pro: ["Design / Graphisme","Développement Web","Marketing / Réseaux sociaux","Comptabilité","Traduction","Cours / Coaching","Montage vidéo"],
-  sejour: ["Hôtel / Appartement","Location voiture","Guide touristique","Transport / Moto","Location salle"]
+  domicile: ["Nettoyage / Ménage","Ménage / Repassage","Plomberie","Électricité","Climatisation","Menuiserie","Peinture","Jardinage","Mécanique","Serrurerie","Déménagement"],
+  pro: ["Design / Graphisme","Développement Web","Marketing / Réseaux sociaux","Comptabilité","Traduction","Cours / Coaching","Montage vidéo","Rédaction / CV"],
+  sejour: ["Hôtel / Appartement","Location voiture","Guide touristique","Transport / Moto","Location salle","Excursion / Visite"],
+  immobilier: ["Location maison / Appartement","Vente maison / Terrain","Location chambre / Studio","Gestion locative","Visite / Courtage"]
+};
+
+const infosCommission = {
+  manger: "🍽️ <b>Manger : Commission 12%</b> - Lancement 8% pour les 20 premiers. Prélevée à la libération. Espèces à la livraison + 500 FCFA possible.",
+  domicile: "🏠 <b>Domicile : Commission 8%</b> - Prélevée à la libération. Tu reçois 92% du montant. Escrow 100%.",
+  pro: "💼 <b>Pro : Commission 5 000 FCFA fixe</b> - Pour débloquer le contact client. Pas de %. Le client paie, tu reçois le contact.",
+  sejour: "✈️ <b>Séjour : Commission 12% par nuit réservée.</b> Prélevée à la libération. Paiement avant arrivée, escrow.",
+  immobilier: "🏘️ <b>Immobilier : Commission à part.</b> Visite payante / mise en relation. L'Admin te confirmera le montant avant validation."
 };
 
 function setUnivers(u){
   universChoisi = u;
-  ['manger','domicile','pro','sejour'].forEach(k=>{
-    document.getElementById('u-'+k).classList.toggle('active', k===u);
+  ['manger','domicile','pro','sejour','immobilier'].forEach(k=>{
+    const el = document.getElementById('u-'+k);
+    if(el) el.classList.toggle('active', k===u);
   });
   const sel = document.getElementById('categorie');
-  sel.innerHTML = '<option value="">Choisir une catégorie...</option>' + categories[u].map(c=>`<option value="${c}">${c}</option>`).join('');
+  sel.innerHTML = '<option value="">Choisir une catégorie...</option>' + categories[u].map(c=>`<option value="${c}">${c}</option>`).join('') + '<option value="__AUTRE__">➕ Autre - Écrire ma catégorie...</option>';
+  document.getElementById('blocAutreCategorie').style.display = 'none';
+  document.getElementById('autreCategorie').value = '';
+  const info = document.getElementById('infoCommission');
+  info.innerHTML = infosCommission[u] || '';
+  info.style.display = 'block';
+  const exemples = {
+    manger: "Ex: Traiteur à Calavi - Riz, sauce, livraison rapide",
+    domicile: "Ex: Nettoyage à Calavi - Maison, bureau, après chantier",
+    pro: "Ex: Graphiste à Cotonou - Logo, flyer, réseaux sociaux",
+    sejour: "Ex: Appartement meublé à Fidjrossè - 2 chambres, wifi",
+    immobilier: "Ex: Maison 3 chambres à Godomey - Location 150 000 FCFA/mois"
+  };
+  document.getElementById('titre').placeholder = exemples[u] || '';
+}
+
+function checkAutre(){
+  const sel = document.getElementById('categorie');
+  const isAutre = sel.value === '__AUTRE__';
+  document.getElementById('blocAutreCategorie').style.display = isAutre ? 'block' : 'none';
 }
 
 function setPrixType(fixe){
@@ -151,7 +191,6 @@ function showMsg(txt, ok){
   m.className = 'msg ' + (ok ? 'ok' : 'err');
 }
 
-// Pré-remplir avec le profil
 const uid = localStorage.getItem('rocy_user_id');
 if(!uid){ showMsg('Connecte-toi d’abord pour publier une annonce.', false); setTimeout(()=>location.href='connexion.html',1500); }
 else {
@@ -163,13 +202,20 @@ else {
 async function publier(){
   const titre = document.getElementById('titre').value.trim();
   const description = document.getElementById('description').value.trim();
-  const categorie = document.getElementById('categorie').value;
+  let categorie = document.getElementById('categorie').value;
   const pays = document.getElementById('pays').value;
   const ville = document.getElementById('ville').value.trim();
   const localite = document.getElementById('localite').value.trim();
   const photo = document.getElementById('photo').value.trim();
   const prix = document.getElementById('prix').value;
   const btn = document.getElementById('btnPublier');
+
+  // Si Autre, on prend ce que le prestataire a écrit
+  if(categorie === '__AUTRE__'){
+    const autre = document.getElementById('autreCategorie').value.trim();
+    if(!autre){ showMsg('Écris ta catégorie, ex: Nettoyage, Désinfection...', false); return; }
+    categorie = autre;
+  }
 
   if(!universChoisi || !categorie || !titre || !description || !ville || !localite){ showMsg('Remplis Univers + Catégorie + Titre + Description + Ville + Localité', false); return; }
   if(prixFixe && (!prix || Number(prix)<=0)){ showMsg('Mets un prix fixe supérieur à 0', false); return; }
@@ -181,7 +227,7 @@ async function publier(){
     univers: universChoisi,
     categorie, titre, description,
     prix_fixe: prixFixe,
-    prix_indicatif: prixFixe ? Number(prix) : (prix ? Number(prix) : 0),
+    prix_indicatif: prixFixe ? Number(prix) : (prix ? Number(prix) : null),
     pays, ville, localite,
     photo_url: photo || null,
     status: 'en_attente'
