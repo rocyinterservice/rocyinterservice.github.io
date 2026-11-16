@@ -45,7 +45,8 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:8p
       <button type="button" id="u-domicile" onclick="setUnivers('domicile')">🏠 Domicile</button>
       <button type="button" id="u-pro" onclick="setUnivers('pro')">💼 Pro</button>
       <button type="button" id="u-sejour" onclick="setUnivers('sejour')">✈️ Séjour</button>
-      <button type="button" id="u-immobilier" onclick="setUnivers('immobilier')" style="grid-column:1 / -1">🏘️ Immobilier</button>
+      <button type="button" id="u-immobilier" onclick="setUnivers('immobilier')">🏘️ Immobilier</button>
+      <button type="button" id="u-livreur" onclick="setUnivers('livreur')">🛵 Livreur</button>
     </div>
     <div id="infoCommission" class="info-commission"></div>
   </div>
@@ -57,7 +58,6 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:8p
     </select>
   </div>
 
-  <!-- CORRECTION V3 : Si la catégorie n'existe pas, le prestataire l'écrit lui-même -->
   <div id="blocAutreCategorie" style="display:none">
     <label>ÉCRIS TA CATÉGORIE * (elle n'existait pas)</label>
     <input id="autreCategorie" placeholder="Ex: Nettoyage, Désinfection, Nettoyage après chantier...">
@@ -121,7 +121,7 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:8p
 
   <div id="msg" class="msg"></div>
   <button class="btn" id="btnPublier" onclick="publier()">Publier mon annonce →</button>
-  <small>⚠️ Votre annonce sera en attente de validation.<br>Elle apparaîtra sur l'accueil après validation. Pas de faux service = pas de bannissement.</small>
+  <small>⚠️ Votre annonce sera en attente de validation.<br>Elle apparaîtra sur l'accueil après validation. Pas de faux service = pas de bannissement.<br><a href="abonnement.html">Voir abonnement - 1er mois offert* pour les 30 premiers validés. Commissions dues dès la 1ère mission.</a></small>
 </div>
 </div>
 
@@ -138,7 +138,8 @@ const categories = {
   domicile: ["Nettoyage / Ménage","Ménage / Repassage","Plomberie","Électricité","Climatisation","Menuiserie","Peinture","Jardinage","Mécanique","Serrurerie","Déménagement"],
   pro: ["Design / Graphisme","Développement Web","Marketing / Réseaux sociaux","Comptabilité","Traduction","Cours / Coaching","Montage vidéo","Rédaction / CV"],
   sejour: ["Hôtel / Appartement","Location voiture","Guide touristique","Transport / Moto","Location salle","Excursion / Visite"],
-  immobilier: ["Location maison / Appartement","Vente maison / Terrain","Location chambre / Studio","Gestion locative","Visite / Courtage"]
+  immobilier: ["Maison à louer","Chambre à louer","Appartement à louer","Parcelle à vendre","Terrain à vendre","Maison à vendre","Gestion locative","Visite / Courtage"],
+  livreur: ["Livraison moto","Livraison voiture","Livraison colis","Livraison repas","Courses / Marché"]
 };
 
 const infosCommission = {
@@ -146,12 +147,13 @@ const infosCommission = {
   domicile: "🏠 <b>Domicile : Commission 8%</b> - Prélevée à la libération. Tu reçois 92% du montant. Escrow 100%.",
   pro: "💼 <b>Pro : Commission 5 000 FCFA fixe</b> - Pour débloquer le contact client. Pas de %. Le client paie, tu reçois le contact.",
   sejour: "✈️ <b>Séjour : Commission 12% par nuit réservée.</b> Prélevée à la libération. Paiement avant arrivée, escrow.",
-  immobilier: "🏘️ <b>Immobilier : Commission à part.</b> Visite payante / mise en relation. L'Admin te confirmera le montant avant validation."
+  immobilier: "🏘️ <b>Immobilier :</b> Parcelle / Vente : 10 000 FCFA / 30 jours + 2% plafonné à 200 000 FCFA. Location : 50% d'un mois, une fois, payé par le propriétaire. Mise en avant parcelle : 5 000 FCFA / semaine.",
+  livreur: "🛵 <b>Livreur : Livreur 80% / Rocyinter 20%.</b> Livraison non obligatoire, au choix du client. Prix de livraison à discuter dans le chat, pas de prix fixe."
 };
 
 function setUnivers(u){
   universChoisi = u;
-  ['manger','domicile','pro','sejour','immobilier'].forEach(k=>{
+  ['manger','domicile','pro','sejour','immobilier','livreur'].forEach(k=>{
     const el = document.getElementById('u-'+k);
     if(el) el.classList.toggle('active', k===u);
   });
@@ -167,9 +169,12 @@ function setUnivers(u){
     domicile: "Ex: Nettoyage à Calavi - Maison, bureau, après chantier",
     pro: "Ex: Graphiste à Cotonou - Logo, flyer, réseaux sociaux",
     sejour: "Ex: Appartement meublé à Fidjrossè - 2 chambres, wifi",
-    immobilier: "Ex: Maison 3 chambres à Godomey - Location 150 000 FCFA/mois"
+    immobilier: "Ex: Maison 3 chambres à Godomey - Location 150 000 FCFA/mois",
+    livreur: "Ex: Livreur moto à Calavi - Godomey, Cococodji, Cotonou"
   };
   document.getElementById('titre').placeholder = exemples[u] || '';
+  // Livreur : prix toujours à discuter par défaut
+  if(u==='livreur'){ setPrixType(false); }
 }
 
 function checkAutre(){
@@ -192,14 +197,20 @@ function showMsg(txt, ok){
 }
 
 const uid = localStorage.getItem('rocy_user_id');
+const roleUser = localStorage.getItem('rocy_user_type') || localStorage.getItem('rocy_role') || '';
 if(!uid){ showMsg('Connecte-toi d’abord pour publier une annonce.', false); setTimeout(()=>location.href='connexion.html',1500); }
-else {
+else if(roleUser==='client'){
+  showMsg('Tu es connecté comme Client / Acheteur. Pour publier, crée un compte Prestataire / Livreur.', false);
+  setTimeout(()=>location.href='inscription.html',2000);
+} else {
   document.getElementById('pays').value = localStorage.getItem('rocy_user_pays') || 'Bénin';
   document.getElementById('ville').value = localStorage.getItem('rocy_user_ville') || '';
   document.getElementById('localite').value = localStorage.getItem('rocy_user_localite') || '';
 }
 
 async function publier(){
+  // Sécurité : un acheteur ne publie pas
+  if(roleUser==='client'){ showMsg('Compte Client : tu ne peux pas publier. Crée un compte Prestataire.', false); return; }
   const titre = document.getElementById('titre').value.trim();
   const description = document.getElementById('description').value.trim();
   let categorie = document.getElementById('categorie').value;
@@ -210,7 +221,6 @@ async function publier(){
   const prix = document.getElementById('prix').value;
   const btn = document.getElementById('btnPublier');
 
-  // Si Autre, on prend ce que le prestataire a écrit
   if(categorie === '__AUTRE__'){
     const autre = document.getElementById('autreCategorie').value.trim();
     if(!autre){ showMsg('Écris ta catégorie, ex: Nettoyage, Désinfection...', false); return; }
