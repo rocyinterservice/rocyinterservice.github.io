@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Monnaie - Rocyinter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
+body{background:#f6f7f9;color:#111;padding:16px}
+.top{max-width:420px;margin:0 auto}
+.back{color:#64748b;font-size:13px;cursor:pointer}
+h1{font-size:22px;margin:14px 0 12px} h1 span{color:#f59e0b}
+.btn{width:100%;background:#fff;border:1px solid #e2e8f0;padding:14px;border-radius:12px;cursor:pointer;margin-bottom:8px;text-align:left;font-size:15px;font-weight:700}
+.btn.active{background:#0f172a;color:#fff}
+.info{background:#fffbe6;border:1px solid #fde68a;border-radius:12px;padding:12px;font-size:13px;line-height:1.6}
+</style></head>
+<body><div class="top">
+<div class="back" onclick="history.back()">← Retour</div>
+<h1>💱 <span>Monnaie</span></h1>
+<p style="font-size:13px;color:#64748b;margin-bottom:12px">Prix de base en FCFA. Les autres monnaies sont une estimation, le paiement se fait en FCFA.</p>
+<div id="liste"></div>
+</div>
+<script>
+const monnaies = [['FCFA','🇧🇯 FCFA - Franc CFA'],['NGN','🇳🇬 Naira - Nigeria'],['GHS','🇬🇭 Cedi - Ghana'],['EUR','🇪🇺 Euro'],['USD','🇺🇸 Dollar'],['CAD','🇨🇦 Dollar Canadien']];
+const cur = localStorage.getItem('rocy_monnaie')||'FCFA';
+document.getElementById('liste').innerHTML = monnaies.map(m=>`<button class="btn ${m[0]===cur?'active':''}" onclick="choisir('${m[0]}')">${m[1]} ${m[0]===cur?'✅':''}</button>`).join('');
+function choisir(m){localStorage.setItem('rocy_monnaie',m); alert('Monnaie enregistrée : '+m+' - Les prix restent affichés en FCFA, conversion bientôt.'); history.back();}
+</script></body></html>
