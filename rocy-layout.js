@@ -1,4 +1,4 @@
-// rocy-layout.js - ROCYINTER SERVICE - HEADER + TRADUCTION AUTO POUR TOUTES LES PAGES + MONNAIE + ROLES
+// rocy-layout.js - ROCYINTER SERVICE - HEADER FIXE EN SUPERPOSITION + TRADUCTION + MONNAIE + ROLES
 (function(){
   const uid = localStorage.getItem('rocy_user_id');
   const typeLocal = localStorage.getItem('rocy_user_type') || localStorage.getItem('rocy_role') || '';
@@ -6,33 +6,34 @@
   const isConnecte = !!uid;
   const isPresta = typeLocal === 'prestataire' || typeLocal === 'livreur';
 
+  // LANGUES : court = ce qu'on voit quand c'est fermé, long = ce qu'on voit dans la liste ouverte
   const LANGUES = [
-    {code:'fr', label:'🇫🇷 FR'},
-    {code:'en', label:'🇬🇧 EN'},
-    {code:'yo', label:'🇳🇬 YO'},
-    {code:'ig', label:'🇳🇬 IG'},
-    {code:'ha', label:'🇳🇬 HA'},
-    {code:'fon', label:'🇧🇯 FON'},
-    {code:'wo', label:'🇸🇳 WO'},
-    {code:'bm', label:'🇲🇱 BM'},
-    {code:'ee', label:'🇹🇬 EE'},
-    {code:'tw', label:'🇬🇭 TW'},
-    {code:'ln', label:'🇨🇩 LN'},
-    {code:'sw', label:'🇹🇿 SW'},
-    {code:'am', label:'🇪🇹 AM'},
-    {code:'so', label:'🇸🇴 SO'},
-    {code:'es', label:'🇪🇸 ES'},
-    {code:'pt', label:'🇵🇹 PT'},
-    {code:'ar', label:'🇸🇦 AR'},
-    {code:'de', label:'🇩🇪 DE'},
-    {code:'it', label:'🇮🇹 IT'},
-    {code:'nl', label:'🇳🇱 NL'},
-    {code:'ru', label:'🇷🇺 RU'},
-    {code:'tr', label:'🇹🇷 TR'},
-    {code:'zh', label:'🇨🇳 ZH'},
-    {code:'ja', label:'🇯🇵 JA'},
-    {code:'ko', label:'🇰🇷 KO'},
-    {code:'hi', label:'🇮🇳 HI'}
+    {code:'fr', court:'FR', long:'Français', flag:'🇫🇷'},
+    {code:'en', court:'EN', long:'English', flag:'🇬🇧'},
+    {code:'yo', court:'YO', long:'Yoruba', flag:'🇳🇬'},
+    {code:'ig', court:'IG', long:'Igbo', flag:'🇳🇬'},
+    {code:'ha', court:'HA', long:'Hausa', flag:'🇳🇬'},
+    {code:'fon', court:'FON', long:'Fon / Fongbe', flag:'🇧🇯'},
+    {code:'wo', court:'WO', long:'Wolof', flag:'🇸🇳'},
+    {code:'bm', court:'BM', long:'Bambara', flag:'🇲🇱'},
+    {code:'ee', court:'EE', long:'Ewe', flag:'🇹🇬'},
+    {code:'tw', court:'TW', long:'Twi', flag:'🇬🇭'},
+    {code:'ln', court:'LN', long:'Lingala', flag:'🇨🇩'},
+    {code:'sw', court:'SW', long:'Kiswahili', flag:'🇹🇿'},
+    {code:'am', court:'AM', long:'Amharic', flag:'🇪🇹'},
+    {code:'so', court:'SO', long:'Somali', flag:'🇸🇴'},
+    {code:'es', court:'ES', long:'Español', flag:'🇪🇸'},
+    {code:'pt', court:'PT', long:'Português', flag:'🇵🇹'},
+    {code:'ar', court:'AR', long:'العربية', flag:'🇸🇦'},
+    {code:'de', court:'DE', long:'Deutsch', flag:'🇩🇪'},
+    {code:'it', court:'IT', long:'Italiano', flag:'🇮🇹'},
+    {code:'nl', court:'NL', long:'Nederlands', flag:'🇳🇱'},
+    {code:'ru', court:'RU', long:'Русский', flag:'🇷🇺'},
+    {code:'tr', court:'TR', long:'Türkçe', flag:'🇹🇷'},
+    {code:'zh', court:'ZH', long:'中文', flag:'🇨🇳'},
+    {code:'ja', court:'JA', long:'日本語', flag:'🇯🇵'},
+    {code:'ko', court:'KO', long:'한국어', flag:'🇰🇷'},
+    {code:'hi', court:'HI', long:'हिन्दी', flag:'🇮🇳'}
   ];
 
   let langue = localStorage.getItem('rocy_langue') || 'fr';
@@ -60,6 +61,15 @@
     return BASE_FR[key] || key;
   };
   window.rocySetLangue = function(l){ localStorage.setItem('rocy_langue', l); location.reload(); };
+  window.rocyToggleLangue = function(e){
+    if(e) e.stopPropagation();
+    const m = document.getElementById('rocyLangueMenu');
+    if(m) m.classList.toggle('show');
+  };
+  document.addEventListener('click', function(){
+    const m = document.getElementById('rocyLangueMenu');
+    if(m) m.classList.remove('show');
+  });
 
   async function traduireAuto(texte, langueCible){
     if(!texte || langueCible==='fr') return texte;
@@ -154,27 +164,42 @@
     await chargerTaux();
     const isAdmin = await verifierAdmin();
     const t = window.rocyT;
-    const optsLangue = LANGUES.map(l=>`<option value="${l.code}" ${langue===l.code?'selected':''}>${l.label}</option>`).join('');
+    const langueActuelle = LANGUES.find(l=>l.code===langue) || LANGUES[0];
+    // Liste ouverte : NOM COMPLET, pas d'abréviation
+    const listeLangue = LANGUES.map(l=>`<button type="button" class="rocy-langue-item ${l.code===langue?'actif':''}" onclick="rocySetLangue('${l.code}')">${l.flag} ${l.long}</button>`).join('');
     const optsDevise = DEVISES.map(d=>`<option value="${d.code}" ${devise===d.code?'selected':''}>${d.label}</option>`).join('');
     const headerHTML = `
     <style>
       *{box-sizing:border-box}
       html,body{overflow-x:hidden;width:100%;margin:0;padding:0}
-      .rocy-header{background:#0f172a;color:#fff;padding:10px 8px 8px;display:flex;flex-direction:column;gap:8px;position:sticky;top:0;z-index:100;width:100%;max-width:100vw;overflow:hidden}
+      /* Pour que l'entête fixe ne cache pas le contenu */
+      body{padding-top:92px !important}
+      .rocy-header{background:#0f172a;color:#fff;padding:10px 8px 8px;display:flex;flex-direction:column;gap:8px;position:fixed;top:0;left:0;right:0;z-index:100;width:100%;max-width:100vw;overflow:visible;box-shadow:0 4px 14px rgba(0,0,0,.25)}
       .rocy-header-ligne1{display:flex;align-items:center;gap:6px;width:100%;max-width:100%}
       .rocy-header-ligne2{display:flex;justify-content:flex-end;gap:8px;width:100%}
       .rocy-burger{font-size:22px;cursor:pointer;background:none;border:none;color:#fff;line-height:1;padding:4px 4px;border-radius:8px;flex-shrink:0}
-      .rocy-logo{font-size:19px;font-weight:800;cursor:pointer;flex:1;min-width:0;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .rocy-logo b{font-size:19px;font-weight:800} .rocy-logo span{color:#f59e0b;font-size:12px;font-weight:600;letter-spacing:.3px}
+      /* LOGO : ROCY blanc + INTER jaune, SERVICES blanc en dessous */
+      .rocy-logo{cursor:pointer;flex:1;min-width:0;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .rocy-logo .rocy-nom{font-size:19px;font-weight:800;letter-spacing:.2px}
+      .rocy-logo .rocy-blanc{color:#fff}
+      .rocy-logo .rocy-jaune{color:#f59e0b}
+      .rocy-logo .rocy-services{display:block;color:#fff;font-size:10px;font-weight:700;letter-spacing:3.5px;margin-top:3px;opacity:.95}
       .rocy-header .btn{background:#f59e0b;color:#000;border:none;padding:8px 12px;border-radius:999px;font-weight:700;cursor:pointer;font-size:12px;white-space:nowrap}
       .rocy-header .btn-white{background:#fff;color:#111}
       .rocy-top-select{background:#1e293b;color:#fff;border:1px solid #334155;border-radius:999px;padding:6px 4px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0}
-      .rocy-select-langue{width:68px;max-width:68px}
       .rocy-select-devise{width:64px;max-width:64px}
       .rocy-espace-btn{background:#1e293b;color:#fff;border:1px solid #334155;border-radius:999px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+      /* LANGUE : bouton fermé = abréviation, liste ouverte = nom complet */
+      .rocy-langue-wrap{position:relative;flex-shrink:0}
+      .rocy-langue-btn{background:#1e293b;color:#fff;border:1px solid #334155;border-radius:999px;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}
+      .rocy-langue-menu{display:none;position:absolute;top:calc(100% + 6px);right:0;width:180px;max-height:320px;overflow-y:auto;background:#fff;color:#111;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.25);padding:6px;z-index:300}
+      .rocy-langue-menu.show{display:block}
+      .rocy-langue-item{display:block;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid #f1f5f9;padding:11px 10px;font-size:14px;cursor:pointer;color:#111}
+      .rocy-langue-item.actif{background:#fef3c7;font-weight:700}
       .rocy-drawer{position:fixed;top:0;left:-300px;width:280px;max-width:85vw;height:100%;background:#fff;z-index:200;transition:left .25s;box-shadow:4px 0 20px rgba(0,0,0,.2);overflow-y:auto;padding-bottom:20px}
       .rocy-drawer.open{left:0}
       .rocy-drawer-head{background:#0f172a;color:#fff;padding:16px}
-      .rocy-drawer-head b{font-size:18px} .rocy-drawer-head b span{color:#f59e0b;font-size:13px;font-weight:600} .rocy-drawer-head small{opacity:.8}
+      .rocy-drawer-head b{font-size:18px} .rocy-drawer-head b .blanc{color:#fff} .rocy-drawer-head b .jaune{color:#f59e0b} .rocy-drawer-head small{opacity:.8}
       .rocy-menu-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid #f1f5f9;padding:14px 16px;font-size:14px;cursor:pointer;color:#111}
       .rocy-menu-label{font-size:11px;font-weight:800;color:#94a3b8;padding:14px 16px 4px}
       .rocy-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:150;display:none;pointer-events:none}
@@ -186,8 +211,14 @@
     <header class="rocy-header">
       <div class="rocy-header-ligne1">
         <button type="button" class="rocy-burger" onclick="rocyOuvrirMenu()">☰</button>
-        <div class="rocy-logo" onclick="location.href='index.html'"><b>Rocyinter</b> <span>Service</span></div>
-        <select class="rocy-top-select rocy-select-langue" onchange="rocySetLangue(this.value)">${optsLangue}</select>
+        <div class="rocy-logo" onclick="location.href='index.html'">
+          <div class="rocy-nom"><span class="rocy-blanc">ROCY</span><span class="rocy-jaune">INTER</span></div>
+          <span class="rocy-services">SERVICES</span>
+        </div>
+        <div class="rocy-langue-wrap">
+          <button type="button" class="rocy-langue-btn" onclick="rocyToggleLangue(event)">${langueActuelle.flag} ${langueActuelle.court} ▾</button>
+          <div class="rocy-langue-menu" id="rocyLangueMenu">${listeLangue}</div>
+        </div>
         <select class="rocy-top-select rocy-select-devise" onchange="rocySetDevise(this.value)">${optsDevise}</select>
       </div>
       <div class="rocy-header-ligne2">
@@ -195,7 +226,7 @@
       </div>
     </header>
     <div class="rocy-drawer" id="rocyDrawer">
-      <div class="rocy-drawer-head"><b>Rocyinter <span>Service</span></b><br><small>${isConnecte ? '👋 '+t('bonjour')+', '+nom : t('visiteur')}</small><br><button type="button" style="margin-top:8px;background:#f59e0b;border:none;padding:6px 12px;border-radius:999px;font-weight:700;cursor:pointer" onclick="rocyFermerMenu()">${t('fermer')}</button></div>
+      <div class="rocy-drawer-head"><b><span class="blanc">ROCY</span><span class="jaune">INTER</span></b><br><small style="letter-spacing:3px">SERVICES</small><br><small>${isConnecte ? '👋 '+t('bonjour')+', '+nom : t('visiteur')}</small><br><button type="button" style="margin-top:8px;background:#f59e0b;border:none;padding:6px 12px;border-radius:999px;font-weight:700;cursor:pointer" onclick="rocyFermerMenu()">${t('fermer')}</button></div>
       <div class="rocy-menu-label">${t('compte')}</div>
       ${!isConnecte ? `<button type="button" class="rocy-menu-item" onclick="location.href='connexion.html'">${t('seConnecter')}</button><button type="button" class="rocy-menu-item" onclick="location.href='inscription.html'">${t('creerCompte')}</button>` : `<button type="button" class="rocy-menu-item" onclick="rocyAllerEspace()">👤 ${t('espace')}</button><button type="button" class="rocy-menu-item" onclick="location.href='favoris.html'">${t('favoris')}</button><button type="button" class="rocy-menu-item" onclick="location.href='panier.html'">${t('panier')}</button><button type="button" class="rocy-menu-item" onclick="location.href='notifications.html'">${t('notif')}</button><button type="button" class="rocy-menu-item" onclick="rocyDeconnexion()">${t('deconnexion')}</button>`}
       <div class="rocy-menu-label">${t('services')}</div>
