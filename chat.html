@@ -3,8 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chat - Rocyinter</title>
+<title data-i18n="chatTitre">Chat - Rocyinter</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="pays.js"></script>
+<script src="rocy-layout.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
 body{background:#f6f7f9;color:#111;display:flex;flex-direction:column;height:100vh}
@@ -25,6 +27,7 @@ header b{font-size:16px} header small{display:block;opacity:.7;font-size:11px;fo
 .input-bar{background:#fff;padding:12px;display:flex;gap:8px;border-top:1px solid #e2e8f0}
 .input-bar input{flex:1;padding:12px;border:1px solid #e2e8f0;border-radius:999px;font-size:14px}
 .input-bar button{background:#f59e0b;border:none;padding:12px 18px;border-radius:999px;font-weight:800;cursor:pointer}
+.input-bar button:disabled{opacity:.5}
 .actions{display:flex;gap:8px;padding:10px 16px;background:#fff;border-top:1px solid #e2e8f0}
 .actions button{flex:1;padding:11px;border-radius:10px;border:none;font-weight:700;cursor:pointer;font-size:13px}
 .btn-cmd{background:#16a34a;color:#fff}
@@ -49,35 +52,35 @@ header b{font-size:16px} header small{display:block;opacity:.7;font-size:11px;fo
 <div id="messages"></div>
 
 <div class="actions" id="actionsBar">
-  <button class="btn-voir" onclick="location.href='index.html'">Voir annonces</button>
-  <button class="btn-prop" id="btnProp" onclick="ouvrirProposition()" style="display:none">💰 Proposer un prix</button>
-  <button class="btn-cmd" id="btnCmd" onclick="ouvrirCommande()" style="display:none">✅ Créer la commande</button>
+  <button class="btn-voir" onclick="location.href='index.html'" data-i18n="voirAnnonces">Voir annonces</button>
+  <button class="btn-prop" id="btnProp" onclick="ouvrirProposition()" style="display:none">💰 <span data-i18n="proposerPrix">Proposer un prix</span></button>
+  <button class="btn-cmd" id="btnCmd" onclick="ouvrirCommande()" style="display:none">✅ <span data-i18n="creerCommande">Créer la commande</span></button>
 </div>
 
 <div class="input-bar">
-  <input id="inputMsg" placeholder="Écris ton message... Prix, date, lieu..." onkeypress="if(event.key==='Enter') envoyer()">
-  <button onclick="envoyer()">Envoyer</button>
+  <input id="inputMsg" data-i18n-ph="ecrisMessage" placeholder="Écris ton message... Prix, date, lieu..." onkeypress="if(event.key==='Enter') envoyer()">
+  <button id="btnEnvoyer" onclick="envoyer()" data-i18n="envoyer">Envoyer</button>
 </div>
 
 <div class="modal" id="modalProp">
   <div class="modal-box">
-    <h3>💰 Proposer un prix</h3>
-    <p style="font-size:13px;color:#64748b">Le client verra ta proposition et pourra l'accepter ou la refuser. Pas de paiement tant qu'il n'a pas accepté.</p>
-    <div><label>MONTANT PROPOSÉ (FCFA)</label><input id="propMontant" type="number" placeholder="Ex: 20000"></div>
-    <div><label>DÉTAIL (optionnel)</label><input id="propDetail" placeholder="Ex: Matériel inclus, 2h de travail, déplacement..."></div>
-    <button style="background:#f59e0b;border:none;padding:14px;border-radius:12px;font-weight:800;cursor:pointer" onclick="envoyerProposition()">Envoyer la proposition →</button>
-    <button style="background:#f1f5f9;border:none;padding:12px;border-radius:12px;cursor:pointer" onclick="fermerProposition()">Annuler</button>
+    <h3>💰 <span data-i18n="proposerPrix">Proposer un prix</span></h3>
+    <p style="font-size:13px;color:#64748b" data-i18n="propAide">Le client verra ta proposition et pourra l'accepter ou la refuser. Pas de paiement tant qu'il n'a pas accepté.</p>
+    <div><label data-i18n="montantPropose">MONTANT PROPOSÉ (FCFA)</label><input id="propMontant" type="number" placeholder="Ex: 20000"></div>
+    <div><label data-i18n="detail">DÉTAIL (optionnel)</label><input id="propDetail" placeholder="Ex: Matériel inclus, 2h de travail..."></div>
+    <button style="background:#f59e0b;border:none;padding:14px;border-radius:12px;font-weight:800;cursor:pointer" onclick="envoyerProposition()" data-i18n="envoyerProp">Envoyer la proposition →</button>
+    <button style="background:#f1f5f9;border:none;padding:12px;border-radius:12px;cursor:pointer" onclick="fermerProposition()" data-i18n="annuler">Annuler</button>
   </div>
 </div>
 
 <div class="modal" id="modalCmd">
   <div class="modal-box">
-    <h3>✅ Créer la commande</h3>
-    <p style="font-size:13px;color:#64748b" id="texteCommission">Vous êtes d'accord sur le prix ? Créez la commande. Le client paiera, l'argent sera bloqué jusqu'à la fin du service.</p>
-    <div><label>TITRE DE LA COMMANDE</label><input id="cmdTitre" placeholder="Ex: Réparation fuite cuisine"></div>
-    <div><label>MONTANT TOTAL CONVENU (FCFA)</label><input id="cmdMontant" type="number" placeholder="Ex: 20000"></div>
-    <button style="background:#16a34a;color:#fff;border:none;padding:14px;border-radius:12px;font-weight:800;cursor:pointer" onclick="creerCommande()">Créer la commande →</button>
-    <button style="background:#f1f5f9;border:none;padding:12px;border-radius:12px;cursor:pointer" onclick="fermerCommande()">Annuler</button>
+    <h3>✅ <span data-i18n="creerCommande">Créer la commande</span></h3>
+    <p style="font-size:13px;color:#64748b" id="texteCommission">Vous êtes d'accord sur le prix ? Créez la commande.</p>
+    <div><label data-i18n="titreCommande">TITRE DE LA COMMANDE</label><input id="cmdTitre" placeholder="Ex: Réparation fuite cuisine"></div>
+    <div><label data-i18n="montantConvenu">MONTANT TOTAL CONVENU (FCFA)</label><input id="cmdMontant" type="number" placeholder="Ex: 20000"></div>
+    <button style="background:#16a34a;color:#fff;border:none;padding:14px;border-radius:12px;font-weight:800;cursor:pointer" onclick="creerCommande()" data-i18n="creerCommandeBtn">Créer la commande →</button>
+    <button style="background:#f1f5f9;border:none;padding:12px;border-radius:12px;cursor:pointer" onclick="fermerCommande()" data-i18n="annuler">Annuler</button>
   </div>
 </div>
 
@@ -87,76 +90,81 @@ const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const moiId = localStorage.getItem('rocy_user_id');
-const moiType = localStorage.getItem('rocy_user_type');
+const moiType = localStorage.getItem('rocy_user_type') || localStorage.getItem('rocy_role') || '';
 const prestataireId = localStorage.getItem('chat_prestataire');
 const annonceId = localStorage.getItem('chat_annonce');
 let conversationId = null;
 let annonceData = null;
 let clientIdFinal = null;
-let propositionAcceptee = null;
 
-if(!moiId){ alert('Connecte-toi d’abord pour discuter.'); location.href='connexion.html'; }
-if(!prestataireId){ alert('Choisis une annonce pour discuter.'); location.href='index.html'; }
+if(!moiId){ location.href='connexion.html'; }
+if(!prestataireId){ location.href='index.html'; }
 
-// CORRECTION V3 : Commission réelle par univers
 function calculerCommission(univers, montant){
   if(univers==='domicile') return Math.round(montant * 0.08);
   if(univers==='pro') return 5000;
   if(univers==='manger' || univers==='sejour') return Math.round(montant * 0.12);
-  if(univers==='immobilier') return 10000;
+  if(univers==='immobilier'){
+    // Cahier immobilier : location = 50% d'un mois, vente/parcelle = traité à part. Ici on garde 10 000 pour l'annonce, le vrai calcul est dans paiement/admin
+    return 10000;
+  }
+  if(univers==='livreur') return Math.round(montant * 0.20);
   return Math.round(montant * 0.12);
 }
 function texteCommission(univers){
   if(univers==='domicile') return 'Commission Rocyinter : 8% - prélevée à la libération, pas avant.';
   if(univers==='pro') return 'Commission Rocyinter : 5 000 FCFA pour débloquer le contact.';
-  if(univers==='manger') return 'Commission Rocyinter : 12% - lancement 8% pour les 20 premiers.';
+  if(univers==='manger') return 'Commission Rocyinter : 12%.';
   if(univers==='sejour') return 'Commission Rocyinter : 12% par nuit réservée.';
+  if(univers==='livreur') return 'Livreur 80% / Rocyinter 20%. Prix à discuter dans le chat.';
   return 'Commission Rocyinter prélevée à la libération.';
 }
 
 async function init(){
-  const {data: ann} = await supabase.from('annonces').select('*, profiles(nom, whatsapp, ville, localite)').eq('id', annonceId).single();
+  // Annonce + prestataire (via profiles, pas via join annonces->profiles qui peut casser)
+  const {data: ann} = await supabase.from('annonces').select('*').eq('id', annonceId).single();
   if(ann){
     annonceData = ann;
-    document.getElementById('annonceBar').innerHTML = `<b>${ann.titre}</b><small>📍 ${ann.localite} - ${ann.ville} • 👤 ${ann.profiles?.nom} • ${ann.prix_fixe ? Number(ann.prix_indicatif).toLocaleString()+' FCFA' : 'Prix à discuter'}<br>${texteCommission(ann.univers)}</small>`;
-    document.getElementById('nomAutre').textContent = ann.profiles?.nom || 'Prestataire';
+    let nomPresta = 'Prestataire';
+    const {data: prof} = await supabase.from('profiles').select('nom,ville,localite').eq('id', prestataireId).maybeSingle();
+    if(prof) nomPresta = prof.nom || nomPresta;
+    document.getElementById('annonceBar').innerHTML = `<b>${ann.titre}</b><small>📍 ${ann.localite} - ${ann.ville} • 👤 ${nomPresta} • ${ann.prix_fixe ? Number(ann.prix_indicatif).toLocaleString()+' FCFA' : 'Prix à discuter'}<br>${texteCommission(ann.univers)}</small>`;
+    document.getElementById('nomAutre').textContent = nomPresta;
     document.getElementById('infoAutre').textContent = `${ann.categorie} • ${ann.ville} - ${ann.localite}`;
     document.getElementById('cmdTitre').value = ann.titre;
     document.getElementById('cmdMontant').value = ann.prix_indicatif || '';
     document.getElementById('texteCommission').textContent = texteCommission(ann.univers);
   }
-
-  // CORRECTION V3 : Client = celui qui n'est PAS le prestataire. Jamais null.
   const jeSuisPresta = (moiId === prestataireId);
-  clientIdFinal = jeSuisPresta ? null : moiId; // on va chercher le vrai clientId dans les conversations existantes
-  // Boutons selon rôle
+  // --- Rôles : Presta = Proposer, Client = Créer commande ---
   if(jeSuisPresta) document.getElementById('btnProp').style.display = 'block';
   else document.getElementById('btnCmd').style.display = 'block';
 
-  // Chercher conversation existante
+  // --- CORRECTION : ne jamais créer une conversation avec client_id = prestataire ---
+  // On cherche une conversation existante où je suis client OU prestataire
   const {data: convs} = await supabase.from('conversations').select('*').eq('annonce_id', annonceId).or(`client_id.eq.${moiId},prestataire_id.eq.${moiId}`);
   if(convs && convs.length>0){
-    conversationId = convs[0].id;
-    if(convs[0].client_id) clientIdFinal = convs[0].client_id;
+    // Prendre la conversation où client != prestataire si possible
+    const bonne = convs.find(c=>c.client_id && c.client_id !== c.prestataire_id) || convs[0];
+    conversationId = bonne.id;
+    if(bonne.client_id && bonne.client_id !== bonne.prestataire_id) clientIdFinal = bonne.client_id;
     else if(!jeSuisPresta) clientIdFinal = moiId;
   } else {
-    // Création : si je suis prestataire, je ne connais pas encore le client, on met client_id = prestataire en attendant
-    // Le vrai client sera mis à jour quand il enverra le 1er message / ouvrira le chat
-    const {data: nv} = await supabase.from('conversations').insert([{
-      client_id: jeSuisPresta ? moiId : moiId, // temporaire, corrigé ci-dessous
-      prestataire_id: prestataireId,
-      annonce_id: annonceId
-    }]).select().single();
-    if(nv){
-      conversationId = nv.id;
-      // Si je suis prestataire, on garde client_id = moi pour l'instant, on le corrigera quand le client arrive
-      // On stocke le vrai client dans localStorage quand le client ouvre le chat
-      if(!jeSuisPresta) clientIdFinal = moiId;
+    if(jeSuisPresta){
+      // Prestataire ouvre en premier : pas de client encore, on ne crée RIEN
+      document.getElementById('messages').innerHTML = `<div class="msg sys">⏳ En attente qu'un client te parle sur cette annonce. Tu ne peux pas encore créer de conversation tout seul.</div>`;
+      document.getElementById('inputMsg').disabled = true;
+      document.getElementById('btnEnvoyer').disabled = true;
+      document.getElementById('btnProp').style.display = 'none';
+      return;
+    } else {
+      // Client ouvre en premier : c'est lui le client, on crée la vraie conversation
+      clientIdFinal = moiId;
+      const {data: nv} = await supabase.from('conversations').insert([{client_id: moiId, prestataire_id: prestataireId, annonce_id: annonceId}]).select().single();
+      if(nv) conversationId = nv.id;
     }
   }
-  // Si je suis le client, je suis forcément le clientId
   if(!jeSuisPresta) clientIdFinal = moiId;
-
   chargerMessages();
   setInterval(chargerMessages, 3000);
 }
@@ -198,79 +206,58 @@ async function envoyer(){
   await supabase.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: txt, type: 'texte'}]);
   chargerMessages();
 }
-
 function ouvrirProposition(){ document.getElementById('modalProp').classList.add('show'); }
 function fermerProposition(){ document.getElementById('modalProp').classList.remove('show'); }
-function ouvrirCommande(){ document.getElementById('modalCmd').classList.add('show'); }
+function ouvrirCommande(){
+  // Client seulement
+  if(moiId === prestataireId){ alert('Seul le client crée la commande.'); return; }
+  document.getElementById('modalCmd').classList.add('show');
+}
 function fermerCommande(){ document.getElementById('modalCmd').classList.remove('show'); }
 
 async function envoyerProposition(){
+  if(moiId === prestataireId || true){
+    // Seul le prestataire propose : si client essaie, on bloque (le bouton est caché, double sécurité)
+    if(moiId !== prestataireId){ alert('Seul le prestataire propose un prix.'); return; }
+  }
   const montant = Number(document.getElementById('propMontant').value);
   const detail = document.getElementById('propDetail').value.trim();
   if(!montant || montant<=0){ alert('Mets un montant > 0'); return; }
-  await supabase.from('messages').insert([{
-    conversation_id: conversationId, sender_id: moiId,
-    contenu: detail || 'Proposition de prix pour ce service.',
-    type: 'proposition', proposition_prix: montant, proposition_statut: 'en_attente'
-  }]);
+  await supabase.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: detail || 'Proposition de prix pour ce service.', type: 'proposition', proposition_prix: montant, proposition_statut: 'en_attente'}]);
   fermerProposition();
   document.getElementById('propMontant').value = '';
   chargerMessages();
 }
-
 async function repondreProposition(msgId, rep){
   await supabase.from('messages').update({proposition_statut: rep}).eq('id', msgId);
   if(rep==='accepte'){
     const {data: msg} = await supabase.from('messages').select('*').eq('id', msgId).single();
     if(msg){
-      propositionAcceptee = msg.proposition_prix;
       document.getElementById('cmdMontant').value = msg.proposition_prix;
       await supabase.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: `✅ Proposition de ${Number(msg.proposition_prix).toLocaleString()} FCFA acceptée. Tu peux créer la commande.`, type: 'texte'}]);
-      // Le client voit maintenant le bouton Créer commande
       document.getElementById('btnCmd').style.display = 'block';
     }
   }
   chargerMessages();
 }
-
 async function creerCommande(){
+  if(moiId === prestataireId){ alert('Seul le client crée la commande.'); return; }
   const titre = document.getElementById('cmdTitre').value.trim();
   const montant = Number(document.getElementById('cmdMontant').value);
   if(!titre || !montant || montant<=0){ alert('Mets un titre + un montant > 0'); return; }
-
+  if(!clientIdFinal){ alert('Erreur : client introuvable. Recharge la page.'); return; }
   const univers = annonceData?.univers || 'domicile';
   const commission = calculerCommission(univers, montant);
   const montantPresta = montant - commission;
-
-  // Client réel : si je suis prestataire, on prend clientIdFinal, sinon moi
-  const vraiClientId = (moiId === prestataireId) ? clientIdFinal : moiId;
-
-  const {data, error} = await supabase.from('commandes').insert([{
-    client_id: vraiClientId,
-    prestataire_id: prestataireId,
-    annonce_id: annonceId,
-    conversation_id: conversationId,
-    univers: univers,
-    titre,
-    montant_total: montant,
-    commission,
-    montant_prestataire: montantPresta,
-    status: 'en_attente',
-    pays: annonceData?.pays,
-    ville: annonceData?.ville,
-    localite: annonceData?.localite
-  }]).select().single();
-
+  const {error} = await supabase.from('commandes').insert([{client_id: clientIdFinal, prestataire_id: prestataireId, annonce_id: annonceId, conversation_id: conversationId, univers: univers, titre, montant_total: montant, commission, montant_prestataire: montantPresta, status: 'en_attente', pays: annonceData?.pays, ville: annonceData?.ville, localite: annonceData?.localite}]).select().single();
   if(error){ alert('Erreur : ' + error.message); return; }
-
-  await supabase.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: `✅ COMMANDE CRÉÉE : ${titre} - ${montant.toLocaleString()} FCFA (Commission ${commission.toLocaleString()} FCFA - ${texteCommission(univers)}). En attente de paiement sécurisé en escrow.`, type: 'texte'}]);
-
+  await supabase.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: `✅ COMMANDE CRÉÉE : ${titre} - ${montant.toLocaleString()} FCFA (Commission ${commission.toLocaleString()} FCFA). En attente de paiement sécurisé en escrow.`, type: 'texte'}]);
   fermerCommande();
-  alert('✅ Commande créée ! Elle est dans ton dashboard.');
+  alert('✅ Commande créée ! Elle est dans ton dashboard. Va payer dans Paiement.');
   chargerMessages();
 }
-
 init();
+if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 </script>
 </body>
 </html>
