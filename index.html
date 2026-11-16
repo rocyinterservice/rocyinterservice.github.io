@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rocyinter Services - Services réels près de chez vous</title>
+<title>Rocyinter Services</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="rocy-layout.js"></script>
 <style>
@@ -11,233 +11,50 @@
 body{background:#f6f7f9;color:#111}
 .btn{background:#f59e0b;color:#000;border:none;padding:9px 14px;border-radius:999px;font-weight:700;cursor:pointer;font-size:13px}
 .hero{background:#0f172a;color:#fff;padding:28px 16px 20px;text-align:center}
-.hero h1{font-size:26px;line-height:1.2}
-.hero h1 span{color:#f59e0b}
-.hero p{opacity:.8;margin-top:8px;font-size:14px}
+.hero h1{font-size:26px;line-height:1.2} .hero h1 span{color:#f59e0b} .hero p{opacity:.8;margin-top:8px;font-size:14px}
 .filters{background:#fff;margin:-10px 16px 16px;padding:14px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.08);display:grid;gap:10px}
 .filters label{font-size:12px;font-weight:700;color:#475569}
 .filters select,.filters input{width:100%;padding:11px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;background:#fff}
 .univers{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 16px 16px}
-.card-u{background:#fff;border-radius:16px;padding:16px;cursor:pointer;border:2px solid transparent;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+.card-u{background:#fff;border-radius:16px;padding:16px;cursor:pointer;border:2px solid transparent;box-shadow:0 2px 10px rgba(0,0,0,.05);touch-action:manipulation}
 .card-u.active{border-color:#f59e0b;background:#fffbeb}
-.card-u .ico{font-size:28px}
-.card-u b{display:block;margin:6px 0 2px}
-.card-u small{color:#64748b;font-size:12px;line-height:1.3;display:block}
-.section{padding:0 16px 20px}
-.section h2{font-size:18px;margin-bottom:10px}
+.card-u .ico{font-size:28px} .card-u b{display:block;margin:6px 0 2px} .card-u small{color:#64748b;font-size:12px;line-height:1.3;display:block}
+.section{padding:0 16px 20px} .section h2{font-size:18px;margin-bottom:10px}
 .grid{display:grid;gap:12px}
 .card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.05)}
 .card img{width:100%;height:170px;object-fit:cover;background:#e2e8f0}
-.card-body{padding:12px}
-.card-body h3{font-size:15px}
-.card-body p{font-size:13px;color:#64748b;margin:6px 0}
+.card-body{padding:12px} .card-body h3{font-size:15px} .card-body p{font-size:13px;color:#64748b;margin:6px 0}
 .badge{display:inline-block;background:#fef3c7;color:#92400e;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:700}
 .price{font-weight:800;margin-top:8px}
-.card-actions{display:flex;gap:8px;margin-top:10px}
-.card-actions button{flex:1;padding:10px;border-radius:10px;border:none;font-weight:700;cursor:pointer}
-.btn-chat{background:#0f172a;color:#fff}
-.btn-voir{background:#f1f5f9}
-.empty{background:#fff;border:1px dashed #cbd5e1;border-radius:16px;padding:24px;text-align:center;color:#64748b}
-.empty b{color:#111;display:block;margin-bottom:6px}
+.card-actions{display:flex;gap:8px;margin-top:10px} .card-actions button{flex:1;padding:10px;border-radius:10px;border:none;font-weight:700;cursor:pointer}
+.btn-chat{background:#0f172a;color:#fff} .btn-voir{background:#f1f5f9}
+.empty{background:#fff;border:1px dashed #cbd5e1;border-radius:16px;padding:24px;text-align:center;color:#64748b} .empty b{color:#111;display:block;margin-bottom:6px}
 .liens{padding:0 16px 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .liens button{background:#fff;border:1px solid #e2e8f0;padding:12px;border-radius:12px;font-weight:700;cursor:pointer;font-size:13px}
 </style>
 </head>
 <body>
-
 <div class="hero">
   <h1>Trouvez un vrai service<br><span>près de chez vous</span></h1>
   <p>Pas de faux produits. Que des vrais prestataires validés, près de vous, avec paiement sécurisé.</p>
 </div>
-
 <div class="filters">
-  <div>
-    <label>PAYS</label>
-    <select id="filtrePays" onchange="chargerAnnonces()">
-      <option value="">Tous les pays</option>
-      <option value="Bénin">🇧🇯 Bénin</option>
-      <option value="Algérie">🇩🇿 Algérie</option>
-      <option value="Angola">🇦🇴 Angola</option>
-      <option value="Burkina Faso">🇧🇫 Burkina Faso</option>
-      <option value="Burundi">🇧🇮 Burundi</option>
-      <option value="Cameroun">🇨🇲 Cameroun</option>
-      <option value="Cap-Vert">🇨🇻 Cap-Vert</option>
-      <option value="Centrafrique">🇨🇫 Centrafrique</option>
-      <option value="Tchad">🇹🇩 Tchad</option>
-      <option value="Comores">🇰🇲 Comores</option>
-      <option value="Congo">🇨🇬 Congo</option>
-      <option value="Congo RDC">🇨🇩 Congo RDC</option>
-      <option value="Côte d'Ivoire">🇨🇮 Côte d'Ivoire</option>
-      <option value="Djibouti">🇩🇯 Djibouti</option>
-      <option value="Égypte">🇪🇬 Égypte</option>
-      <option value="Guinée Équatoriale">🇬🇶 Guinée Équatoriale</option>
-      <option value="Érythrée">🇪🇷 Érythrée</option>
-      <option value="Éthiopie">🇪🇹 Éthiopie</option>
-      <option value="Gabon">🇬🇦 Gabon</option>
-      <option value="Gambie">🇬🇲 Gambie</option>
-      <option value="Ghana">🇬🇭 Ghana</option>
-      <option value="Guinée">🇬🇳 Guinée</option>
-      <option value="Guinée-Bissau">🇬🇼 Guinée-Bissau</option>
-      <option value="Kenya">🇰🇪 Kenya</option>
-      <option value="Lesotho">🇱🇸 Lesotho</option>
-      <option value="Liberia">🇱🇷 Liberia</option>
-      <option value="Libye">🇱🇾 Libye</option>
-      <option value="Madagascar">🇲🇬 Madagascar</option>
-      <option value="Malawi">🇲🇼 Malawi</option>
-      <option value="Mali">🇲🇱 Mali</option>
-      <option value="Maroc">🇲🇦 Maroc</option>
-      <option value="Maurice">🇲🇺 Maurice</option>
-      <option value="Mauritanie">🇲🇷 Mauritanie</option>
-      <option value="Mozambique">🇲🇿 Mozambique</option>
-      <option value="Namibie">🇳🇦 Namibie</option>
-      <option value="Niger">🇳🇪 Niger</option>
-      <option value="Nigeria">🇳🇬 Nigeria</option>
-      <option value="Rwanda">🇷🇼 Rwanda</option>
-      <option value="Sao Tomé">🇸🇹 Sao Tomé</option>
-      <option value="Sénégal">🇸🇳 Sénégal</option>
-      <option value="Seychelles">🇸🇨 Seychelles</option>
-      <option value="Sierra Leone">🇸🇱 Sierra Leone</option>
-      <option value="Somalie">🇸🇴 Somalie</option>
-      <option value="Afrique du Sud">🇿🇦 Afrique du Sud</option>
-      <option value="Soudan du Sud">🇸🇸 Soudan du Sud</option>
-      <option value="Soudan">🇸🇩 Soudan</option>
-      <option value="Eswatini">🇸🇿 Eswatini</option>
-      <option value="Tanzanie">🇹🇿 Tanzanie</option>
-      <option value="Togo">🇹🇬 Togo</option>
-      <option value="Tunisie">🇹🇳 Tunisie</option>
-      <option value="Ouganda">🇺🇬 Ouganda</option>
-      <option value="Zambie">🇿🇲 Zambie</option>
-      <option value="Zimbabwe">🇿🇼 Zimbabwe</option>
-      <option value="France">🇫🇷 France</option>
-      <option value="Belgique">🇧🇪 Belgique</option>
-      <option value="Suisse">🇨🇭 Suisse</option>
-      <option value="Luxembourg">🇱🇺 Luxembourg</option>
-      <option value="Italie">🇮🇹 Italie</option>
-      <option value="Espagne">🇪🇸 Espagne</option>
-      <option value="Portugal">🇵🇹 Portugal</option>
-      <option value="Allemagne">🇩🇪 Allemagne</option>
-      <option value="Royaume-Uni">🇬🇧 Royaume-Uni</option>
-      <option value="Pays-Bas">🇳🇱 Pays-Bas</option>
-      <option value="Autriche">🇦🇹 Autriche</option>
-      <option value="Danemark">🇩🇰 Danemark</option>
-      <option value="Suède">🇸🇪 Suède</option>
-      <option value="Norvège">🇳🇴 Norvège</option>
-      <option value="Finlande">🇫🇮 Finlande</option>
-      <option value="Irlande">🇮🇪 Irlande</option>
-      <option value="Grèce">🇬🇷 Grèce</option>
-      <option value="Pologne">🇵🇱 Pologne</option>
-      <option value="Roumanie">🇷🇴 Roumanie</option>
-      <option value="Hongrie">🇭🇺 Hongrie</option>
-      <option value="Tchéquie">🇨🇿 Tchéquie</option>
-      <option value="Slovaquie">🇸🇰 Slovaquie</option>
-      <option value="Croatie">🇭🇷 Croatie</option>
-      <option value="Slovénie">🇸🇮 Slovénie</option>
-      <option value="Bosnie">🇧🇦 Bosnie</option>
-      <option value="Serbie">🇷🇸 Serbie</option>
-      <option value="Monténégro">🇲🇪 Monténégro</option>
-      <option value="Albanie">🇦🇱 Albanie</option>
-      <option value="Bulgarie">🇧🇬 Bulgarie</option>
-      <option value="Ukraine">🇺🇦 Ukraine</option>
-      <option value="Biélorussie">🇧🇾 Biélorussie</option>
-      <option value="Lituanie">🇱🇹 Lituanie</option>
-      <option value="Lettonie">🇱🇻 Lettonie</option>
-      <option value="Estonie">🇪🇪 Estonie</option>
-      <option value="Islande">🇮🇸 Islande</option>
-      <option value="Malte">🇲🇹 Malte</option>
-      <option value="Chypre">🇨🇾 Chypre</option>
-      <option value="Russie">🇷🇺 Russie</option>
-      <option value="Turquie">🇹🇷 Turquie</option>
-      <option value="Arménie">🇦🇲 Arménie</option>
-      <option value="Azerbaïdjan">🇦🇿 Azerbaïdjan</option>
-      <option value="Géorgie">🇬🇪 Géorgie</option>
-      <option value="Moldavie">🇲🇩 Moldavie</option>
-      <option value="USA">🇺🇸 USA</option>
-      <option value="Canada">🇨🇦 Canada</option>
-      <option value="Mexique">🇲🇽 Mexique</option>
-      <option value="Brésil">🇧🇷 Brésil</option>
-      <option value="Argentine">🇦🇷 Argentine</option>
-      <option value="Colombie">🇨🇴 Colombie</option>
-      <option value="Pérou">🇵🇪 Pérou</option>
-      <option value="Chili">🇨🇱 Chili</option>
-      <option value="Venezuela">🇻🇪 Venezuela</option>
-      <option value="Équateur">🇪🇨 Équateur</option>
-      <option value="Bolivie">🇧🇴 Bolivie</option>
-      <option value="Paraguay">🇵🇾 Paraguay</option>
-      <option value="Uruguay">🇺🇾 Uruguay</option>
-      <option value="Guatemala">🇬🇹 Guatemala</option>
-      <option value="Salvador">🇸🇻 Salvador</option>
-      <option value="Honduras">🇭🇳 Honduras</option>
-      <option value="Nicaragua">🇳🇮 Nicaragua</option>
-      <option value="Costa Rica">🇨🇷 Costa Rica</option>
-      <option value="Panama">🇵🇦 Panama</option>
-      <option value="Haïti">🇭🇹 Haïti</option>
-      <option value="Cuba">🇨🇺 Cuba</option>
-      <option value="République Dominicaine">🇩🇴 République Dominicaine</option>
-      <option value="Jamaïque">🇯🇲 Jamaïque</option>
-      <option value="Trinité-et-Tobago">🇹🇹 Trinité-et-Tobago</option>
-      <option value="Inde">🇮🇳 Inde</option>
-      <option value="Chine">🇨🇳 Chine</option>
-      <option value="Japon">🇯🇵 Japon</option>
-      <option value="Corée du Sud">🇰🇷 Corée du Sud</option>
-      <option value="Vietnam">🇻🇳 Vietnam</option>
-      <option value="Thaïlande">🇹🇭 Thaïlande</option>
-      <option value="Indonésie">🇮🇩 Indonésie</option>
-      <option value="Philippines">🇵🇭 Philippines</option>
-      <option value="Malaisie">🇲🇾 Malaisie</option>
-      <option value="Singapour">🇸🇬 Singapour</option>
-      <option value="Myanmar">🇲🇲 Myanmar</option>
-      <option value="Cambodge">🇰🇭 Cambodge</option>
-      <option value="Laos">🇱🇦 Laos</option>
-      <option value="Bangladesh">🇧🇩 Bangladesh</option>
-      <option value="Pakistan">🇵🇰 Pakistan</option>
-      <option value="Sri Lanka">🇱🇰 Sri Lanka</option>
-      <option value="Népal">🇳🇵 Népal</option>
-      <option value="Afghanistan">🇦🇫 Afghanistan</option>
-      <option value="Iran">🇮🇷 Iran</option>
-      <option value="Irak">🇮🇶 Irak</option>
-      <option value="Émirats">🇦🇪 Émirats</option>
-      <option value="Arabie Saoudite">🇸🇦 Arabie Saoudite</option>
-      <option value="Qatar">🇶🇦 Qatar</option>
-      <option value="Koweït">🇰🇼 Koweït</option>
-      <option value="Bahreïn">🇧🇭 Bahreïn</option>
-      <option value="Oman">🇴🇲 Oman</option>
-      <option value="Jordanie">🇯🇴 Jordanie</option>
-      <option value="Liban">🇱🇧 Liban</option>
-      <option value="Syrie">🇸🇾 Syrie</option>
-      <option value="Israël">🇮🇱 Israël</option>
-      <option value="Palestine">🇵🇸 Palestine</option>
-      <option value="Australie">🇦🇺 Australie</option>
-      <option value="Nouvelle-Zélande">🇳🇿 Nouvelle-Zélande</option>
-      <option value="Fidji">🇫🇯 Fidji</option>
-      <option value="Papouasie">🇵🇬 Papouasie</option>
-      <option value="Îles Salomon">🇸🇧 Îles Salomon</option>
-      <option value="Vanuatu">🇻🇺 Vanuatu</option>
-      <option value="Îles Cook">🇨🇰 Îles Cook</option>
-      <option value="Nouvelle-Calédonie">🇳🇨 Nouvelle-Calédonie</option>
-      <option value="Polynésie">🇵🇫 Polynésie</option>
-    </select>
-  </div>
-  <div>
-    <label>VILLE / LOCALITÉ</label>
-    <input id="filtreLocalite" placeholder="Ex: Calavi, Cotonou, Godomey..." oninput="chargerAnnonces()">
-  </div>
-  <div>
-    <label>RECHERCHER UN SERVICE</label>
-    <input id="filtreSearch" placeholder="Ex: Plombier, Traiteur, Nettoyage..." oninput="chargerAnnonces()">
-  </div>
+  <div><label>PAYS</label><select id="filtrePays" onchange="chargerAnnonces()">
+    <option value="">Tous les pays</option><option value="Bénin">🇧🇯 Bénin</option><option value="Togo">🇹🇬 Togo</option><option value="Côte d'Ivoire">🇨🇮 Côte d'Ivoire</option><option value="Sénégal">🇸🇳 Sénégal</option><option value="Cameroun">🇨🇲 Cameroun</option><option value="Nigeria">🇳🇬 Nigeria</option><option value="Ghana">🇬🇭 Ghana</option><option value="France">🇫🇷 France</option><option value="Canada">🇨🇦 Canada</option><option value="Mali">🇲🇱 Mali</option><option value="Burkina Faso">🇧🇫 Burkina Faso</option><option value="Niger">🇳🇪 Niger</option><option value="Guinée">🇬🇳 Guinée</option><option value="Maroc">🇲🇦 Maroc</option><option value="Algérie">🇩🇿 Algérie</option><option value="Tunisie">🇹🇳 Tunisie</option><option value="USA">🇺🇸 USA</option><option value="Belgique">🇧🇪 Belgique</option><option value="Suisse">🇨🇭 Suisse</option>
+  </select></div>
+  <div><label>VILLE / LOCALITÉ</label><input id="filtreLocalite" placeholder="Ex: Calavi, Cotonou, Godomey..." oninput="chargerAnnonces()"></div>
+  <div><label>RECHERCHER UN SERVICE</label><input id="filtreSearch" placeholder="Ex: Plombier, Traiteur, Nettoyage..." oninput="chargerAnnonces()"></div>
 </div>
-
 <div class="univers">
-  <div class="card-u active" id="u-tous" onclick="setUnivers('')"><div class="ico">🌍</div><b>Tous</b><small>Tous les services réels</small></div>
-  <div class="card-u" id="u-manger" onclick="setUnivers('manger')"><div class="ico">🍽️</div><b>Se nourrir</b><small>Traiteur, Restaurant, Livraison</small></div>
-  <div class="card-u" id="u-domicile" onclick="setUnivers('domicile')"><div class="ico">🏠</div><b>Domicile</b><small>Nettoyage, Ménage, Plomberie, Électricité</small></div>
-  <div class="card-u" id="u-pro" onclick="setUnivers('pro')"><div class="ico">💼</div><b>Pro</b><small>Design, Dev, Marketing, Compta</small></div>
-  <div class="card-u" id="u-sejour" onclick="setUnivers('sejour')"><div class="ico">✈️</div><b>Séjour</b><small>Hôtel, Location, Guide, Transport</small></div>
-  <div class="card-u" id="u-immobilier" onclick="setUnivers('immobilier')"><div class="ico">🏘️</div><b>Immobilier</b><small>Location, Vente, Chambre, Visite</small></div>
+  <div class="card-u active" id="u-tous" data-univers=""><div class="ico">🌍</div><b>Tous</b><small>Tous les services réels</small></div>
+  <div class="card-u" id="u-manger" data-univers="manger"><div class="ico">🍽️</div><b>Se nourrir</b><small>Traiteur, Restaurant, Livraison</small></div>
+  <div class="card-u" id="u-domicile" data-univers="domicile"><div class="ico">🏠</div><b>Domicile</b><small>Nettoyage, Ménage, Plomberie, Électricité</small></div>
+  <div class="card-u" id="u-pro" data-univers="pro"><div class="ico">💼</div><b>Pro</b><small>Design, Dev, Marketing, Compta</small></div>
+  <div class="card-u" id="u-sejour" data-univers="sejour"><div class="ico">✈️</div><b>Séjour</b><small>Hôtel, Location, Guide, Transport</small></div>
+  <div class="card-u" id="u-immobilier" data-univers="immobilier"><div class="ico">🏘️</div><b>Immobilier</b><small>Location, Vente, Chambre, Visite</small></div>
   <div class="card-u" id="u-livreur" onclick="location.href='livreurs.html'"><div class="ico">🛵</div><b>Livreurs</b><small>Prix à discuter - Choix, pas obligatoire</small></div>
-  <div class="card-u" onclick="location.href='inscription.html'" style="grid-column:1 / -1"><div class="ico">➕</div><b>Proposer un service</b><small>Gagnez de l'argent - Si ta catégorie n'existe pas, tu l'écris toi-même</small></div>
+  <div class="card-u" onclick="rocyProposerService()" style="grid-column:1 / -1"><div class="ico">➕</div><b>Proposer un service</b><small>Gagnez de l'argent - Si ta catégorie n'existe pas, tu l'écris toi-même</small></div>
 </div>
-
 <div class="liens">
   <button type="button" onclick="location.href='immobilier.html'">🏠 Voir tout Immobilier</button>
   <button type="button" onclick="location.href='livreurs.html'">🛵 Chercher un livreur</button>
@@ -246,29 +63,33 @@ body{background:#f6f7f9;color:#111}
   <button type="button" onclick="location.href='escrow.html'">🔒 Mon Escrow</button>
   <button type="button" onclick="location.href='favoris.html'">❤️ Mes Favoris</button>
 </div>
-
 <div class="section">
   <h2 id="titreSection">Annonces réelles près de vous</h2>
+  <p style="font-size:12px;color:#64748b;margin-bottom:10px">Les annonces validées s'affichent ici automatiquement. S'il n'y en a pas, on affiche « Aucune annonce ».</p>
   <div id="listeAnnonces" class="grid"></div>
 </div>
-
 <script>
+// ===== DÉFINI EN PREMIER, POUR QUE LES BOUTONS CLIQUENT TOUJOURS =====
+let universActif = "";
+window.setUnivers = function(u){
+  universActif = u;
+  document.querySelectorAll('.card-u[data-univers]').forEach(c=>c.classList.remove('active'));
+  const map = {'':'u-tous','manger':'u-manger','domicile':'u-domicile','pro':'u-pro','sejour':'u-sejour','immobilier':'u-immobilier'};
+  const el = document.getElementById(map[u]||'u-tous'); if(el) el.classList.add('active');
+  const titres = {'':'Annonces réelles près de vous','manger':'🍽️ Se nourrir - Traiteur, Restaurant, Livraison','domicile':'🏠 Domicile - Nettoyage, Ménage, Plomberie, Électricité','pro':'💼 Pro - Design, Dev, Marketing, Compta','sejour':'✈️ Séjour - Hôtel, Location, Guide, Transport','immobilier':'🏘️ Immobilier - Location, Vente, Chambre, Visite'};
+  document.getElementById('titreSection').textContent = titres[u] || titres[''];
+  chargerAnnonces();
+};
+// On attache les clics 2 fois : onclick + addEventListener, pour être sûr que ça marche sur mobile
+document.querySelectorAll('.card-u[data-univers]').forEach(card=>{
+  card.addEventListener('click', ()=>{ window.setUnivers(card.getAttribute('data-univers')); });
+});
+
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 let supabase = null;
-try{ supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); }catch(e){ console.log('Supabase non chargé', e); }
-let universActif = "";
-function setUnivers(u){
-  try{
-    universActif = u;
-    document.querySelectorAll('.card-u').forEach(c=>c.classList.remove('active'));
-    const ids = {'':'u-tous','manger':'u-manger','domicile':'u-domicile','pro':'u-pro','sejour':'u-sejour','immobilier':'u-immobilier'};
-    const el = document.getElementById(ids[u]||'u-tous'); if(el) el.classList.add('active');
-    const titres = {'':'Annonces réelles près de vous','manger':'🍽️ Se nourrir - Traiteur, Restaurant, Livraison','domicile':'🏠 Domicile - Nettoyage, Ménage, Plomberie, Électricité','pro':'💼 Pro - Design, Dev, Marketing, Compta','sejour':'✈️ Séjour - Hôtel, Location, Guide, Transport','immobilier':'🏘️ Immobilier - Location, Vente, Chambre, Visite'};
-    document.getElementById('titreSection').textContent = titres[u] || titres[''];
-    chargerAnnonces();
-  }catch(e){ console.log(e); }
-}
+try{ supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); }catch(e){ console.log(e); }
+
 async function chargerAnnonces(){
   const box = document.getElementById('listeAnnonces');
   if(!box) return;
@@ -276,7 +97,7 @@ async function chargerAnnonces(){
     const pays = document.getElementById('filtrePays').value;
     const loc = document.getElementById('filtreLocalite').value.trim().toLowerCase();
     const search = document.getElementById('filtreSearch').value.trim().toLowerCase();
-    if(!supabase){ box.innerHTML = `<div class="empty"><b>Pas de connexion</b>Recharge la page.<br><br><button type="button" class="btn" onclick="chargerAnnonces()">Réessayer</button></div>`; return; }
+    if(!supabase){ box.innerHTML = `<div class="empty"><b>Pas de connexion</b><button type="button" class="btn" onclick="chargerAnnonces()">Réessayer</button></div>`; return; }
     let q = supabase.from('annonces').select('*, profiles(nom, whatsapp, ville, localite)').eq('status','valide').order('created_at',{ascending:false});
     if(universActif) q = q.eq('univers', universActif);
     if(pays) q = q.eq('pays', pays);
@@ -286,7 +107,7 @@ async function chargerAnnonces(){
     if(loc) filtres = filtres.filter(a => (a.localite||'').toLowerCase().includes(loc) || (a.ville||'').toLowerCase().includes(loc));
     if(search) filtres = filtres.filter(a => (a.titre||'').toLowerCase().includes(search) || (a.categorie||'').toLowerCase().includes(search) || (a.description||'').toLowerCase().includes(search));
     if(filtres.length===0){
-      box.innerHTML = `<div class="empty"><b>Aucune annonce réelle pour l'instant ici</b>Sois le premier à proposer un service dans ta localité.<br><br><button type="button" class="btn" onclick="location.href='inscription.html'">Proposer un service</button></div>`;
+      box.innerHTML = `<div class="empty"><b>Aucune annonce réelle pour l'instant ici</b>Sois le premier à proposer un service dans ta localité.<br><br><button type="button" class="btn" onclick="rocyProposerService()">Proposer un service</button></div>`;
       return;
     }
     box.innerHTML = filtres.map(a=>{
@@ -310,7 +131,7 @@ async function chargerAnnonces(){
       </div>`;
     }).join('');
   }catch(e){
-    box.innerHTML = `<div class="empty"><b>Erreur de connexion</b>Recharge la page.<br><br><button type="button" class="btn" onclick="chargerAnnonces()">Réessayer</button></div>`;
+    box.innerHTML = `<div class="empty"><b>Erreur de connexion</b><br><button type="button" class="btn" onclick="chargerAnnonces()">Réessayer</button></div>`;
   }
 }
 function allerChat(prestataireId, annonceId){
