@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title data-i18n="chatTitre">Chat - Rocyinter</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="pays.js"></script>
 <script src="rocy-layout.js"></script>
 <style>
@@ -79,7 +79,8 @@ header b{font-size:16px} header small{display:block;opacity:.7;font-size:11px;fo
 <script>
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+window.supabaseClient = sb;
 const moiId = localStorage.getItem('rocy_user_id');
 const moiType = localStorage.getItem('rocy_user_type') || localStorage.getItem('rocy_role') || '';
 const prestataireId = localStorage.getItem('chat_prestataire');
@@ -97,7 +98,6 @@ function estValideAnnonce(a){
   if(!s) return true;
   return s==='valide' || s==='valid' || s==='publie' || s==='publié' || s==='publiee' || s==='actif' || s==='active';
 }
-// --- CORRIGÉ : Immobilier selon catégorie ---
 function calculerCommission(univers, montant, annonce){
   if(univers==='domicile') return Math.round(montant * 0.08);
   if(univers==='pro') return 5000;
@@ -105,10 +105,8 @@ function calculerCommission(univers, montant, annonce){
   if(univers==='immobilier'){
     const cat = String(annonce?.categorie||'').toLowerCase();
     if(cat.includes('parcelle') || cat.includes('vente') || cat.includes('terrain')){
-      // Parcelle : 10 000 + 2% plafonné 200 000
       return Math.min(200000, 10000 + Math.round(montant * 0.02));
     }
-    // Location : 50% d'un mois
     return Math.round(montant * 0.50);
   }
   if(univers==='livreur') return Math.round(montant * 0.20);
@@ -128,7 +126,7 @@ function texteCommission(univers, annonce){
   return 'Commission Rocyinter prélevée à la libération.';
 }
 async function init(){
-  const {data: ann} = await supabase.from('annonces').select('*').eq('id', annonceId).maybeSingle();
+  const {data: ann} = await sb.from('annonces').select('*').eq('id', annonceId).maybeSingle();
   if(!ann){
     document.getElementById('annonceBar').innerHTML = 'Annonce introuvable.';
     document.getElementById('inputMsg').disabled = true;
@@ -143,7 +141,7 @@ async function init(){
   }
   annonceData = ann;
   let nomPresta = 'Prestataire';
-  const {data: prof} = await supabase.from('profiles').select('nom,ville,localite').eq('id', prestataireId).maybeSingle();
+  const {data: prof} = await sb.from('profiles').select('nom,ville,localite').eq('id', prestataireId).maybeSingle();
   if(prof) nomPresta = prof.nom || nomPresta;
   document.getElementById('annonceBar').innerHTML = `<b>${ann.titre}</b><small>📍 ${ann.localite} - ${ann.ville} • 👤 ${nomPresta} • ${ann.prix_fixe ? Number(ann.prix_indicatif||ann.prix||0).toLocaleString()+' FCFA' : 'Prix à discuter'}<br>${texteCommission(ann.univers, ann)}</small>`;
   document.getElementById('nomAutre').textContent = nomPresta;
@@ -156,19 +154,17 @@ async function init(){
   if(jeSuisPresta) document.getElementById('btnProp').style.display = 'block';
   else document.getElementById('btnCmd').style.display = 'block';
 
-  const {data: convs} = await supabase.from('conversations').select('*').eq('annonce_id', annonceId).or(`client_id.eq.${moiId},prestataire_id.eq.${moiId}`);
+  const {data: convs} = await sb.from('conversations').select('*').eq('annonce_id', annonceId).or(`client_id.eq.${moiId},prestataire_id.eq.${moiId}`);
   if(convs && convs.length>0){
     const bonne = convs.find(c=>c.client_id && c.prestataire_id && String(c.client_id)!==String(c.prestataire_id)) || null;
     if(bonne){
       conversationId = bonne.id;
       clientIdFinal = bonne.client_id;
     } else if(!jeSuisPresta){
-      // Ancienne conversation buggée client==presta, on ne la réutilise pas, on en crée une propre
       clientIdFinal = moiId;
-      const {data: nv} = await supabase.from('conversations').insert([{client_id: moiId, prestataire_id: prestataireId, annonce_id: annonceId}]).select().single();
+      const {data: nv} = await sb.from('conversations').insert([{client_id: moiId, prestataire_id: prestataireId, annonce_id: annonceId}]).select().single();
       if(nv) conversationId = nv.id;
     } else {
-      // Je suis presta, et il n'existe que des conversations buggées sans vrai client
       document.getElementById('messages').innerHTML = `<div class="msg sys">⏳ En attente qu'un client te parle sur cette annonce. Tu ne peux pas encore créer de conversation tout seul.</div>`;
       document.getElementById('inputMsg').disabled = true;
       document.getElementById('btnEnvoyer').disabled = true;
@@ -184,7 +180,7 @@ async function init(){
       return;
     } else {
       clientIdFinal = moiId;
-      const {data: nv} = await supabase.from('conversations').insert([{client_id: moiId, prestataire_id: prestataireId, annonce_id: annonceId}]).select().single();
+      const {data: nv} = await sb.from('conversations').insert([{client_id: moiId, prestataire_id: prestataireId, annonce_id: annonceId}]).select().single();
       if(nv) conversationId = nv.id;
     }
   }
@@ -194,7 +190,7 @@ async function init(){
 }
 async function chargerMessages(){
   if(!conversationId) return;
-  const {data} = await supabase.from('messages').select('*').eq('conversation_id', conversationId).order('created_at',{ascending:true});
+  const {data} = await sb.from('messages').select('*').eq('conversation_id', conversationId).order('created_at',{ascending:true});
   const box = document.getElementById('messages');
   if(!data || data.length===0){
     box.innerHTML = `<div class="msg sys">👋 Dis bonjour ! Demande le prix, la date, le lieu. Ne paie jamais en dehors de Rocyinter.</div>`;
@@ -225,7 +221,7 @@ async function envoyer(){
   const txt = inp.value.trim();
   if(!txt || !conversationId) return;
   inp.value = '';
-  await supabase.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: txt, type: 'texte'}]);
+  await sb.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: txt, type: 'texte'}]);
   chargerMessages();
 }
 function ouvrirProposition(){
@@ -239,24 +235,23 @@ function ouvrirCommande(){
 }
 function fermerCommande(){ document.getElementById('modalCmd').classList.remove('show'); }
 async function envoyerProposition(){
-  // CORRIGÉ : seul le prestataire propose
   if(String(moiId)!==String(prestataireId)){ alert('Seul le prestataire propose un prix.'); return; }
   const montant = Number(document.getElementById('propMontant').value);
   const detail = document.getElementById('propDetail').value.trim();
   if(!montant || montant<=0){ alert('Mets un montant > 0'); return; }
-  await supabase.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: detail || 'Proposition de prix pour ce service.', type: 'proposition', proposition_prix: montant, proposition_statut: 'en_attente'}]);
+  await sb.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: detail || 'Proposition de prix pour ce service.', type: 'proposition', proposition_prix: montant, proposition_statut: 'en_attente'}]);
   fermerProposition();
   document.getElementById('propMontant').value = '';
   chargerMessages();
 }
 async function repondreProposition(msgId, rep){
   if(String(moiId)===String(prestataireId)){ alert('Seul le client accepte / refuse.'); return; }
-  await supabase.from('messages').update({proposition_statut: rep}).eq('id', msgId);
+  await sb.from('messages').update({proposition_statut: rep}).eq('id', msgId);
   if(rep==='accepte'){
-    const {data: msg} = await supabase.from('messages').select('*').eq('id', msgId).single();
+    const {data: msg} = await sb.from('messages').select('*').eq('id', msgId).single();
     if(msg){
       document.getElementById('cmdMontant').value = msg.proposition_prix;
-      await supabase.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: `✅ Proposition de ${Number(msg.proposition_prix).toLocaleString()} FCFA acceptée. Tu peux créer la commande.`, type: 'texte'}]);
+      await sb.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: `✅ Proposition de ${Number(msg.proposition_prix).toLocaleString()} FCFA acceptée. Tu peux créer la commande.`, type: 'texte'}]);
       document.getElementById('btnCmd').style.display = 'block';
     }
   }
@@ -273,9 +268,9 @@ async function creerCommande(){
   const commission = calculerCommission(univers, montant, annonceData);
   const montantPresta = montant - commission;
   if(montantPresta < 0){ alert('Erreur commission > montant.'); return; }
-  const {error} = await supabase.from('commandes').insert([{client_id: clientIdFinal, prestataire_id: prestataireId, annonce_id: annonceId, conversation_id: conversationId, univers: univers, titre, montant_total: montant, commission, montant_prestataire: montantPresta, status: 'en_attente', pays: annonceData?.pays, ville: annonceData?.ville, localite: annonceData?.localite}]).select().single();
+  const {error} = await sb.from('commandes').insert([{client_id: clientIdFinal, prestataire_id: prestataireId, annonce_id: annonceId, conversation_id: conversationId, univers: univers, titre, montant_total: montant, commission, montant_prestataire: montantPresta, status: 'en_attente', pays: annonceData?.pays, ville: annonceData?.ville, localite: annonceData?.localite}]).select().single();
   if(error){ alert('Erreur : ' + error.message); return; }
-  await supabase.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: `✅ COMMANDE CRÉÉE : ${titre} - ${montant.toLocaleString()} FCFA (Commission ${commission.toLocaleString()} FCFA). En attente de paiement sécurisé en escrow.`, type: 'texte'}]);
+  await sb.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: `✅ COMMANDE CRÉÉE : ${titre} - ${montant.toLocaleString()} FCFA (Commission ${commission.toLocaleString()} FCFA). En attente de paiement sécurisé en escrow.`, type: 'texte'}]);
   fermerCommande();
   alert('✅ Commande créée ! Elle est dans ton dashboard. Va payer dans Paiement.');
   chargerMessages();
