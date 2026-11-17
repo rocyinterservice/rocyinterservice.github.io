@@ -55,14 +55,18 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px;line-height:1.5}
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-const uid = localStorage.getItem('rocy_user_id');
-const roleUser = localStorage.getItem('rocy_user_type') || localStorage.getItem('rocy_role') || '';
-const nom = localStorage.getItem('rocy_user_nom') || 'Client';
-if(!uid){ location.href='connexion.html'; }
-if(roleUser==='prestataire' || roleUser==='livreur'){ location.href='dashboard-prestataire.html'; }
-if(roleUser==='admin'){ location.href='admin.html'; }
-document.getElementById('nomUser').textContent = nom;
-function deconnecter(){
+let uid = null;
+
+// SÉCURISÉ : échappe tout texte venant de la base avant innerHTML
+function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmt(n){ return Number(n || 0).toLocaleString('fr-FR'); }
+async function getUtilisateurSecurise(){
+  const {data:{user}, error} = await supabase.auth.getUser();
+  if(error || !user) return null;
+  return user;
+}
+async function deconnecter(){
+  await supabase.auth.signOut();
   const langue = localStorage.getItem('rocy_langue');
   localStorage.clear();
   if(langue) localStorage.setItem('rocy_langue', langue);
@@ -75,30 +79,50 @@ function badgeStatus(s){
   if(s==='valide') return '<span class="badge valide">✅ Validé</span>';
   if(s==='libere') return '<span class="badge valide">💰 Libéré</span>';
   if(s==='litige') return '<span class="badge litige">⚠️ Litige</span>';
-  return `<span class="badge attente">${s}</span>`;
+  return `<span class="badge attente">${esc(s)}</span>`;
 }
 function stepsHtml(s){
   if(s==='litige') return `<p style="color:#991b1b">⚠️ Litige en cours - Argent bloqué. L'Admin va trancher.</p>`;
   const order = ['en_attente','paye','en_cours','valide','libere'];
   const idx = order.indexOf(s);
   const labels = ['Créée','Payée','En cours','Validée','Libérée'];
-  return `<div class="steps">${labels.map((l,i)=>`<div class="step ${i<idx?'done':''} ${i===idx?'active':''}">${l}</div>`).join('')}</div>`;
+  return `<div class="steps">${labels.map((l,i)=>`<div class="step ${i<idx?'done':''} ${i===idx?'active':''}">${esc(l)}</div>`).join('')}</div>`;
 }
 function texteCommission(c){
-  if(c.univers==='domicile') return `Commission 8% : ${Number(c.commission).toLocaleString()} FCFA`;
+  if(c.univers==='domicile') return `Commission 8% : ${fmt(c.commission)} FCFA`;
   if(c.univers==='pro') return `Commission 5 000 FCFA fixe`;
-  if(c.univers==='manger') return `Commission 12% : ${Number(c.commission).toLocaleString()} FCFA`;
-  if(c.univers==='sejour') return `Commission 12% : ${Number(c.commission).toLocaleString()} FCFA`;
-  if(c.univers==='livreur') return `Commission 20% (Livreur 80%) : ${Number(c.commission).toLocaleString()} FCFA`;
+  if(c.univers==='manger') return `Commission 12% : ${fmt(c.commission)} FCFA`;
+  if(c.univers==='sejour') return `Commission 12% : ${fmt(c.commission)} FCFA`;
+  if(c.univers==='livreur') return `Commission 20% (Livreur 80%) : ${fmt(c.commission)} FCFA`;
   if(c.univers==='immobilier'){
     const t = String(c.titre||'').toLowerCase();
-    if(t.includes('parcelle') || t.includes('vente') || t.includes('terrain')) return `Commission Parcelle 10 000 + 2% plafonné 200 000 : ${Number(c.commission).toLocaleString()} FCFA`;
-    return `Commission Location 50% d'un mois : ${Number(c.commission).toLocaleString()} FCFA`;
+    if(t.includes('parcelle') || t.includes('vente') || t.includes('terrain')) return `Commission Parcelle 10 000 + 2% plafonné 200 000 : ${fmt(c.commission)} FCFA`;
+    return `Commission Location 50% d'un mois : ${fmt(c.commission)} FCFA`;
   }
-  return `Commission : ${Number(c.commission||0).toLocaleString()} FCFA`;
+  return `Commission : ${fmt(c.commission)} FCFA`;
 }
 async function charger(){
-  const {data: cmds} = await supabase.from('commandes').select('*, annonces(titre)').eq('client_id', uid).order('created_at',{ascending:false});
+  const user = await getUtilisateurSecurise();
+  if(!user){ location.href='connexion.html'; return; }
+  uid = user.id;
+
+  // Profil depuis la BASE, jamais localStorage. Colonnes utiles seulement.
+  const {data: profil} = await supabase.from('profiles')
+    .select('id, nom, nom_entreprise, type_fournisseur, type_compte, role')
+    .eq('id', uid).maybeSingle();
+  if(!profil){ location.href='connexion.html'; return; }
+  const roleReel = String(profil.type_compte || profil.role || profil.type_fournisseur || '').toLowerCase();
+  // Un fournisseur qui arrive ici va sur son dashboard fournisseur
+  if(['prestataire','livreur','fournisseur','professionnel','entreprise','pro'].includes(roleReel)){ location.href='dashboard-prestataire.html'; return; }
+  if(roleReel === 'admin'){ location.href='admin.html'; return; }
+  if(roleReel !== 'client'){ location.href='connexion.html'; return; }
+
+  document.getElementById('nomUser').textContent = profil.nom || 'Client';
+
+  // Commandes : seulement les miennes, colonnes utiles
+  const {data: cmds} = await supabase.from('commandes')
+    .select('id, titre, prestataire_id, conversation_id, annonce_id, status, univers, commission, montant_total, montant_prestataire, localite, ville, created_at')
+    .eq('client_id', uid).order('created_at',{ascending:false});
   const box = document.getElementById('listeCommandes');
   if(!cmds || cmds.length===0){
     box.innerHTML = `<div class="empty">Aucune commande pour l'instant.<br>Trouvez un service, discutez, créez une commande.</div>`;
@@ -106,44 +130,49 @@ async function charger(){
     box.innerHTML = cmds.map(c=>`
     <div class="card">
       ${badgeStatus(c.status)}
-      <h3 style="margin-top:8px">${c.titre}</h3>
-      <p>📍 ${c.localite || ''} - ${c.ville || ''}<br>
-      Total : <b>${Number(c.montant_total).toLocaleString()} FCFA</b><br>
-      Prestataire reçoit : ${Number(c.montant_prestataire).toLocaleString()} FCFA (${texteCommission(c)})<br>
+      <h3 style="margin-top:8px">${esc(c.titre)}</h3>
+      <p>📍 ${esc(c.localite || '')} - ${esc(c.ville || '')}<br>
+      Total : <b>${fmt(c.montant_total)} FCFA</b><br>
+      Prestataire reçoit : ${fmt(c.montant_prestataire)} FCFA (${esc(texteCommission(c))})<br>
       <span style="color:#16a34a;font-weight:700">🔒 Escrow : argent bloqué chez Rocyinter jusqu'à validation</span></p>
       ${stepsHtml(c.status)}
-      ${c.status==='en_attente' ? `<button class="btn btn-green" onclick="payer('${c.id}')">💳 Payer en escrow sécurisé</button>` : ''}
-      ${c.status==='paye' ? `<button class="btn btn-dark" onclick="demarrer('${c.id}')">🔧 Confirmer le début du service</button>` : ''}
-      ${c.status==='en_cours' ? `<button class="btn btn-green" onclick="valider('${c.id}')">✅ Valider le service terminé</button>` : ''}
-      ${c.status==='valide' ? `<button class="btn" onclick="noter('${c.id}','${c.prestataire_id}')">⭐ Noter le prestataire</button><p style="color:#166534">⏳ Libération dans 48h pour Services, lundi pour Manger / Hôtels.</p>` : ''}
-      ${['paye','en_cours'].includes(c.status) ? `<button class="btn btn-red" onclick="signalerLitige('${c.id}')">⚠️ Signaler un litige</button>` : ''}
-      <button class="btn btn-dark" onclick="voirConversation('${c.conversation_id}','${c.annonce_id}')">Ouvrir le chat</button>
+      ${c.status==='en_attente' ? `<button class="btn btn-green" onclick="payer('${esc(c.id)}')">💳 Payer en escrow sécurisé</button>` : ''}
+      ${c.status==='paye' ? `<button class="btn btn-dark" onclick="demarrer('${esc(c.id)}')">🔧 Confirmer le début du service</button>` : ''}
+      ${c.status==='en_cours' ? `<button class="btn btn-green" onclick="valider('${esc(c.id)}')">✅ Valider le service terminé</button>` : ''}
+      ${c.status==='valide' ? `<button class="btn" onclick="noter('${esc(c.id)}','${esc(c.prestataire_id)}')">⭐ Noter le prestataire</button><p style="color:#166534">⏳ Libération dans 48h pour Services, lundi pour Manger / Hôtels.</p>` : ''}
+      ${['paye','en_cours'].includes(c.status) ? `<button class="btn btn-red" onclick="signalerLitige('${esc(c.id)}')">⚠️ Signaler un litige</button>` : ''}
+      <button class="btn btn-dark" onclick="voirConversation('${esc(c.conversation_id)}','${esc(c.annonce_id)}')">Ouvrir le chat</button>
     </div>`).join('');
   }
-  const {data: convsBrutes} = await supabase.from('conversations').select('*, annonces(titre)').eq('client_id', uid).order('created_at',{ascending:false});
-  // Filtre anti auto-chat : client != prestataire
+  const {data: convsBrutes} = await supabase.from('conversations')
+    .select('id, client_id, prestataire_id, annonce_id, created_at, annonces(titre)')
+    .eq('client_id', uid).order('created_at',{ascending:false});
   const convs = (convsBrutes||[]).filter(cv => String(cv.client_id)!==String(cv.prestataire_id));
   const boxV = document.getElementById('listeConvs');
   if(!convs || convs.length===0){
     boxV.innerHTML = `<div class="empty">Aucune conversation pour l'instant.</div>`;
   } else {
-    boxV.innerHTML = convs.map(cv=>`<div class="card"><b>${cv.annonces?.titre || 'Discussion'}</b><p>${new Date(cv.created_at).toLocaleDateString('fr-FR')}</p><button class="btn btn-dark" onclick="voirConversation('${cv.id}','${cv.annonce_id}')">Ouvrir le chat</button></div>`).join('');
+    boxV.innerHTML = convs.map(cv=>`<div class="card"><b>${esc(cv.annonces?.titre || 'Discussion')}</b><p>${esc(new Date(cv.created_at).toLocaleDateString('fr-FR'))}</p><button class="btn btn-dark" onclick="voirConversation('${esc(cv.id)}','${esc(cv.annonce_id)}')">Ouvrir le chat</button></div>`).join('');
   }
   if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 }
 function payer(id){
-  localStorage.setItem('paiement_commande_id', id);
-  location.href='paiement.html';
+  // SÉCURISÉ : on passe par l'URL, paiement.html doit re-vérifier avec auth.getUser() que c'est bien MA commande
+  // Avant : localStorage.setItem('paiement_commande_id', id) -> on pouvait payer / voir la commande d'un autre
+  location.href = 'paiement.html?commande=' + encodeURIComponent(id);
 }
 async function demarrer(id){
-  // CORRIGÉ : seul le vrai client, et seulement si paye
-  const {error} = await supabase.from('commandes').update({status:'en_cours'}).eq('id', id).eq('client_id', uid).eq('status','paye');
+  const user = await getUtilisateurSecurise();
+  if(!user) return;
+  const {error} = await supabase.from('commandes').update({status:'en_cours'}).eq('id', id).eq('client_id', user.id).eq('status','paye');
   if(error) alert('Erreur : ' + error.message);
   charger();
 }
 async function valider(id){
   if(!confirm('Le service est bien terminé ? Après validation, l’argent sera libéré au prestataire.')) return;
-  const {error} = await supabase.from('commandes').update({status:'valide'}).eq('id', id).eq('client_id', uid).eq('status','en_cours');
+  const user = await getUtilisateurSecurise();
+  if(!user) return;
+  const {error} = await supabase.from('commandes').update({status:'valide'}).eq('id', id).eq('client_id', user.id).eq('status','en_cours');
   if(error){ alert('Erreur : ' + error.message); return; }
   alert('✅ Service validé ! Le prestataire sera payé. Tu peux le noter.');
   charger();
@@ -151,33 +180,41 @@ async function valider(id){
 async function signalerLitige(id){
   const raison = prompt('Décris le problème :', 'Prestataire non venu / travail non terminé...');
   if(!raison || !raison.trim()){ alert('Décris le problème pour ouvrir un litige.'); return; }
-  const {error} = await supabase.from('commandes').update({status:'litige', litige_raison: raison.trim()}).eq('id', id).eq('client_id', uid).in('status',['paye','en_cours']);
+  if(raison.trim().length > 500){ alert('Raison trop longue, max 500 caractères.'); return; }
+  const user = await getUtilisateurSecurise();
+  if(!user) return;
+  const {error} = await supabase.from('commandes').update({status:'litige', litige_raison: raison.trim()}).eq('id', id).eq('client_id', user.id).in('status',['paye','en_cours']);
   if(error){ alert('Erreur : ' + error.message); return; }
   alert('⚠️ Litige signalé. Argent bloqué. L’Admin va trancher dans la Page Litiges.');
   charger();
 }
 async function noter(cmdId, prestaId){
+  const user = await getUtilisateurSecurise();
+  if(!user) return;
   const noteStr = prompt('Note de 1 à 5 pour ce prestataire :', '5');
   const note = parseInt(noteStr);
   if(!note || note<1 || note>5){ alert('Note invalide. Mets un chiffre entre 1 et 5.'); return; }
   const com = prompt('Ton commentaire :', 'Très bon service, merci !') || '';
-  // Anti-doublon : un seul avis par commande
-  const {data: exist} = await supabase.from('avis').select('id').eq('commande_id', cmdId).eq('client_id', uid).maybeSingle();
+  if(com.length > 500){ alert('Commentaire trop long, max 500 caractères.'); return; }
+  // On vérifie que la commande est bien à moi ET validée avant de noter
+  const {data: cmd} = await supabase.from('commandes').select('id, status').eq('id', cmdId).eq('client_id', user.id).single();
+  if(!cmd || cmd.status !== 'valide'){ alert('Tu ne peux noter que les commandes validées.'); return; }
+  const {data: exist} = await supabase.from('avis').select('id').eq('commande_id', cmdId).eq('client_id', user.id).maybeSingle();
   if(exist){ alert('Tu as déjà noté cette commande.'); return; }
-  const {error} = await supabase.from('avis').insert([{commande_id: cmdId, client_id: uid, prestataire_id: prestaId, note, commentaire: com}]);
+  const {error} = await supabase.from('avis').insert([{commande_id: cmdId, client_id: user.id, prestataire_id: prestaId, note, commentaire: com}]);
   if(error){ alert('Erreur : ' + error.message); return; }
   alert('⭐ Merci pour ton avis !');
   charger();
 }
-function voirConversation(convId, annonceId){
+async function voirConversation(convId, annonceId){
   if(!convId || convId==='null' || convId==='undefined'){ alert('Conversation introuvable.'); return; }
-  supabase.from('conversations').select('*').eq('id', convId).eq('client_id', uid).single().then(({data})=>{
-    if(!data){ alert('Conversation introuvable.'); return; }
-    if(String(data.client_id)===String(data.prestataire_id)){ alert('Conversation invalide.'); return; }
-    localStorage.setItem('chat_prestataire', data.prestataire_id);
-    localStorage.setItem('chat_annonce', annonceId);
-    location.href='chat.html';
-  });
+  const user = await getUtilisateurSecurise();
+  if(!user) return;
+  const {data} = await supabase.from('conversations').select('id, client_id, prestataire_id').eq('id', convId).eq('client_id', user.id).single();
+  if(!data){ alert('Conversation introuvable.'); return; }
+  if(String(data.client_id)===String(data.prestataire_id)){ alert('Conversation invalide.'); return; }
+  // SÉCURISÉ : on passe par l'URL, pas localStorage. chat.html doit re-vérifier avec auth.getUser()
+  location.href = 'chat.html?conversation=' + encodeURIComponent(convId) + '&annonce=' + encodeURIComponent(annonceId || '');
 }
 charger();
 </script>
