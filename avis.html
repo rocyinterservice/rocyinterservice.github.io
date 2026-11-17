@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Avis - Rocyinter</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
 body{background:#f6f7f9;color:#111;padding:16px}
@@ -23,13 +23,14 @@ select,textarea{width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:1
 <script>
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+window.supabaseClient = sb;
 async function envoyer(){
   const uid = localStorage.getItem('rocy_user_id');
   if(!uid){location.href='connexion.html';return;}
   const prestaId = localStorage.getItem('chat_prestataire') || localStorage.getItem('fiche_prestataire_id');
   if(!prestaId){alert('Choisis un prestataire d’abord');return;}
-  const {error} = await supabase.from('avis').insert({prestataire_id:prestaId, client_id:uid, note:Number(document.getElementById('note').value), commentaire:document.getElementById('commentaire').value});
+  const {error} = await sb.from('avis').insert({prestataire_id:prestaId, client_id:uid, note:Number(document.getElementById('note').value), commentaire:document.getElementById('commentaire').value});
   if(error){alert('Erreur : '+error.message);return;}
   alert('Merci ! Ton avis est publié.'); location.href='fiche-prestataire.html';
 }
