@@ -179,10 +179,8 @@ async function connecter(){
     const r = normaliseWhatsApp();
     if(!r.num || !password){ showMsg('Remplis WhatsApp + Mot de passe', false); return; }
     if(!verifTelConnexion()){ const indic=document.getElementById('indicatif').value; const p=paysDepuisIndicatifCo(indic); showMsg('❌ Numéro incorrect. ' + texteLongueurCo(p), false); return; }
-    // WhatsApp -> Email via fonction serveur, qui ne renvoie QUE l'email
     const {data: emailViaWhats, error: errRpc} = await supabase.rpc('get_email_by_whatsapp', { p_whatsapp: r.chiffres });
     if(errRpc || !emailViaWhats){
-      // Fallback anciens comptes : email = chiffres@rocyinter.com
       emailCherche = r.chiffres + '@rocyinter.com';
     } else {
       emailCherche = String(emailViaWhats).toLowerCase().trim();
@@ -194,17 +192,23 @@ async function connecter(){
   }
   btn.disabled = true; btn.textContent = 'Vérification...';
   try{
-    // 1. Supabase Auth vérifie le mot de passe haché
     const {data: login, error: errLogin} = await supabase.auth.signInWithPassword({email: emailCherche, password});
     if(errLogin || !login?.user){ showMsg('Email / WhatsApp ou mot de passe incorrect.', false); btn.disabled = false; btn.textContent = 'Se connecter →'; return; }
-    // 2. Profil = seulement son propre profil, RLS l'impose
     const {data: prof, error: perr} = await supabase.from('profiles').select('id,nom,full_name,email,whatsapp,phone,type,type_compte,role,pays,country,ville,city,localite').eq('id', login.user.id).single();
     if(perr || !prof){ showMsg('Profil introuvable. Réinscris-toi.', false); btn.disabled = false; btn.textContent = 'Se connecter →'; return; }
     const emailFinal = String(prof.email || emailCherche || '').toLowerCase().trim();
-    let typeFinal = prof.type || prof.type_compte || prof.role || 'client';
-    if(emailFinal === ADMIN_EMAIL) typeFinal = 'admin';
+    // SÉCURITÉ MONDIALE : Admin = type en base, JAMAIS email seul.
+    // Même si email = rocyinter@gmail.com, si type != admin en base, tu restes client/prestataire.
+    let typeFinal = String(prof.type || prof.type_compte || prof.role || 'client').toLowerCase().trim();
+    if(typeFinal === 'admin' && emailFinal !== ADMIN_EMAIL){
+      // Cas anormal : type admin mais pas l'email Admin -> on ne fait pas confiance, on dégrade en client
+      // et on ne redirige pas vers admin.html. L'Admin doit corriger en base.
+      typeFinal = 'client';
+    }
+    if(typeFinal !== 'admin' && typeFinal !== 'prestataire' && typeFinal !== 'livreur' && typeFinal !== 'client') typeFinal = 'client';
     const nomFinal = prof.nom || prof.full_name || '';
     const langueAvant = localStorage.getItem('rocy_langue');
+    // On ne stocke que l'affichage, la preuve reste le token Supabase
     localStorage.setItem('rocy_user_id', prof.id);
     localStorage.setItem('rocy_user_nom', nomFinal);
     localStorage.setItem('rocy_user_email', emailFinal);
