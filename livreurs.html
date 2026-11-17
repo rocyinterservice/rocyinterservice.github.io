@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title data-i18n="livreursTitre">Livreurs - Rocyinter</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="pays.js"></script>
 <script src="rocy-layout.js"></script>
 <style>
@@ -36,230 +36,70 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:12px;line-height:1.5}
 <h1>🛵 <span data-i18n="livreursTitre">Livreurs</span></h1>
 <p class="sub" data-i18n="livreursSous">Choisis un livreur si tu veux déléguer ta livraison. Ce n'est pas obligatoire.</p>
 <div class="info">💡 <span data-i18n="livreursInfo">Le restaurant / prestataire peut aussi livrer lui-même. Le livreur, c'est juste si tu veux déléguer. Prix à discuter dans le chat.</span></div>
-
 <div id="bandeauRole"></div>
-
 <div class="filters">
-  <div><label data-i18n="pays">PAYS</label>
-  <select id="filtrePays" onchange="charger()">
-    <option value=""> Tous les pays</option>
-    <option value="Bénin">🇧🇯 Bénin</option>
-    <option value="Togo">🇹🇬 Togo</option>
-    <option value="Côte d'Ivoire">🇨🇮 Côte d'Ivoire</option>
-    <option value="Sénégal">🇸🇳 Sénégal</option>
-    <option value="Cameroun">🇨🇲 Cameroun</option>
-    <option value="Nigeria">🇳🇬 Nigeria</option>
-    <option value="Ghana">🇬🇭 Ghana</option>
-    <option value="Mali">🇲🇱 Mali</option>
-    <option value="Burkina Faso">🇧🇫 Burkina Faso</option>
-    <option value="Niger">🇳🇪 Niger</option>
-    <option value="Guinée">🇬🇳 Guinée</option>
-    <option value="Guinée-Bissau">🇬🇼 Guinée-Bissau</option>
-    <option value="Guinée Équatoriale">🇬🇶 Guinée Équatoriale</option>
-    <option value="Gambie">🇬🇲 Gambie</option>
-    <option value="Sierra Leone">🇸🇱 Sierra Leone</option>
-    <option value="Liberia">🇱🇷 Liberia</option>
-    <option value="Cap-Vert">🇨🇻 Cap-Vert</option>
-    <option value="Mauritanie">🇲🇷 Mauritanie</option>
-    <option value="Maroc">🇲🇦 Maroc</option>
-    <option value="Algérie">🇩🇿 Algérie</option>
-    <option value="Tunisie">🇹🇳 Tunisie</option>
-    <option value="Libye">🇱🇾 Libye</option>
-    <option value="Égypte">🇪🇬 Égypte</option>
-    <option value="Soudan">🇸🇩 Soudan</option>
-    <option value="Soudan du Sud">🇸🇸 Soudan du Sud</option>
-    <option value="Éthiopie">🇪🇹 Éthiopie</option>
-    <option value="Érythrée">🇪🇷 Érythrée</option>
-    <option value="Djibouti">🇩🇯 Djibouti</option>
-    <option value="Somalie">🇸🇴 Somalie</option>
-    <option value="Kenya">🇰🇪 Kenya</option>
-    <option value="Ouganda">🇺🇬 Ouganda</option>
-    <option value="Tanzanie">🇹🇿 Tanzanie</option>
-    <option value="Rwanda">🇷🇼 Rwanda</option>
-    <option value="Burundi">🇧🇮 Burundi</option>
-    <option value="Congo">🇨🇬 Congo</option>
-    <option value="Congo RDC">🇨🇩 Congo RDC</option>
-    <option value="Gabon">🇬🇦 Gabon</option>
-    <option value="Centrafrique">🇨🇫 Centrafrique</option>
-    <option value="Tchad">🇹🇩 Tchad</option>
-    <option value="Angola">🇦🇴 Angola</option>
-    <option value="Zambie">🇿🇲 Zambie</option>
-    <option value="Zimbabwe">🇿🇼 Zimbabwe</option>
-    <option value="Mozambique">🇲🇿 Mozambique</option>
-    <option value="Malawi">🇲🇼 Malawi</option>
-    <option value="Madagascar">🇲🇬 Madagascar</option>
-    <option value="Maurice">🇲🇺 Maurice</option>
-    <option value="Seychelles">🇸🇨 Seychelles</option>
-    <option value="Comores">🇰🇲 Comores</option>
-    <option value="Afrique du Sud">🇿🇦 Afrique du Sud</option>
-    <option value="Namibie">🇳🇦 Namibie</option>
-    <option value="Botswana">🇧🇼 Botswana</option>
-    <option value="Lesotho">🇱🇸 Lesotho</option>
-    <option value="Eswatini">🇸🇿 Eswatini</option>
-    <option value="France">🇫🇷 France</option>
-    <option value="Belgique">🇧🇪 Belgique</option>
-    <option value="Suisse">🇨🇭 Suisse</option>
-    <option value="Luxembourg">🇱🇺 Luxembourg</option>
-    <option value="Italie">🇮🇹 Italie</option>
-    <option value="Espagne">🇪🇸 Espagne</option>
-    <option value="Portugal">🇵🇹 Portugal</option>
-    <option value="Allemagne">🇩🇪 Allemagne</option>
-    <option value="Royaume-Uni">🇬🇧 Royaume-Uni</option>
-    <option value="Pays-Bas">🇳🇱 Pays-Bas</option>
-    <option value="Autriche">🇦🇹 Autriche</option>
-    <option value="Danemark">🇩🇰 Danemark</option>
-    <option value="Suède">🇸🇪 Suède</option>
-    <option value="Norvège">🇳🇴 Norvège</option>
-    <option value="Finlande">🇫🇮 Finlande</option>
-    <option value="Irlande">🇮🇪 Irlande</option>
-    <option value="Grèce">🇬🇷 Grèce</option>
-    <option value="Pologne">🇵🇱 Pologne</option>
-    <option value="Roumanie">🇷🇴 Roumanie</option>
-    <option value="Hongrie">🇭🇺 Hongrie</option>
-    <option value="Tchéquie">🇨🇿 Tchéquie</option>
-    <option value="Slovaquie">🇸🇰 Slovaquie</option>
-    <option value="Croatie">🇭🇷 Croatie</option>
-    <option value="Slovénie">🇸🇮 Slovénie</option>
-    <option value="Bosnie">🇧🇦 Bosnie</option>
-    <option value="Serbie">🇷🇸 Serbie</option>
-    <option value="Monténégro">🇲🇪 Monténégro</option>
-    <option value="Albanie">🇦🇱 Albanie</option>
-    <option value="Bulgarie">🇧🇬 Bulgarie</option>
-    <option value="Ukraine">🇺🇦 Ukraine</option>
-    <option value="Biélorussie">🇧🇾 Biélorussie</option>
-    <option value="Lituanie">🇱🇹 Lituanie</option>
-    <option value="Lettonie">🇱🇻 Lettonie</option>
-    <option value="Estonie">🇪🇪 Estonie</option>
-    <option value="Islande">🇮🇸 Islande</option>
-    <option value="Malte">🇲🇹 Malte</option>
-    <option value="Chypre">🇨🇾 Chypre</option>
-    <option value="Russie">🇷🇺 Russie</option>
-    <option value="Turquie">🇹🇷 Turquie</option>
-    <option value="Arménie">🇦🇲 Arménie</option>
-    <option value="Azerbaïdjan">🇦🇿 Azerbaïdjan</option>
-    <option value="Géorgie">🇬🇪 Géorgie</option>
-    <option value="Moldavie">🇲🇩 Moldavie</option>
-    <option value="USA">🇺🇸 USA</option>
-    <option value="Canada">🇨🇦 Canada</option>
-    <option value="Mexique">🇲🇽 Mexique</option>
-    <option value="Brésil">🇧🇷 Brésil</option>
-    <option value="Argentine">🇦🇷 Argentine</option>
-    <option value="Colombie">🇨🇴 Colombie</option>
-    <option value="Pérou">🇵🇪 Pérou</option>
-    <option value="Chili">🇨🇱 Chili</option>
-    <option value="Venezuela">🇻🇪 Venezuela</option>
-    <option value="Équateur">🇪🇨 Équateur</option>
-    <option value="Bolivie">🇧🇴 Bolivie</option>
-    <option value="Paraguay">🇵🇾 Paraguay</option>
-    <option value="Uruguay">🇺🇾 Uruguay</option>
-    <option value="Guatemala">🇬🇹 Guatemala</option>
-    <option value="Salvador">🇸🇻 Salvador</option>
-    <option value="Honduras">🇭🇳 Honduras</option>
-    <option value="Nicaragua">🇳🇮 Nicaragua</option>
-    <option value="Costa Rica">🇨🇷 Costa Rica</option>
-    <option value="Panama">🇵🇦 Panama</option>
-    <option value="Haïti">🇭🇹 Haïti</option>
-    <option value="Cuba">🇨🇺 Cuba</option>
-    <option value="République Dominicaine">🇩🇴 République Dominicaine</option>
-    <option value="Jamaïque">🇯🇲 Jamaïque</option>
-    <option value="Trinité-et-Tobago">🇹🇹 Trinité-et-Tobago</option>
-    <option value="Inde">🇮🇳 Inde</option>
-    <option value="Chine">🇨🇳 Chine</option>
-    <option value="Japon">🇯🇵 Japon</option>
-    <option value="Corée du Sud">🇰🇷 Corée du Sud</option>
-    <option value="Vietnam">🇻🇳 Vietnam</option>
-    <option value="Thaïlande">🇹🇭 Thaïlande</option>
-    <option value="Indonésie">🇮🇩 Indonésie</option>
-    <option value="Philippines">🇵🇭 Philippines</option>
-    <option value="Malaisie">🇲🇾 Malaisie</option>
-    <option value="Singapour">🇸🇬 Singapour</option>
-    <option value="Myanmar">🇲🇲 Myanmar</option>
-    <option value="Cambodge">🇰🇭 Cambodge</option>
-    <option value="Laos">🇱🇦 Laos</option>
-    <option value="Bangladesh">🇧🇩 Bangladesh</option>
-    <option value="Pakistan">🇵🇰 Pakistan</option>
-    <option value="Sri Lanka">🇱🇰 Sri Lanka</option>
-    <option value="Népal">🇳🇵 Népal</option>
-    <option value="Afghanistan">🇦🇫 Afghanistan</option>
-    <option value="Iran">🇮🇷 Iran</option>
-    <option value="Irak">🇮🇶 Irak</option>
-    <option value="Émirats">🇦🇪 Émirats</option>
-    <option value="Arabie Saoudite">🇸🇦 Arabie Saoudite</option>
-    <option value="Qatar">🇶🇦 Qatar</option>
-    <option value="Koweït">🇰🇼 Koweït</option>
-    <option value="Bahreïn">🇧🇭 Bahreïn</option>
-    <option value="Oman">🇴🇲 Oman</option>
-    <option value="Jordanie">🇯🇴 Jordanie</option>
-    <option value="Liban">🇱🇧 Liban</option>
-    <option value="Syrie">🇸🇾 Syrie</option>
-    <option value="Israël">🇮🇱 Israël</option>
-    <option value="Palestine">🇵🇸 Palestine</option>
-    <option value="Yémen">🇾🇪 Yémen</option>
-    <option value="Australie">🇦🇺 Australie</option>
-    <option value="Nouvelle-Zélande">🇳🇿 Nouvelle-Zélande</option>
-    <option value="Fidji">🇫🇯 Fidji</option>
-    <option value="Papouasie">🇵🇬 Papouasie</option>
-    <option value="Îles Salomon">🇸🇧 Îles Salomon</option>
-    <option value="Vanuatu">🇻🇺 Vanuatu</option>
-    <option value="Îles Cook">🇨🇰 Îles Cook</option>
-    <option value="Nouvelle-Calédonie">🇳🇨 Nouvelle-Calédonie</option>
-    <option value="Polynésie">🇵🇫 Polynésie</option>
-  </select></div>
-  <div><label data-i18n="ville">VILLE / LOCALITÉ</label><input id="search" data-i18n-ph="villePh" placeholder="Ex: Calavi, Godomey, Cotonou..." oninput="afficher()"></div>
+  <div><label data-i18n="pays">PAYS</label><select id="filtrePays" onchange="charger()"><option value="">Tous les pays</option></select></div>
+  <div><label data-i18n="ville">VILLE / LOCALITÉ</label><input id="search" placeholder="Ex: Calavi, Godomey, Cotonou..." oninput="afficher()"></div>
 </div>
-
 <div id="liste"><span data-i18n="chargement">Chargement...</span></div>
 </div>
 <script>
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
-let supabaseClient = null;
-try{ supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); }catch(e){}
-let tous=[];
-
-function afficherBandeauRole(){
-  const box = document.getElementById('bandeauRole');
-  if(!box) return;
-  const uid = localStorage.getItem('rocy_user_id');
-  const type = localStorage.getItem('rocy_user_type') || localStorage.getItem('rocy_role') || '';
-  const t = window.rocyT || (k=>k);
-  if(!uid) box.innerHTML = `<div class="bandeau-role bandeau-visiteur">👁️ ${t('bandeauVisiteur')}</div>`;
-  else if(type==='prestataire' || type==='livreur') box.innerHTML = `<div class="bandeau-role bandeau-presta">🛠️ ${t('bandeauPresta')}</div>`;
-  else if(type==='admin') box.innerHTML = `<div class="bandeau-role bandeau-presta">🛡️ ${t('bandeauAdmin')}</div>`;
-  else box.innerHTML = `<div class="bandeau-role bandeau-client">🛒 ${t('bandeauClient')}</div>`;
+let sb = null;
+try{ sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); window.supabaseClient = sb; }catch(e){}
+let tous=[]; let moiId=''; let monRole='';
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function remplirPays(){
+  const sel=document.getElementById('filtrePays');
+  if(window.ROCY_PAYS&&window.ROCY_PAYS.length){ sel.innerHTML='<option value="">Tous les pays</option>'+window.ROCY_PAYS.map(p=>`<option value="${esc(p.nom)}">${esc(p.drapeau)} ${esc(p.nom)}</option>`).join(''); }
 }
-
+async function afficherBandeauRole(){
+  const box = document.getElementById('bandeauRole'); if(!box) return;
+  const {data:{user}} = await sb.auth.getUser();
+  moiId = user?.id || '';
+  if(user){ const {data:p}=await sb.from('profiles').select('type_compte, role').eq('id',user.id).maybeSingle(); monRole=String(p?.type_compte||p?.role||'').toLowerCase(); }
+  const t = window.rocyT || (k=>k);
+  if(!moiId) box.innerHTML = `<div class="bandeau-role bandeau-visiteur">👁️ ${esc(t('bandeauVisiteur'))}</div>`;
+  else if(monRole==='prestataire' || monRole==='livreur') box.innerHTML = `<div class="bandeau-role bandeau-presta">🛠️ ${esc(t('bandeauPresta'))}</div>`;
+  else if(monRole==='admin') box.innerHTML = `<div class="bandeau-role bandeau-presta">🛡️ ${esc(t('bandeauAdmin'))}</div>`;
+  else box.innerHTML = `<div class="bandeau-role bandeau-client">🛒 ${esc(t('bandeauClient'))}</div>`;
+}
 function afficher(){
   const q=(document.getElementById('search').value||'').trim().toLowerCase();
   const pays=document.getElementById('filtrePays')?document.getElementById('filtrePays').value:'';
   const box=document.getElementById('liste'); const t = window.rocyT || (k=>k);
   let list=tous;
   if(pays) list=list.filter(l=>(l.pays||'')===pays);
-  if(q) list=list.filter(l=>(l.nom+' '+l.ville+' '+l.localite+' '+(l.description||'')).toLowerCase().includes(q));
-  if(!list.length){box.innerHTML=`<div class="empty"><b>${t('aucuneTitre')}</b><br>${t('aucuneSous')}<br><br><button class="btn" onclick="location.href='inscription.html'">${t('devenirLivreur')}</button></div>`;return;}
+  if(q) list=list.filter(l=>((l.nom||'')+' '+(l.ville||'')+' '+(l.localite||'')+' '+(l.description||'')).toLowerCase().includes(q));
+  if(!list.length){box.innerHTML=`<div class="empty"><b>${esc(t('aucuneTitre'))}</b><br>${esc(t('aucuneSous'))}<br><br><button class="btn" onclick="location.href='inscription.html'">${esc(t('devenirLivreur'))}</button></div>`;return;}
   box.innerHTML=list.map(l=>{
-    const img = l.photo_url || l.avatar_url || 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&q=80';
     const lieu=[l.localite,l.ville,l.pays].filter(Boolean).join(' - ');
-    return `<div class="card"><span class="badge">✅ ${t('verifie')}</span><h3 style="margin-top:8px">🛵 ${l.nom||''}</h3><p>📍 ${lieu}<br>${l.description||t('livreurDesc')}<br><b>💬 ${t('prixDiscuter')}</b> - ${t('pasPrixFixe')}</p><button class="btn btn-gris" onclick="voirPresta('${l.id}')">${t('voirLivreur')}</button><button class="btn btn-dark" onclick="discuter('${l.id}')">💬 ${t('confierLivraison')}</button></div>`;
+    const cestMoi = moiId && String(l.id)===String(moiId);
+    const btnChat = cestMoi ? `<button class="btn btn-gris" disabled>C'est toi</button>` : `<button class="btn btn-dark" onclick="discuter('${esc(l.id)}')">💬 ${esc(t('confierLivraison'))}</button>`;
+    return `<div class="card"><span class="badge">✅ ${esc(t('verifie'))}</span><h3 style="margin-top:8px">🛵 ${esc(l.nom)}</h3><p>📍 ${esc(lieu)}<br>${esc(l.description||t('livreurDesc'))}<br><b>💬 ${esc(t('prixDiscuter'))}</b> - ${esc(t('pasPrixFixe'))}</p><button class="btn btn-gris" onclick="voirPresta('${esc(l.id)}')">${esc(t('voirLivreur'))}</button>${btnChat}</div>`;
   }).join('');
   if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 }
-
 async function charger(){
   const box=document.getElementById('liste'); const t = window.rocyT || (k=>k);
-  if(!supabaseClient){box.innerHTML=`<div class="empty"><b>${t('pasConnexion')}</b><br><button class="btn" onclick="charger()">${t('reessayer')}</button></div>`;return;}
+  if(!sb){box.innerHTML=`<div class="empty"><b>${esc(t('pasConnexion'))}</b><br><button class="btn" onclick="charger()">${esc(t('reessayer'))}</button></div>`;return;}
   try{
-    const {data,error}=await supabaseClient.from('profiles').select('*').eq('role','livreur').eq('statut_validation','valide').order('created_at',{ascending:false});
+    const {data,error}=await sb.from('profiles').select('id, nom, ville, localite, pays, description, photo_url, avatar_url').or('role.eq.livreur,type_compte.eq.livreur').eq('statut_validation','valide').order('created_at',{ascending:false});
     if(error) throw error;
     tous=data||[]; afficher();
-  }catch(e){ console.log('ROCY livreurs erreur:',e); box.innerHTML=`<div class="empty"><b>${t('erreurConnexion')}</b><br><button class="btn" onclick="charger()">${t('reessayer')}</button></div>`; }
+  }catch(e){ console.log('ROCY livreurs erreur:',e); box.innerHTML=`<div class="empty"><b>${esc(t('erreurConnexion'))}</b><br><button class="btn" onclick="charger()">${esc(t('reessayer'))}</button></div>`; }
 }
 function voirPresta(id){localStorage.setItem('fiche_prestataire_id',id); location.href='fiche-prestataire.html';}
-function discuter(id){
+async function discuter(id){
   const t = window.rocyT || (k=>k);
-  if(!localStorage.getItem('rocy_user_id')){alert(t('connectePourCommander')); location.href='connexion.html'; return;}
+  const {data:{user}} = await sb.auth.getUser();
+  if(!user){alert(t('connectePourCommander')); location.href='connexion.html'; return;}
+  if(String(id)===String(user.id)){ alert("C'est toi."); return; }
+  if(monRole==='admin'){ alert('Admin : tu ne peux pas chatter.'); return; }
   localStorage.setItem('chat_prestataire',id); localStorage.removeItem('chat_annonce'); location.href='chat.html';
 }
+remplirPays();
 afficherBandeauRole();
 charger();
 </script>
