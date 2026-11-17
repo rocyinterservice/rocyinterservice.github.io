@@ -55,7 +55,7 @@ function estValideAnnonce(a){
   if(!s) return true;
   return s==='valide' || s==='valid' || s==='publie' || s==='publié' || s==='publiee' || s==='actif' || s==='active';
 }
-// NOUVEAU : Badge vérification par quartier
+// Badge vérification par quartier - DYNAMIQUE, pas que Godomey
 function badgeQuartierHTML(p){
   const quartier = p.quartier || p.localite || '';
   const verifie = p.quartier_verifie === true || String(p.verification_quartier||'').toLowerCase()==='valide' || String(p.verification_quartier||'').toLowerCase()==='verifie';
@@ -70,7 +70,7 @@ async function charger(){
   const {data:{user}} = await sb.auth.getUser();
   moiId = user?.id || '';
   const t = window.rocyT || (k=>k);
-  const {data: p} = await sb.from('profiles').select('id, nom, photo_url, photo_profil, photo, description_profil, description, categorie_prestataire, categorie, localite, quartier, verification_quartier, quartier_verifie, ville, pays, statut_validation, statut').eq('id', prestaId).maybeSingle();
+  const {data: p} = await sb.from('profiles').select('id, nom, nom_entreprise, type_compte, role, type_fournisseur, photo_url, photo_profil, photo_profil_url, avatar_url, photo, description_profil, description, categorie_prestataire, categorie, localite, quartier, verification_quartier, quartier_verifie, ville, pays, statut_validation, statut').eq('id', prestaId).maybeSingle();
   if(!p){ document.getElementById('contenu').innerHTML='Prestataire introuvable. <a href="index.html">Retour Accueil</a>'; return; }
   const statut = String(p.statut_validation || p.statut || '').toLowerCase();
   if(statut && statut!=='valide' && statut!=='valid'){
@@ -79,12 +79,22 @@ async function charger(){
     document.getElementById('avis').innerHTML = '';
     return;
   }
-  const photo = p.photo_url || p.photo_profil || p.photo || '';
+  const photo = p.photo_profil_url || p.avatar_url || p.photo_url || p.photo_profil || p.photo || '';
   const description = p.description_profil || p.description || '';
   const categorie = p.categorie_prestataire || p.categorie || '';
-  const initiale = (p.nom||'R').charAt(0).toUpperCase();
-  const lieu = [p.localite, p.ville, p.pays].filter(Boolean).join(' - ');
-  const {data: annoncesBrutes} = await sb.from('annonces').select('id, titre, categorie, description, prix_fixe, prix_indicatif, prix, localite, ville, status, statut').eq('prestataire_id', prestaId).order('created_at',{ascending:false});
+  const nomAff = p.nom_entreprise || p.nom || 'Prestataire';
+  const typeC = String(p.type_compte || p.role || p.type_fournisseur || '').toLowerCase();
+  const labelType = typeC==='entreprise' ? '🏢 Entreprise' : typeC==='professionnel' ? '👨‍🔧 Professionnel' : typeC==='livreur' ? '🛵 Livreur' : typeC==='client' ? '🛒 Client' : '💼 Fournisseur';
+  const initiale = (nomAff||'R').charAt(0).toUpperCase();
+  const lieu = [p.quartier || p.localite, p.ville, p.pays].filter(Boolean).join(' - ');
+  // Annonces : prestataire_id OU user_id
+  let annoncesBrutes = [];
+  const r1 = await sb.from('annonces').select('id, titre, categorie, description, prix_fixe, prix_indicatif, prix, localite, ville, status, statut').eq('prestataire_id', prestaId).order('created_at',{ascending:false});
+  if(r1.data && r1.data.length) annoncesBrutes = r1.data;
+  else {
+    const r2 = await sb.from('annonces').select('id, titre, categorie, description, prix_fixe, prix_indicatif, prix, localite, ville, status, statut').eq('user_id', prestaId).order('created_at',{ascending:false});
+    annoncesBrutes = r2.data || [];
+  }
   const annonces = (annoncesBrutes||[]).filter(estValideAnnonce);
   const {data: avis} = await sb.from('avis').select('note, commentaire, created_at').eq('prestataire_id', prestaId).order('created_at',{ascending:false});
   let moyenne = 0; if(avis && avis.length) moyenne = (avis.reduce((a,b)=>a+Number(b.note||0),0)/avis.length).toFixed(1);
@@ -93,13 +103,14 @@ async function charger(){
   const btnVerifier = (cestMoi && !estVerifieQuartier) ? `<button class="btn btn-orange" onclick="location.href='verification.html'">📍 Faire vérifier mon quartier</button>` : '';
   const btnPrincipal = cestMoi
     ? `<button class="btn btn-mine" disabled>C'est ton profil</button>`
-    : `<button class="btn" onclick="contacter('${esc(annonces && annonces[0] ? annonces[0].id : '')}')">💬 Discuter avec ${esc(p.nom)}</button>`;
+    : `<button class="btn" onclick="contacter('${esc(annonces && annonces[0] ? annonces[0].id : '')}')">💬 Discuter avec ${esc(nomAff)}</button>`;
   document.getElementById('contenu').innerHTML = `
     <div class="profil">
       <div class="avatar">${photo ? `<img src="${esc(photo)}" onerror="this.remove()">` : esc(initiale)}</div>
-      <h1>${esc(p.nom)}</h1>
+      <h1>${esc(nomAff)}</h1>
       <p>📍 ${esc(lieu)}</p>
-      <p>${esc(categorie)}</p>
+      <p>${labelType} • ${esc(categorie)}</p>
+      ${p.nom_entreprise && p.nom ? `<p style="font-size:12px">Contact : ${esc(p.nom)}</p>` : ''}
       <span class="badge">✅ Profil vérifié Rocyinter</span>
       ${badgeQuartierHTML(p)}
       <p style="margin-top:10px;text-align:left">${esc(description)}</p>
