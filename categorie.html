@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Catégorie - Rocyinter</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="rocy-layout.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
@@ -59,8 +59,8 @@ body{background:#f6f7f9;color:#111}
 <script>
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
-let supabase = null;
-try{ supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); }catch(e){}
+let sb = null;
+try{ sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); window.supabaseClient = sb; }catch(e){}
 const params = new URLSearchParams(location.search);
 const universActif = params.get('univers') || '';
 const INFOS = {
@@ -88,8 +88,8 @@ async function chargerAnnonces(){
     const pays = document.getElementById('filtrePays').value;
     const loc = document.getElementById('filtreLocalite').value.trim().toLowerCase();
     const search = document.getElementById('filtreSearch').value.trim().toLowerCase();
-    if(!supabase){ box.innerHTML = `<div class="empty"><b>Pas de connexion</b><br><button type="button" class="btn" onclick="chargerAnnonces()">Réessayer</button></div>`; return; }
-    let q = supabase.from('annonces').select('*, profiles(nom, whatsapp, ville, localite)').eq('status','valide').order('created_at',{ascending:false});
+    if(!sb){ box.innerHTML = `<div class="empty"><b>Pas de connexion</b><br><button type="button" class="btn" onclick="chargerAnnonces()">Réessayer</button></div>`; return; }
+    let q = sb.from('annonces').select('*, profiles(nom, whatsapp, ville, localite)').eq('status','valide').order('created_at',{ascending:false});
     if(universActif) q = q.eq('univers', universActif);
     if(pays) q = q.eq('pays', pays);
     const {data, error} = await q;
