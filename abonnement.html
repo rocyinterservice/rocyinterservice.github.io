@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title data-i18n="abonnementTitre">Abonnement - Rocyinter</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="pays.js"></script>
 <script src="rocy-layout.js"></script>
 <style>
@@ -48,7 +48,8 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:12px;line-height:1.5}
 <script>
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+window.supabaseClient = sb;
 const WHATSAPP_ROCY = '2290191478460';
 
 const uid = localStorage.getItem('rocy_user_id');
@@ -89,17 +90,17 @@ function universPourCategorie(cat){
 async function charger(){
   let count = 0;
   try{
-    const {count: c} = await supabase.from('profiles').select('*',{count:'exact',head:true}).eq('statut_validation','valide').in('user_type',['prestataire','livreur']);
+    const {count: c} = await sb.from('profiles').select('*',{count:'exact',head:true}).eq('statut_validation','valide').in('user_type',['prestataire','livreur']);
     count = c || 0;
   }catch(e){
-    const {count: c2} = await supabase.from('profiles').select('*',{count:'exact',head:true}).eq('statut_validation','valide');
+    const {count: c2} = await sb.from('profiles').select('*',{count:'exact',head:true}).eq('statut_validation','valide');
     count = c2 || 0;
   }
   const places = Math.max(0, 30 - count);
   document.getElementById('compteur').innerHTML = `📊 <b>${count} / 30</b> prestataires validés.<br>${places>0 ? `Il reste <b>${places} places</b> pour avoir le <b>1er mois d'abonnement offert</b>.` : '❌ <b>Les 30 places avec 1er mois offert sont prises.</b> Abonnement payant dès le 1er mois.'}<br>Commissions dues dès la 1ère mission, même pendant le mois offert.`;
 
   if(roleUser==='client') return;
-  const {data: profil} = await supabase.from('profiles').select('*').eq('id', uid).maybeSingle();
+  const {data: profil} = await sb.from('profiles').select('*').eq('id', uid).maybeSingle();
   if(!profil) return;
   let acts = profil.activites || [];
   if(typeof acts==='string'){ try{ acts=JSON.parse(acts); }catch(e){ acts=[acts]; } }
