@@ -265,7 +265,6 @@ const VILLES_PAR_PAYS = {
   'Brésil': ["São Paulo","Rio de Janeiro","Salvador","Brasilia","Fortaleza","Belo Horizonte"],
   'Mexique': ["Mexico","Guadalajara","Monterrey","Puebla","Cancún","Tijuana"]
 };
-// NOUVEAU : Quartiers pour la vérification par quartier
 const QUARTIERS_PAR_VILLE = {
   'Abomey-Calavi': ["Godomey","Calavi Centre","Ouèdo","Akassato","Hêvié","Togba","Zinvié","Kpanroun","Glo-Djigbé"],
   'Cotonou': ["Fidjrossè","Godomey","Agla","Akpakpa","Fidjrossè","Ganhi","Gbégamey","Godomey","Jéricho","Kindonou","Mènontin","Sainte-Cécile","St Michel","Vodjè","Wologuèdè","Zongo"],
@@ -456,7 +455,7 @@ async function inscrire(){
       verification_quartier: 'en_attente',
       quartier_verifie: false,
       description:description||null, description_profil:description||null,
-      photo_url:photoBase64||null, avatar_url:photoBase64||null,
+      photo_url:photoBase64||null, avatar_url:photoBase64||null, photo_profil_url:photoBase64||null,
       categorie:typeFinal==='prestataire'?categorie:null,
       categorie_prestataire:typeFinal==='prestataire'?categorie:null,
       univers:univers,
@@ -465,7 +464,7 @@ async function inscrire(){
     };
     let {data,error}=await sb.from('profiles').insert([payload]).select().single();
     if(error && (error.message.includes("Could not find the") || error.message.includes("column"))){
-      const minimal = { id:userId, nom: nomFinal, whatsapp, phone: whatsapp, email:emailFinal, type:typeFinal, type_compte:typeFinal, pays, ville, localite, description_profil:description||null, categorie_prestataire:typeFinal==='prestataire'?categorie:null, statut_validation:(typeFinal==='prestataire'?'en_attente':'valide'), status_prestataire:typeFinal==='prestataire'?'en_attente':'valide' };
+      const minimal = { id:userId, nom: nomFinal, whatsapp, phone: whatsapp, email:emailFinal, type:typeFinal, type_compte:typeFinal, pays, ville, localite, quartier: localite, quartier_verifie: false, verification_quartier: 'non_envoye', photo_url:photoBase64||null, avatar_url:photoBase64||null, photo_profil_url:photoBase64||null, description_profil:description||null, categorie_prestataire:typeFinal==='prestataire'?categorie:null, statut_validation:(typeFinal==='prestataire'?'en_attente':'valide'), status_prestataire:typeFinal==='prestataire'?'en_attente':'valide' };
       const retry = await sb.from('profiles').insert([minimal]).select().single();
       data = retry.data; error = retry.error;
     }
