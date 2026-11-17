@@ -1,5 +1,9 @@
 <!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Admin - Rocyinter</title>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin - Rocyinter</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="pays.js"></script>
 <script src="rocy-layout.js"></script>
@@ -11,8 +15,7 @@ header{display:flex;justify-content:space-between;align-items:center}
 header b{font-size:22px} header b span{color:#f59e0b}
 header button{background:#fff;color:#000;border:none;padding:8px 12px;border-radius:999px;cursor:pointer;font-size:12px}
 .login{max-width:400px;margin:60px auto;background:#fff;color:#111;border-radius:16px;padding:20px;display:grid;gap:12px}
-.login a.btn{background:#f59e0b;padding:12px;border-radius:10px;font-weight:800;cursor:pointer;text-align:center;color:#000;text-decoration:none;display:block}
-.login button{padding:12px;border-radius:10px;border:1px solid #e2e8f0;background:#f1f5f9;cursor:pointer;font-weight:700}
+.login button,.login a.btn{background:#f59e0b;border:none;padding:12px;border-radius:10px;font-weight:800;cursor:pointer;text-align:center;color:#000;text-decoration:none;font-size:14px;display:block}
 .stats{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin:16px 0}
 .stat{background:#1e293b;border-radius:14px;padding:12px;text-align:center}
 .stat b{font-size:18px;display:block} .stat small{opacity:.6;font-size:11px}
@@ -20,93 +23,281 @@ header button{background:#fff;color:#000;border:none;padding:8px 12px;border-rad
 .tabs button{background:#1e293b;color:#fff;border:none;padding:10px 14px;border-radius:999px;cursor:pointer;font-size:13px}
 .tabs button.active{background:#f59e0b;color:#000;font-weight:800}
 .card{background:#fff;color:#111;border-radius:16px;padding:14px;margin-bottom:12px}
-.card p{font-size:13px;color:#64748b;margin:6px 0;line-height:1.5}
+.card h3{font-size:15px} .card p{font-size:13px;color:#64748b;margin:6px 0;line-height:1.5}
 .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:700}
 .badge.attente{background:#fef3c7;color:#92400e}
+.badge.valide{background:#dcfce7;color:#166534}
+.badge.rejete{background:#fee2e2;color:#991b1b}
+.badge.litige{background:#fee2e2;color:#991b1b}
 .actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 .actions button{flex:1;padding:10px;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:13px;min-width:120px}
-.btn-val{background:#16a34a;color:#fff} .btn-rej{background:#fee2e2;color:#991b1b}
+.btn-val{background:#16a34a;color:#fff} .btn-rej{background:#fee2e2;color:#991b1b} .btn-chat{background:#0f172a;color:#fff}
 .empty{background:#1e293b;border-radius:14px;padding:20px;text-align:center;opacity:.7;font-size:13px}
 #main{display:none}
-</style></head>
-<body><div class="top">
-<header><b>Rocy<span>inter</span> Admin</b><button type="button" onclick="window.location.href='index.html'">Voir le site</button></header>
+.msg-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px;margin-top:8px;font-size:12px;line-height:1.5;max-height:200px;overflow-y:auto}
+</style>
+</head>
+<body>
+<div class="top">
+<header>
+  <b>Rocy<span>inter</span> Admin</b>
+  <button type="button" onclick="window.location.href='index.html'">Voir le site</button>
+</header>
+
 <div class="login" id="loginBox">
-<h2 style="text-align:center">🔐 Admin Rocyinter</h2>
-<p style="text-align:center;color:#64748b;font-size:13px">Accès réservé à <b>rocyinter@gmail.com</b>.</p>
-<p id="adminErreur" style="text-align:center;color:#991b1b;font-size:13px;display:none">⛔ Accès refusé. Ce compte n'est pas Admin.</p>
-<a class="btn" href="connexion.html">Se connecter comme Admin →</a>
-<button type="button" onclick="window.location.href='index.html'">Retour au site</button>
+  <h2 style="text-align:center">🔐 Admin Rocyinter</h2>
+  <p style="text-align:center;color:#64748b;font-size:13px">Accès réservé à <b>rocyinter@gmail.com</b>.<br>Connecte-toi avec ce compte.</p>
+  <p id="adminErreur" style="text-align:center;color:#991b1b;font-size:13px;display:none">⛔ Accès refusé. Ce compte n'est pas Admin.</p>
+  <a class="btn" href="connexion.html">Se connecter comme Admin →</a>
+  <button type="button" style="background:#f1f5f9" onclick="window.location.href='index.html'">Retour au site</button>
+  <button type="button" style="background:#fff;border:1px solid #e2e8f0" onclick="deconnecterAdmin()">Se déconnecter / Changer de compte</button>
 </div>
+
 <div id="main">
-<div style="background:#dcfce7;color:#166534;padding:10px;border-radius:10px;font-size:13px;margin:14px 0;text-align:center">✅ Connecté Admin : <b id="adminEmailAffiche">rocyinter@gmail.com</b> <button type="button" onclick="deconnecterAdmin()" style="background:#fff;border:none;padding:4px 8px;border-radius:999px;cursor:pointer;font-size:11px">Déconnexion</button></div>
-<div class="stats"><div class="stat"><b id="sAnnonces">0</b><small>Annonces</small></div><div class="stat"><b id="sCommandes">0</b><small>Commandes</small></div><div class="stat"><b id="sUsers">0</b><small>Utilisateurs</small></div><div class="stat"><b id="sCommission">0 F</b><small>Commissions</small></div></div>
-<div class="tabs">
-<button type="button" id="tab-annonces" class="active" onclick="setTab('annonces')">📋 Annonces</button>
-<button type="button" id="tab-prestataires" onclick="setTab('prestataires')">👷 Prestataires</button>
-<button type="button" id="tab-commandes" onclick="setTab('commandes')">💰 Commandes</button>
-<button type="button" id="tab-users" onclick="setTab('users')">👥 Utilisateurs</button>
+  <div style="background:#dcfce7;color:#166534;padding:10px;border-radius:10px;font-size:13px;margin:14px 0;text-align:center">✅ Connecté Admin : <b id="adminEmailAffiche">rocyinter@gmail.com</b> <button type="button" onclick="deconnecterAdmin()" style="background:#fff;border:none;padding:4px 8px;border-radius:999px;cursor:pointer;font-size:11px;margin-left:8px">Déconnexion</button></div>
+  <div class="stats">
+    <div class="stat"><b id="sAnnonces">0</b><small>Annonces</small></div>
+    <div class="stat"><b id="sCommandes">0</b><small>Commandes</small></div>
+    <div class="stat"><b id="sUsers">0</b><small>Utilisateurs</small></div>
+    <div class="stat"><b id="sCommission">0 F</b><small>Commissions</small></div>
+  </div>
+  <div class="tabs">
+    <button type="button" id="tab-annonces" class="active" onclick="setTab('annonces')">📋 Annonces</button>
+    <button type="button" id="tab-prestataires" onclick="setTab('prestataires')">👷 Prestataires</button>
+    <button type="button" id="tab-commandes" onclick="setTab('commandes')">💰 Commandes</button>
+    <button type="button" id="tab-litiges" onclick="setTab('litiges')">⚠️ Litiges</button>
+    <button type="button" id="tab-users" onclick="setTab('users')">👥 Utilisateurs</button>
+    <button type="button" id="tab-avis" onclick="setTab('avis')">⭐ Avis</button>
+  </div>
+  <div id="contenu"></div>
 </div>
-<div id="contenu"></div>
-</div></div>
+</div>
+
 <script>
-const ADMIN_EMAIL='rocyinter@gmail.com';
-const supabase=window.supabase.createClient("https://gdwgjsloivrpxxvggxyz.supabase.co","sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF");
-let tabActuel='annonces';
-async function deconnecterAdmin(){await supabase.auth.signOut();localStorage.clear();window.location.href='connexion.html';}
-function afficherLogin(refuse){document.getElementById('loginBox').style.display='grid';document.getElementById('main').style.display='none';if(refuse)document.getElementById('adminErreur').style.display='block';}
-function afficherMain(email){document.getElementById('loginBox').style.display='none';document.getElementById('main').style.display='block';document.getElementById('adminEmailAffiche').textContent=email;}
-// SÉCURITÉ : la preuve = token Supabase, jamais localStorage
-async function verifierAdmin(){
-  const {data:{user},error}=await supabase.auth.getUser();
-  if(error||!user){afficherLogin(false);return false;}
-  const {data:prof,error:perr}=await supabase.from('profiles').select('email,type_compte,role').eq('id',user.id).single();
-  if(perr||!prof){afficherLogin(true);return false;}
-  const email=String(prof.email||'').toLowerCase().trim();
-  const isAdmin=email===ADMIN_EMAIL||prof.type_compte==='admin'||prof.role==='admin';
-  if(!isAdmin){afficherLogin(true);return false;}
-  localStorage.setItem('rocy_user_id',user.id);localStorage.setItem('rocy_user_email',email);localStorage.setItem('rocy_user_type','admin');localStorage.setItem('rocy_role','admin');
-  afficherMain(email);
-  return true;
+const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
+const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const ADMIN_EMAIL = 'rocyinter@gmail.com';
+let tabActuel = 'annonces';
+
+function allerConnexion(){ window.location.href='connexion.html'; }
+async function deconnecterAdmin(){
+  try{ await supabase.auth.signOut(); }catch(e){}
+  const langue = localStorage.getItem('rocy_langue');
+  localStorage.clear();
+  if(langue) localStorage.setItem('rocy_langue', langue);
+  window.location.href='connexion.html';
 }
-async function initAdmin(){try{const ok=await verifierAdmin();if(ok)chargerTout();}catch(e){afficherLogin(false);}}
-function setTab(t){tabActuel=t;['annonces','prestataires','commandes','users'].forEach(k=>{document.getElementById('tab-'+k).classList.toggle('active',k===t);});chargerTout();}
+function statutAnnonce(a){ return String(a.status || a.statut || '').toLowerCase(); }
+// ANTI-XSS : tout texte venu d'un utilisateur est échappé avant innerHTML
+function esc(v){
+  return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function afficherLogin(refuse){
+  document.getElementById('loginBox').style.display='grid';
+  document.getElementById('main').style.display='none';
+  if(refuse) document.getElementById('adminErreur').style.display='block';
+}
+function afficherMain(email){
+  document.getElementById('loginBox').style.display='none';
+  document.getElementById('main').style.display='block';
+  document.getElementById('adminEmailAffiche').textContent = email || ADMIN_EMAIL;
+}
+// SÉCURISÉ : la preuve = token Supabase, jamais localStorage
+async function verifierAdmin(){
+  try{
+    const {data:{user}, error} = await supabase.auth.getUser();
+    if(error || !user){ afficherLogin(false); return false; }
+    const {data: prof, error: perr} = await supabase.from('profiles').select('id,email,type,type_compte,role').eq('id', user.id).single();
+    if(perr || !prof){ afficherLogin(true); return false; }
+    const email = String(prof.email || '').toLowerCase().trim();
+    const isAdmin = email === ADMIN_EMAIL || prof.type_compte === 'admin' || prof.role === 'admin' || prof.type === 'admin';
+    if(!isAdmin){ afficherLogin(true); return false; }
+    // On ne stocke que l'affichage, la preuve reste le token
+    localStorage.setItem('rocy_user_id', user.id);
+    localStorage.setItem('rocy_user_email', email);
+    localStorage.setItem('rocy_user_type', 'admin');
+    localStorage.setItem('rocy_role', 'admin');
+    afficherMain(email);
+    return true;
+  }catch(e){ afficherLogin(false); return false; }
+}
+async function initAdmin(){
+  const ok = await verifierAdmin();
+  if(ok) chargerTout();
+}
+function setTab(t){
+  tabActuel = t;
+  ['annonces','prestataires','commandes','litiges','users','avis'].forEach(k=>{
+    document.getElementById('tab-'+k).classList.toggle('active', k===t);
+  });
+  chargerTout();
+}
+function texteCommission(c){
+  if(c.univers==='domicile') return 'Commission 8%';
+  if(c.univers==='pro') return 'Commission 5 000 FCFA fixe';
+  if(c.univers==='manger') return 'Commission 12%';
+  if(c.univers==='sejour') return 'Commission 12%';
+  if(c.univers==='livreur') return 'Commission 20% (Livreur 80%)';
+  if(c.univers==='immobilier'){
+    const t = String(c.titre||'').toLowerCase();
+    if(t.includes('parcelle') || t.includes('vente') || t.includes('terrain')) return 'Commission Parcelle 10 000 + 2% plafonné 200 000';
+    return 'Commission Location 50% d\'un mois';
+  }
+  return 'Commission';
+}
 async function chargerTout(){
   try{
-    const {data:ann}=await supabase.from('annonces').select('*');
-    const {data:cmd}=await supabase.from('commandes').select('*');
-    const {data:users}=await supabase.from('profiles').select('id,nom,whatsapp,type_compte,statut_validation,categorie_prestataire,localite,ville,pays');
-    let comm=0;(cmd||[]).forEach(c=>{if(['paye','en_cours','valide','libere'].includes(c.status))comm+=Number(c.commission||0);});
-    document.getElementById('sAnnonces').textContent=ann?.length||0;document.getElementById('sCommandes').textContent=cmd?.length||0;document.getElementById('sUsers').textContent=users?.length||0;document.getElementById('sCommission').textContent=comm.toLocaleString()+' F';
-    const box=document.getElementById('contenu');
+    const [annRes, cmdRes, usersRes] = await Promise.all([
+      supabase.from('annonces').select('*'),
+      supabase.from('commandes').select('*'),
+      supabase.from('profiles').select('id,nom,whatsapp,type_compte,statut_validation,status_prestataire,categorie_prestataire,description_profil,localite,ville,pays')
+    ]);
+    const ann = annRes.data || [];
+    const cmd = cmdRes.data || [];
+    const users = usersRes.data || [];
+    let comm = 0; cmd.forEach(c=>{ if(['paye','en_cours','valide','libere'].includes(c.status)) comm += Number(c.commission||0); });
+    document.getElementById('sAnnonces').textContent = ann.length || 0;
+    document.getElementById('sCommandes').textContent = cmd.length || 0;
+    document.getElementById('sUsers').textContent = users.length || 0;
+    document.getElementById('sCommission').textContent = comm.toLocaleString() + ' F';
+    const box = document.getElementById('contenu');
     if(tabActuel==='annonces'){
-      const {data}=await supabase.from('annonces').select('*, profiles(nom, whatsapp)').order('created_at',{ascending:false});
-      const enAttente=(data||[]).filter(a=>String(a.status||a.statut||'').toLowerCase()==='en_attente');
-      if(!enAttente.length){box.innerHTML=`<div class="empty">✅ Aucune annonce en attente.</div>`;return;}
-      box.innerHTML=enAttente.map(a=>`<div class="card"><span class="badge attente">⏳ En attente</span><h3 style="margin-top:8px">${a.titre}</h3><p><b>Prestataire :</b> ${a.profiles?.nom} • ${a.profiles?.whatsapp}<br><b>Catégorie :</b> ${a.categorie} • ${a.univers}<br><b>Lieu :</b> ${a.localite} - ${a.ville} - ${a.pays}<br><b>Description :</b> ${a.description}</p><div class="actions"><button type="button" class="btn-val" onclick="validerAnnonce('${a.id}')">✅ Valider</button><button type="button" class="btn-rej" onclick="rejeterAnnonce('${a.id}')">❌ Rejeter</button></div></div>`).join('');
+      const {data} = await supabase.from('annonces').select('*, profiles(nom, whatsapp)').order('created_at',{ascending:false});
+      const enAttente = (data||[]).filter(a=> statutAnnonce(a)==='en_attente');
+      if(!enAttente.length){ box.innerHTML = `<div class="empty">✅ Aucune annonce en attente. Tout est validé !</div>`; return; }
+      box.innerHTML = enAttente.map(a=>`
+        <div class="card">
+          <span class="badge attente">⏳ En attente</span>
+          <h3 style="margin-top:8px">${esc(a.titre)}</h3>
+          <p><b>Prestataire :</b> ${esc(a.profiles?.nom)} • WhatsApp : ${esc(a.profiles?.whatsapp)}<br>
+          <b>Catégorie :</b> ${esc(a.categorie)} • ${esc(a.univers)}<br>
+          <b>Lieu :</b> ${esc(a.localite)} - ${esc(a.ville)} - ${esc(a.pays)}<br>
+          <b>Prix :</b> ${a.prix_fixe ? Number(a.prix_indicatif||a.prix||0).toLocaleString()+' FCFA fixe' : 'À discuter'}<br>
+          <b>Description :</b> ${esc(a.description)}</p>
+          <div class="actions">
+            <button type="button" class="btn-val" onclick="validerAnnonce('${esc(a.id)}')">✅ Valider</button>
+            <button type="button" class="btn-rej" onclick="rejeterAnnonce('${esc(a.id)}')">❌ Rejeter</button>
+          </div>
+        </div>`).join('');
     }
     if(tabActuel==='prestataires'){
-      const {data}=await supabase.from('profiles').select('*').eq('type_compte','prestataire').order('created_at',{ascending:false});
-      const enAttente=(data||[]).filter(u=>String(u.statut_validation||u.status_prestataire||'en_attente').toLowerCase()==='en_attente');
-      if(!enAttente.length){box.innerHTML=`<div class="empty">✅ Aucun prestataire en attente.</div>`;return;}
-      box.innerHTML=enAttente.map(u=>`<div class="card"><h3>${u.nom}</h3><p>WhatsApp : ${u.whatsapp} • 📍 ${u.localite} - ${u.ville} - ${u.pays}<br><b>Catégorie :</b> ${u.categorie_prestataire||'-'}</p><div class="actions"><button type="button" class="btn-val" onclick="validerPrestataire('${u.id}')">✅ Valider</button><button type="button" class="btn-rej" onclick="rejeterPrestataire('${u.id}')">❌ Refuser</button></div></div>`).join('');
+      const {data} = await supabase.from('profiles').select('*').eq('type_compte','prestataire').order('created_at',{ascending:false});
+      const enAttente = (data||[]).filter(u=> String(u.statut_validation||u.status_prestataire||'en_attente').toLowerCase()==='en_attente');
+      if(!enAttente.length){ box.innerHTML = `<div class="empty">✅ Aucun prestataire en attente.</div>`; return; }
+      box.innerHTML = enAttente.map(u=>`
+        <div class="card">
+          <span class="badge attente">⏳ Prestataire en attente</span>
+          <h3 style="margin-top:8px">${esc(u.nom)}</h3>
+          <p>WhatsApp : ${esc(u.whatsapp)} • 📍 ${esc(u.localite)} - ${esc(u.ville)} - ${esc(u.pays)}<br>${esc(u.description_profil || '')}<br><b>Catégorie :</b> ${esc(u.categorie_prestataire || '-')}</p>
+          <div class="actions">
+            <button type="button" class="btn-val" onclick="validerPrestataire('${esc(u.id)}')">✅ Valider le compte</button>
+            <button type="button" class="btn-rej" onclick="rejeterPrestataire('${esc(u.id)}')">❌ Refuser</button>
+          </div>
+        </div>`).join('');
     }
     if(tabActuel==='commandes'){
-      const {data}=await supabase.from('commandes').select('*').order('created_at',{ascending:false}).limit(50);
-      if(!data?.length){box.innerHTML=`<div class="empty">Aucune commande.</div>`;return;}
-      box.innerHTML=data.map(c=>`<div class="card"><b>${c.titre}</b> • ${c.status}<p>Total : ${Number(c.montant_total||0).toLocaleString()} FCFA • Commission : ${Number(c.commission||0).toLocaleString()} FCFA<br>📍 ${c.localite} - ${c.ville}</p></div>`).join('');
+      const {data} = await supabase.from('commandes').select('*').order('created_at',{ascending:false}).limit(50);
+      if(!data || data.length===0){ box.innerHTML = `<div class="empty">Aucune commande pour l'instant.</div>`; return; }
+      box.innerHTML = data.map(c=>{
+        let action = '';
+        if(c.status==='valide') action = `<div class="actions"><button type="button" class="btn-val" onclick="liberer('${esc(c.id)}')">💰 Libérer l'argent au prestataire</button></div>`;
+        if(c.status==='paye') action = `<p style="color:#1e40af">💳 Payé - Bloqué en escrow. En attente du service.</p>`;
+        if(c.status==='litige') action = `<p style="color:#991b1b">⚠️ Litige - Va dans l'onglet Litiges pour trancher.</p>`;
+        return `<div class="card">
+          <b>${esc(c.titre)}</b> • <span class="badge attente">${esc(c.status)}</span>
+          <p>Total : ${Number(c.montant_total||0).toLocaleString()} FCFA • ${texteCommission(c)} : <b>${Number(c.commission||0).toLocaleString()} FCFA</b> • Prestataire : ${Number(c.montant_prestataire||0).toLocaleString()} FCFA<br>
+          📍 ${esc(c.localite)} - ${esc(c.ville)} • ${c.created_at ? new Date(c.created_at).toLocaleDateString('fr-FR') : ''} • Paiement : ${esc(c.mode_paiement || '-')}</p>${action}
+        </div>`;
+      }).join('');
+    }
+    if(tabActuel==='litiges'){
+      const {data} = await supabase.from('commandes').select('*').eq('status','litige').order('created_at',{ascending:false});
+      if(!data || data.length===0){ box.innerHTML = `<div class="empty">✅ Aucun litige. Tout va bien !</div>`; return; }
+      box.innerHTML = data.map(c=>`
+        <div class="card">
+          <span class="badge litige">⚠️ Litige - Argent bloqué</span>
+          <h3 style="margin-top:8px">${esc(c.titre)}</h3>
+          <p>Total : ${Number(c.montant_total||0).toLocaleString()} FCFA • Prestataire devait recevoir : ${Number(c.montant_prestataire||0).toLocaleString()} FCFA<br>
+          <b>Raison :</b> ${esc(c.litige_raison || 'Non précisée')}<br>📍 ${esc(c.localite)} - ${esc(c.ville)}</p>
+          <div class="actions">
+            <button type="button" class="btn-val" onclick="trancherLitige('${esc(c.id)}','libere')">✅ Donner raison au prestataire - Libérer</button>
+            <button type="button" class="btn-rej" onclick="trancherLitige('${esc(c.id)}','rembourse')">💰 Donner raison au client - Rembourser</button>
+            <button type="button" class="btn-chat" onclick="voirChatLitige('${esc(c.conversation_id)}','${esc(c.id)}')">💬 Voir le chat (lecture seule)</button>
+          </div>
+          <div id="chat-${esc(c.id)}" style="display:none"></div>
+        </div>`).join('');
     }
     if(tabActuel==='users'){
-      const {data}=await supabase.from('profiles').select('*').order('created_at',{ascending:false}).limit(100);
-      if(!data?.length){box.innerHTML=`<div class="empty">Aucun utilisateur.</div>`;return;}
-      box.innerHTML=data.map(u=>`<div class="card"><b>${u.nom}</b> • ${u.type_compte}<p>WhatsApp : ${u.whatsapp} • 📍 ${u.localite} - ${u.ville} - ${u.pays}</p></div>`).join('');
+      const {data} = await supabase.from('profiles').select('*').order('created_at',{ascending:false}).limit(100);
+      if(!data || data.length===0){ box.innerHTML = `<div class="empty">Aucun utilisateur.</div>`; return; }
+      box.innerHTML = data.map(u=>`
+        <div class="card"><b>${esc(u.nom)}</b> • ${esc(u.type_compte)} ${u.type_compte==='prestataire' ? '• ' + esc(u.categorie_prestataire||'') + ' • Statut : ' + esc(u.statut_validation||'en_attente') : ''}
+        <p>WhatsApp : ${esc(u.whatsapp)} • 📍 ${esc(u.localite)} - ${esc(u.ville)} - ${esc(u.pays)}<br>${esc(u.description_profil || '')}</p></div>`).join('');
     }
-  }catch(e){document.getElementById('contenu').innerHTML=`<div class="empty">Erreur : ${e.message}</div>`;}
+    if(tabActuel==='avis'){
+      const {data} = await supabase.from('avis').select('*').order('created_at',{ascending:false}).limit(50);
+      if(!data || data.length===0){ box.innerHTML = `<div class="empty">Aucun avis pour l'instant.</div>`; return; }
+      box.innerHTML = data.map(a=>`<div class="card"><b>${'⭐'.repeat(Math.min(5, Math.max(1, a.note||5)))}</b><p>${esc(a.commentaire || '')}</p></div>`).join('');
+    }
+  }catch(e){
+    document.getElementById('contenu').innerHTML = `<div class="empty">Erreur chargement : ${esc(e.message)}<br><button type="button" onclick="chargerTout()" style="margin-top:10px;padding:10px 14px;border-radius:10px;border:none;background:#f59e0b;font-weight:800;cursor:pointer">Réessayer</button></div>`;
+  }
 }
-async function validerAnnonce(id){const {error}=await supabase.from('annonces').update({status:'valide',statut:'valide'}).eq('id',id);if(error)alert(error.message);else{alert('✅ Annonce validée');chargerTout();}}
-async function rejeterAnnonce(id){if(!confirm('Rejeter ?'))return;await supabase.from('annonces').update({status:'rejete',statut:'rejete'}).eq('id',id);chargerTout();}
-async function validerPrestataire(id){await supabase.from('profiles').update({statut_validation:'valide',status_prestataire:'valide'}).eq('id',id);alert('✅ Prestataire validé');chargerTout();}
-async function rejeterPrestataire(id){if(!confirm('Refuser ?'))return;await supabase.from('profiles').update({statut_validation:'rejete',status_prestataire:'rejete'}).eq('id',id);chargerTout();}
-document.addEventListener('DOMContentLoaded',initAdmin);
-if(document.readyState!=='loading')initAdmin();
-</script></body></html>
+async function validerAnnonce(id){
+  const {error} = await supabase.from('annonces').update({status:'valide', statut:'valide'}).eq('id', id);
+  if(error) alert('Erreur : ' + error.message);
+  else alert('✅ Annonce validée ! Elle apparaît maintenant sur l’accueil.');
+  chargerTout();
+}
+async function rejeterAnnonce(id){
+  if(!confirm('Rejeter cette annonce ?')) return;
+  await supabase.from('annonces').update({status:'rejete', statut:'rejete'}).eq('id', id);
+  chargerTout();
+}
+async function validerPrestataire(id){
+  await supabase.from('profiles').update({statut_validation:'valide', status_prestataire:'valide'}).eq('id', id);
+  alert('✅ Prestataire validé ! Son dashboard va afficher Validé.');
+  chargerTout();
+}
+async function rejeterPrestataire(id){
+  if(!confirm('Refuser ce prestataire ?')) return;
+  await supabase.from('profiles').update({statut_validation:'rejete', status_prestataire:'rejete'}).eq('id', id);
+  chargerTout();
+}
+async function liberer(id){
+  if(!confirm('Libérer l’argent au prestataire ? Vérifie que le client a bien validé.')) return;
+  const {data: avant} = await supabase.from('commandes').select('status').eq('id', id).single();
+  if(!avant || avant.status!=='valide'){ alert('⚠️ Cette commande n’est pas en statut Validé. Libération refusée.'); return; }
+  await supabase.from('commandes').update({status:'libere', libere_le: new Date().toISOString()}).eq('id', id).eq('status','valide');
+  alert('💰 Argent libéré !');
+  chargerTout();
+}
+async function trancherLitige(id, decision){
+  if(decision==='libere'){
+    if(!confirm('Donner raison au prestataire ? Argent libéré au prestataire.')) return;
+    await supabase.from('commandes').update({status:'libere', litige_decision:'prestataire'}).eq('id', id).eq('status','litige');
+  } else {
+    if(!confirm('Donner raison au client ? Commande remboursée, prestataire ne reçoit rien.')) return;
+    await supabase.from('commandes').update({status:'rembourse', litige_decision:'client'}).eq('id', id).eq('status','litige');
+  }
+  alert('⚖️ Litige tranché.');
+  chargerTout();
+}
+async function voirChatLitige(convId, cmdId){
+  if(!convId || convId==='null'){ alert('Aucune conversation pour ce litige.'); return; }
+  const {data: msgs} = await supabase.from('messages').select('*').eq('conversation_id', convId).order('created_at',{ascending:true});
+  const box = document.getElementById('chat-'+cmdId);
+  if(!box) return;
+  let html = `<div class="msg-box"><b>💬 Chat - Lecture seule (Admin ne peut pas envoyer)</b><br>`;
+  if(!msgs || !msgs.length) html += 'Aucun message.';
+  else html += msgs.map(m=>`• ${new Date(m.created_at).toLocaleString('fr-FR')} - ${esc(m.contenu)}`).join('<br>');
+  html += `</div>`;
+  box.style.display='block';
+  box.innerHTML = html;
+}
+document.addEventListener('DOMContentLoaded', initAdmin);
+if(document.readyState !== 'loading') initAdmin();
+</script>
+</body>
+</html>
