@@ -54,6 +54,7 @@ textarea{height:80px;resize:none}
   <p id="lieuAffiche">...</p>
   <div id="badgeZone"></div>
   <p id="verifTexte"></p>
+  <button id="btnDashboard" class="btn btn-dark" style="display:none">📊 Aller à mon Dashboard →</button>
 </div>
 
 <!-- PROFIL - DÉJÀ REMPLI DEPUIS INSCRIPTION -->
@@ -67,8 +68,11 @@ textarea{height:80px;resize:none}
 
   <label>Type de compte</label>
   <select id="type_compte" disabled>
-    <option value="prestataire">Prestataire / Entreprise</option>
-    <option value="client">Client</option>
+    <option value="client">Client - Je cherche un service</option>
+    <option value="prestataire">Prestataire / Fournisseur - Je propose un service</option>
+    <option value="professionnel">Professionnel seul - Je travaille seul</option>
+    <option value="entreprise">Entreprise - Hôtel / Restaurant / Société</option>
+    <option value="livreur">Livreur</option>
   </select>
 
   <label>Catégorie / Métier</label>
@@ -99,14 +103,43 @@ textarea{height:80px;resize:none}
   <select id="quartier" disabled>
     <option value="">-- Choisir --</option>
     <option>Godomey</option>
-    <option>Calavi</option>
+    <option>Calavi Centre</option>
+    <option>Ouèdo</option>
+    <option>Akassato</option>
+    <option>Hêvié</option>
+    <option>Togba</option>
+    <option>Zinvié</option>
+    <option>Kpanroun</option>
+    <option>Glo-Djigbé</option>
     <option>Fidjrossè</option>
+    <option>Agla</option>
+    <option>Akpakpa</option>
+    <option>Ganhi</option>
+    <option>Gbégamey</option>
+    <option>Jéricho</option>
+    <option>Kindonou</option>
+    <option>Mènontin</option>
+    <option>Sainte-Cécile</option>
+    <option>St Michel</option>
+    <option>Vodjè</option>
+    <option>Wologuèdè</option>
+    <option>Zongo</option>
+    <option>Avakpa</option>
+    <option>Dowa</option>
+    <option>Houinmè</option>
+    <option>Oganla</option>
+    <option>Ouando</option>
+    <option>Tokpota</option>
+    <option>Pahou</option>
+    <option>Savi</option>
+    <option>Albarika</option>
+    <option>Banikanni</option>
+    <option>Titirou</option>
+    <option>Sodohomè</option>
+    <option>Passagon</option>
+    <option>Calavi</option>
     <option>Cotonou Centre</option>
     <option>Abomey-Calavi</option>
-    <option>Akassato</option>
-    <option>Ouèdo</option>
-    <option>Togba</option>
-    <option>Hêvié</option>
     <option>Autre</option>
   </select>
 
@@ -151,7 +184,7 @@ const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let userId = null;
-
+let monRole = '';
 function esc(v){ return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function setDisabled(dis){
   ['nom','type_compte','categorie_prestataire','whatsapp','quartier','localite','ville','pays','photo_profil_url','description_profil'].forEach(id=>{
@@ -166,7 +199,6 @@ function activerModification(){
   document.getElementById('msg').textContent = "Tu peux modifier maintenant. Change seulement ce qui est faux.";
   document.getElementById('msg').style.color = "#f59e0b";
 }
-
 async function chargerProfil(){
   setDisabled(true);
   document.getElementById('btnModifier').style.display='block';
@@ -178,9 +210,14 @@ async function chargerProfil(){
   userId = user.id;
   const {data: p} = await sb.from('profiles').select('*').eq('id', userId).single();
   if(!p) return;
-
+  monRole = String(p.type_compte || p.role || '').toLowerCase();
+  // --- BOUTON DASHBOARD SELON LES 5 TYPES ---
+  const btnDash = document.getElementById('btnDashboard');
+  if(monRole==='admin'){ btnDash.textContent='🛡️ Aller au Panel Admin →'; btnDash.onclick=()=>window.location.href='admin.html'; btnDash.style.display='block'; }
+  else if(['prestataire','professionnel','entreprise','livreur','fournisseur','pro'].includes(monRole)){ btnDash.textContent='📊 Aller à mon Dashboard Prestataire →'; btnDash.onclick=()=>window.location.href='dashboard-prestataire.html'; btnDash.style.display='block'; }
+  else if(monRole==='client'){ btnDash.textContent='📊 Aller à mes commandes →'; btnDash.onclick=()=>window.location.href='dashboard-client.html'; btnDash.style.display='block'; }
   // Remplit avec ce qui est déjà dans l'inscription
-  document.getElementById('nom').value = p.nom || "";
+  document.getElementById('nom').value = p.nom || p.nom_entreprise || "";
   document.getElementById('type_compte').value = p.type_compte || "prestataire";
   document.getElementById('categorie_prestataire').value = p.categorie_prestataire || "";
   document.getElementById('whatsapp').value = p.whatsapp || "";
@@ -188,28 +225,35 @@ async function chargerProfil(){
   document.getElementById('localite').value = p.localite || "";
   document.getElementById('ville').value = p.ville || "";
   document.getElementById('pays').value = p.pays || "Bénin";
-  document.getElementById('photo_profil_url').value = p.photo_profil_url || p.avatar_url || "";
-  document.getElementById('description_profil').value = p.description_profil || "";
-
-  document.getElementById('nomAffiche').textContent = p.nom || "Sans nom";
-  document.getElementById('catAffiche').textContent = p.categorie_prestataire || "";
+  document.getElementById('photo_profil_url').value = p.photo_profil_url || p.avatar_url || p.photo_url || "";
+  document.getElementById('description_profil').value = p.description_profil || p.description || "";
+  const nomAff = p.nom_entreprise || p.nom || "Sans nom";
+  document.getElementById('nomAffiche').textContent = nomAff;
+  let labelType = '';
+  if(monRole==='entreprise') labelType = '🏢 Entreprise';
+  else if(monRole==='professionnel') labelType = '👨‍🔧 Professionnel';
+  else if(monRole==='livreur') labelType = '🛵 Livreur';
+  else if(monRole==='client') labelType = '🛒 Client';
+  else if(monRole==='admin') labelType = '🛡️ Admin';
+  else labelType = '💼 Fournisseur';
+  document.getElementById('catAffiche').textContent = labelType + (p.categorie_prestataire ? ' • ' + p.categorie_prestataire : '');
   document.getElementById('lieuAffiche').textContent = "📍 " + (p.quartier || p.localite || "") + " - " + (p.ville || "") + " - " + (p.pays || "");
-  if(p.photo_profil_url || p.avatar_url) document.getElementById('photoPreview').src = p.photo_profil_url || p.avatar_url;
+  if(p.photo_profil_url || p.avatar_url || p.photo_url) document.getElementById('photoPreview').src = p.photo_profil_url || p.avatar_url || p.photo_url;
   if(p.photo_piece_url) document.getElementById('imgPiece').src = p.photo_piece_url;
   if(p.photo_atelier_url) document.getElementById('imgAtelier').src = p.photo_atelier_url;
-
   const badgeZone = document.getElementById('badgeZone');
   const verifTexte = document.getElementById('verifTexte');
   const verifDetail = document.getElementById('verifDetail');
-  if(p.quartier_verifie){
+  const st = p.verification_quartier || 'non_envoye';
+  if(p.quartier_verifie===true || st==='valide' || st==='verifie'){
     badgeZone.innerHTML = '<span class="badge ok">✅ Vérifié à ' + esc(p.quartier || p.localite || '') + '</span>';
     verifTexte.textContent = "Ton badge s'affiche pour les clients.";
     verifDetail.textContent = "✅ Vérifié. Ton badge est actif.";
-  } else if(p.verification_quartier === 'demande_envoyee'){
+  } else if(st==='en_attente' || st==='demande_envoyee'){
     badgeZone.innerHTML = '<span class="badge wait">⏳ En attente</span>';
     verifTexte.textContent = "En attente de validation par l'admin.";
-    verifDetail.textContent = "⏳ Demande envoyée. L'admin vérifie tes photos.";
-  } else if(p.verification_quartier === 'refuse'){
+    verifDetail.textContent = "⏳ Demande envoyée pour " + (p.quartier||p.localite||'') + ". L'admin vérifie tes photos.";
+  } else if(st==='refuse' || st==='rejete'){
     badgeZone.innerHTML = '<span class="badge no">❌ Refusé</span>';
     verifTexte.textContent = "Refusé. Renvoie de meilleures photos.";
     verifDetail.textContent = "❌ Refusé. Va sur Vérification pour renvoyer pièce + photo du lieu.";
@@ -219,7 +263,6 @@ async function chargerProfil(){
     verifDetail.textContent = "Envoie ta pièce + photo de ton lieu pour avoir le badge ✅";
   }
 }
-
 async function sauvegarder(){
   const msg = document.getElementById('msg');
   msg.textContent = "Enregistrement..."; msg.style.color = "#f59e0b";
@@ -244,7 +287,6 @@ async function sauvegarder(){
     chargerProfil();
   }
 }
-
 async function deconnexion(){
   await sb.auth.signOut();
   window.location.href='index.html';
