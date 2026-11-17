@@ -11,6 +11,15 @@
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
 body{background:#f6f7f9;color:#111}
 .btn{background:#f59e0b;color:#000;border:none;padding:9px 14px;border-radius:999px;font-weight:700;cursor:pointer;font-size:13px}
+.topbar{background:#0f172a;color:#fff;padding:10px 16px;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.topbar .logo{font-weight:800;font-size:16px}
+.topbar .logo span{color:#f59e0b}
+.topbar .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.topbar .actions button{padding:8px 12px;border-radius:999px;border:none;font-weight:700;cursor:pointer;font-size:12px}
+.topbar .btn-blanc{background:#fff;color:#111}
+.topbar .btn-orange{background:#f59e0b;color:#000}
+.topbar .btn-dark2{background:#334155;color:#fff}
+.topbar .quartierBadge{font-size:11px;background:#1e293b;padding:6px 10px;border-radius:999px;color:#fde68a}
 .hero{background:#0f172a;color:#fff;padding:28px 16px 20px;text-align:center}
 .hero h1{font-size:26px;line-height:1.2} .hero h1 span{color:#f59e0b} .hero p{opacity:.8;margin-top:8px;font-size:14px;line-height:1.5}
 .filters{background:#fff;margin:-10px 16px 16px;padding:14px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.08);display:grid;gap:10px}
@@ -39,6 +48,14 @@ body{background:#f6f7f9;color:#111}
 </style>
 </head>
 <body>
+<!-- BARRE HAUT : VISITEUR / CLIENT / PRESTA / PRO / ENTREPRISE -->
+<div class="topbar">
+  <div class="logo">Rocy<span>inter</span></div>
+  <div class="actions" id="topActions">
+    <button class="btn-blanc" onclick="location.href='connexion.html'">Connexion</button>
+    <button class="btn-orange" onclick="location.href='inscription.html'">Inscription</button>
+  </div>
+</div>
 <div class="hero">
   <h1><span data-i18n="heroTitre1">Trouvez un vrai service</span><br><span data-i18n="heroTitre2">près de chez vous</span></h1>
   <p data-i18n="heroSous">Des prestataires vérifiés près de chez vous. Découvrez leurs services, comparez leurs offres, discutez directement et commandez en toute sécurité avec le paiement Escrow.</p>
@@ -75,14 +92,40 @@ function remplirPaysIndex(){
 }
 async function afficherBandeauRole(){
   const box = document.getElementById('bandeauRole'); if(!box) return;
-  const {data:{user}} = await sb.auth.getUser();
-  moiId = user?.id || '';
-  if(user){ const {data:p}=await sb.from('profiles').select('type_compte, role').eq('id',user.id).maybeSingle(); monRole=String(p?.type_compte||p?.role||'').toLowerCase(); }
+  const top = document.getElementById('topActions');
+  let profil = null;
+  try{
+    const {data:{user}} = await sb.auth.getUser();
+    moiId = user?.id || '';
+    if(user){
+      const {data:p} = await sb.from('profiles').select('type_compte, role, type_fournisseur, nom_entreprise, nom, quartier, localite, quartier_verifie, verification_quartier').eq('id',user.id).maybeSingle();
+      profil = p;
+      monRole = String(p?.type_compte||p?.role||'').toLowerCase();
+    }
+  }catch(e){}
   const t = window.rocyT || (k=>k);
-  if(!moiId) box.innerHTML = `<div class="bandeau-role bandeau-visiteur">👁️ ${esc(t('bandeauVisiteur'))}</div>`;
-  else if(monRole==='prestataire' || monRole==='livreur') box.innerHTML = `<div class="bandeau-role bandeau-presta">🛠️ ${esc(t('bandeauPresta'))} <a href="creer-annonce.html" style="color:#1e40af">${esc(t('creerAnnonce'))} →</a><br><small style="font-weight:400">Sans abonnement à jour, tu ne peux pas publier. Prix fixe, jamais d'augmentation.</small></div>`;
-  else if(monRole==='admin') box.innerHTML = `<div class="bandeau-role bandeau-presta">🛡️ ${esc(t('bandeauAdmin'))} <a href="admin.html" style="color:#1e40af">Panel Admin →</a></div>`;
-  else box.innerHTML = `<div class="bandeau-role bandeau-client">🛒 ${esc(t('bandeauClient'))}</div>`;
+  // --- TOPBAR selon les 5 types ---
+  if(!moiId){
+    if(top) top.innerHTML = `<button class="btn-blanc" onclick="location.href='connexion.html'">Connexion</button><button class="btn-orange" onclick="location.href='inscription.html'">Inscription</button>`;
+    box.innerHTML = `<div class="bandeau-role bandeau-visiteur">👁️ ${esc(t('bandeauVisiteur'))}</div>`;
+    return;
+  }
+  const quartier = profil?.quartier || profil?.localite || '';
+  const badgeQ = (profil?.quartier_verifie===true || profil?.verification_quartier==='valide' || profil?.verification_quartier==='verifie') ? `✅ Vérifié à ${esc(quartier)}` : (profil?.verification_quartier==='en_attente' || profil?.verification_quartier==='demande_envoyee' ? `⏳ En attente - ${esc(quartier)}` : `📍 ${esc(quartier||'Quartier non rempli')}`);
+  const typeF = String(profil?.type_fournisseur||'').toLowerCase();
+  const isEntreprise = !!profil?.nom_entreprise || typeF==='entreprise';
+  const isPro = typeF==='professionnel';
+  if(monRole==='admin'){
+    if(top) top.innerHTML = `<span class="quartierBadge">🛡️ Admin</span><button class="btn-dark2" onclick="location.href='admin.html'">Panel Admin</button>`;
+    box.innerHTML = `<div class="bandeau-role bandeau-presta">🛡️ ${esc(t('bandeauAdmin'))} <a href="admin.html" style="color:#1e40af">Panel Admin →</a></div>`;
+  } else if(['prestataire','livreur','fournisseur','professionnel','entreprise','pro'].includes(monRole) || isEntreprise || isPro){
+    const label = isEntreprise ? '🏢 Entreprise' : (monRole==='livreur' ? '🛵 Livreur' : (isPro ? '👨‍🔧 Professionnel' : '💼 Fournisseur'));
+    if(top) top.innerHTML = `<span class="quartierBadge">${badgeQ}</span><button class="btn-blanc" onclick="location.href='profil.html'">👤 Mon Profil</button><button class="btn-orange" onclick="location.href='dashboard-prestataire.html'">📊 Dashboard</button>`;
+    box.innerHTML = `<div class="bandeau-role bandeau-presta">🛠️ ${esc(t('bandeauPresta'))} ${label} <a href="creer-annonce.html" style="color:#1e40af">${esc(t('creerAnnonce'))} →</a><br><small style="font-weight:400">Sans abonnement à jour, tu ne peux pas publier. Prix fixe, jamais d'augmentation.</small></div>`;
+  } else {
+    if(top) top.innerHTML = `<span class="quartierBadge">${badgeQ}</span><button class="btn-blanc" onclick="location.href='profil.html'">👤 Mon Profil</button><button class="btn-orange" onclick="location.href='dashboard-client.html'">📊 Mes commandes</button>`;
+    box.innerHTML = `<div class="bandeau-role bandeau-client">🛒 ${esc(t('bandeauClient'))}</div>`;
+  }
 }
 async function chargerAnnonces(){
   const box = document.getElementById('listeAnnonces'); if(!box) return;
