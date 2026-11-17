@@ -16,6 +16,10 @@ body{background:#f6f7f9;color:#111;padding:16px}
 .avatar img{width:100%;height:100%;object-fit:cover}
 .profil h1{font-size:22px} .profil p{color:#64748b;font-size:13px;margin:4px 0}
 .badge{display:inline-block;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:700;background:#dcfce7;color:#166534;margin-top:6px}
+.badgeQuartier{display:inline-block;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:800;margin-top:8px}
+.badgeQuartier.vert{background:#dcfce7;color:#166534;border:1px solid #bbf7d0}
+.badgeQuartier.orange{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
+.badgeQuartier.gris{background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0}
 .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:14px 0}
 .stat{background:#fff;border-radius:12px;padding:12px;text-align:center}
 .stat b{font-size:16px;display:block} .stat small{color:#64748b;font-size:11px}
@@ -24,6 +28,7 @@ body{background:#f6f7f9;color:#111;padding:16px}
 .btn{width:100%;background:#f59e0b;border:none;padding:14px;border-radius:12px;font-weight:800;cursor:pointer;font-size:15px;margin-top:10px}
 .btn-dark{background:#0f172a;color:#fff}
 .btn-mine{background:#e2e8f0;color:#64748b;cursor:not-allowed}
+.btn-orange{background:#fffbeb;border:2px solid #f59e0b;color:#92400e}
 .avis{background:#fff;border-radius:12px;padding:12px;margin-bottom:8px;font-size:13px}
 .empty{background:#fff;border:1px dashed #cbd5e1;border-radius:16px;padding:24px;text-align:center;color:#64748b}
 .info-escrow{background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:10px;font-size:12px;line-height:1.5;color:#92400e;margin-top:12px;text-align:left}
@@ -50,12 +55,22 @@ function estValideAnnonce(a){
   if(!s) return true;
   return s==='valide' || s==='valid' || s==='publie' || s==='publié' || s==='publiee' || s==='actif' || s==='active';
 }
+// NOUVEAU : Badge vérification par quartier
+function badgeQuartierHTML(p){
+  const quartier = p.quartier || p.localite || '';
+  const verifie = p.quartier_verifie === true || String(p.verification_quartier||'').toLowerCase()==='valide' || String(p.verification_quartier||'').toLowerCase()==='verifie';
+  const enAttente = String(p.verification_quartier||'').toLowerCase()==='demande_envoyee' || String(p.verification_quartier||'').toLowerCase()==='en_attente';
+  if(!quartier) return '';
+  if(verifie) return `<div><span class="badgeQuartier vert">✅ Vérifié à ${esc(quartier)}</span></div><p style="font-size:11px">Ce prestataire a prouvé qu'il est vraiment de ${esc(quartier)}. Tu peux lui faire confiance, il est proche de toi.</p>`;
+  if(enAttente) return `<div><span class="badgeQuartier orange">⏳ Vérification en cours à ${esc(quartier)}</span></div>`;
+  return `<div><span class="badgeQuartier gris">📍 ${esc(quartier)} (non vérifié)</span></div>`;
+}
 async function charger(){
   if(!prestaId) return;
   const {data:{user}} = await sb.auth.getUser();
   moiId = user?.id || '';
   const t = window.rocyT || (k=>k);
-  const {data: p} = await sb.from('profiles').select('id, nom, photo_url, photo_profil, photo, description_profil, description, categorie_prestataire, categorie, localite, ville, pays, statut_validation, statut').eq('id', prestaId).maybeSingle();
+  const {data: p} = await sb.from('profiles').select('id, nom, photo_url, photo_profil, photo, description_profil, description, categorie_prestataire, categorie, localite, quartier, verification_quartier, quartier_verifie, ville, pays, statut_validation, statut').eq('id', prestaId).maybeSingle();
   if(!p){ document.getElementById('contenu').innerHTML='Prestataire introuvable. <a href="index.html">Retour Accueil</a>'; return; }
   const statut = String(p.statut_validation || p.statut || '').toLowerCase();
   if(statut && statut!=='valide' && statut!=='valid'){
@@ -74,6 +89,8 @@ async function charger(){
   const {data: avis} = await sb.from('avis').select('note, commentaire, created_at').eq('prestataire_id', prestaId).order('created_at',{ascending:false});
   let moyenne = 0; if(avis && avis.length) moyenne = (avis.reduce((a,b)=>a+Number(b.note||0),0)/avis.length).toFixed(1);
   const cestMoi = moiId && String(moiId)===String(prestaId);
+  const estVerifieQuartier = p.quartier_verifie === true || String(p.verification_quartier||'').toLowerCase()==='valide';
+  const btnVerifier = (cestMoi && !estVerifieQuartier) ? `<button class="btn btn-orange" onclick="location.href='verification.html'">📍 Faire vérifier mon quartier</button>` : '';
   const btnPrincipal = cestMoi
     ? `<button class="btn btn-mine" disabled>C'est ton profil</button>`
     : `<button class="btn" onclick="contacter('${esc(annonces && annonces[0] ? annonces[0].id : '')}')">💬 Discuter avec ${esc(p.nom)}</button>`;
@@ -84,8 +101,10 @@ async function charger(){
       <p>📍 ${esc(lieu)}</p>
       <p>${esc(categorie)}</p>
       <span class="badge">✅ Profil vérifié Rocyinter</span>
+      ${badgeQuartierHTML(p)}
       <p style="margin-top:10px;text-align:left">${esc(description)}</p>
       ${btnPrincipal}
+      ${btnVerifier}
       <button class="btn btn-dark" onclick="location.href='index.html'">Voir d'autres services</button>
       <div class="info-escrow">🔒 Ne paie jamais en dehors de Rocyinter. Discute ici, paie via Escrow, l'argent est bloqué jusqu'à la fin de la mission.</div>
     </div>
