@@ -74,9 +74,9 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
 <div id="errVille" class="errTxt" data-i18n="villeErreur">❌ Cette ville n'existe pas dans ce pays. Choisis une ville dans la liste.</div>
 </div>
 </div>
-<div><label data-i18n="localite">LOCALITÉ / QUARTIER *</label><input id="localite" data-i18n-ph="localitePh" placeholder="Ex: Godomey" list="listeQuartiers" oninput="clearErr(this)" autocomplete="off">
+<div><label data-i18n="localite">LOCALITÉ / QUARTIER *</label><input id="localite" data-i18n-ph="localitePh" placeholder="Ex: Godomey, Calavi Centre, Fidjrossè..." list="listeQuartiers" oninput="clearErr(this);majAideQuartier()" autocomplete="off">
 <datalist id="listeQuartiers"></datalist>
-<div class="badgeQuartier" id="aideQuartier">📍 <b>Vérification par quartier :</b> Mets ton vrai quartier (Ex: Godomey). Après inscription, va sur <b>Vérification</b> pour obtenir le badge <b>✅ Vérifié à Godomey</b>. Les clients font plus confiance aux prestataires de leur quartier.</div>
+<div class="badgeQuartier" id="aideQuartier">📍 <b>Vérification par quartier :</b> Mets ton vrai quartier (Ex: Godomey, Calavi Centre, Fidjrossè...). Après inscription, va sur <b>Vérification</b> pour obtenir le badge <b id="aideBadge">✅ Vérifié à ton quartier</b>. Les clients font plus confiance aux prestataires de leur quartier.</div>
 </div>
 <div id="blocPrestataire">
 <div>
@@ -131,6 +131,11 @@ if(!sb && window.supabase && window.supabase.createClient){
 }
 let typeCompte='client'; let photoBase64='';
 let typeFournisseur='professionnel';
+function majAideQuartier(){
+  const q = document.getElementById('localite').value.trim();
+  const b = document.getElementById('aideBadge');
+  if(b) b.textContent = q ? '✅ Vérifié à ' + q : '✅ Vérifié à ton quartier';
+}
 function setType(t){ typeCompte=t; document.getElementById('btnClient').classList.toggle('active', t==='client'); document.getElementById('btnPresta').classList.toggle('active', t==='prestataire'); document.getElementById('btnLivreur').classList.toggle('active', t==='livreur'); document.getElementById('blocPrestataire').classList.toggle('show', t==='prestataire'); if(t!=='prestataire'){ typeFournisseur='professionnel'; } }
 function setTypeFournisseur(t){
   typeFournisseur=t;
@@ -164,10 +169,10 @@ async function redirigerSiDejaConnecte(){
     if(!sb) return;
     const {data:{user}} = await sb.auth.getUser();
     if(!user) return;
-    const {data: prof} = await sb.from('profiles').select('type,type_compte,role').eq('id', user.id).single();
+    const {data: prof} = await sb.from('profiles').select('type,type_compte,role,type_fournisseur').eq('id', user.id).single();
     const type = prof ? (prof.type || prof.type_compte || prof.role || 'client') : 'client';
     if(type==='admin') location.href='admin.html';
-    else if(type==='prestataire' || type==='livreur') location.href='dashboard-prestataire.html';
+    else if(['prestataire','livreur','professionnel','entreprise','fournisseur','pro'].includes(String(type).toLowerCase())) location.href='dashboard-prestataire.html';
     else location.href='dashboard-client.html';
   }catch(e){}
 }
@@ -267,7 +272,7 @@ const VILLES_PAR_PAYS = {
 };
 const QUARTIERS_PAR_VILLE = {
   'Abomey-Calavi': ["Godomey","Calavi Centre","Ouèdo","Akassato","Hêvié","Togba","Zinvié","Kpanroun","Glo-Djigbé"],
-  'Cotonou': ["Fidjrossè","Godomey","Agla","Akpakpa","Fidjrossè","Ganhi","Gbégamey","Godomey","Jéricho","Kindonou","Mènontin","Sainte-Cécile","St Michel","Vodjè","Wologuèdè","Zongo"],
+  'Cotonou': ["Fidjrossè","Agla","Akpakpa","Ganhi","Gbégamey","Jéricho","Kindonou","Mènontin","Sainte-Cécile","St Michel","Vodjè","Wologuèdè","Zongo"],
   'Porto-Novo': ["Avakpa","Dowa","Houinmè","Oganla","Ouando","Tokpota"],
   'Ouidah': ["Centre","Djègbadji","Pahou","Savi"],
   'Parakou': ["Centre","Albarika","Banikanni","Titirou"],
@@ -416,7 +421,7 @@ async function inscrire(){
           const typeExiste = prof ? (prof.type||prof.type_compte||prof.role||typeFinal) : typeFinal;
           localStorage.setItem('rocy_user_id', login.user.id); localStorage.setItem('rocy_user_nom', prof?.nom||prof?.full_name||nom); localStorage.setItem('rocy_user_type', typeExiste); localStorage.setItem('rocy_role', typeExiste); localStorage.setItem('rocy_user_email', String(emailExistant).toLowerCase()); localStorage.setItem('rocy_email', String(emailExistant).toLowerCase()); localStorage.setItem('rocy_user_whatsapp', whatsapp); localStorage.setItem('rocy_user_pays', prof?.pays||pays); localStorage.setItem('rocy_user_ville', prof?.ville||ville); localStorage.setItem('rocy_user_localite', prof?.localite||localite);
           showMsg('✅ Ce compte existe déjà, on te connecte...', true);
-          setTimeout(()=>{ if(typeExiste==='admin') location.href='admin.html'; else if(typeExiste==='prestataire' || typeExiste==='livreur') location.href='dashboard-prestataire.html'; else location.href='dashboard-client.html'; },1000); return;
+          setTimeout(()=>{ if(typeExiste==='admin') location.href='admin.html'; else if(['prestataire','livreur','professionnel','entreprise'].includes(String(typeExiste).toLowerCase())) location.href='dashboard-prestataire.html'; else location.href='dashboard-client.html'; },1000); return;
         } else {
           showMsg('Ce WhatsApp existe déjà. Va sur Connexion, mot de passe incorrect.', false); btn.disabled=false; btn.textContent='Créer mon compte →'; return;
         }
@@ -452,7 +457,7 @@ async function inscrire(){
       taille_entreprise: (typeFinal==='prestataire' && typeFournisseur==='entreprise') ? (tailleEntreprise || null) : null,
       pays, country: pays, ville, city: ville, localite,
       quartier: localite,
-      verification_quartier: 'en_attente',
+      verification_quartier: 'non_envoye',
       quartier_verifie: false,
       description:description||null, description_profil:description||null,
       photo_url:photoBase64||null, avatar_url:photoBase64||null, photo_profil_url:photoBase64||null,
@@ -495,7 +500,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
   const t = params.get('type');
   if(t==='prestataire' || t==='livreur' || t==='client') setType(t);
   if(sb) sb.auth.getUser().then(({data:{user}})=>{ if(user) redirigerSiDejaConnecte(); });
-  majListeVilles(); majAideTel(); majListeQuartiers();
+  majListeVilles(); majAideTel(); majListeQuartiers(); majAideQuartier();
   if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 });
 </script>
