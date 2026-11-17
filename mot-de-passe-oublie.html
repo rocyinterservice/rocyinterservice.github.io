@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Mot de passe oublié - Rocyinter</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
 body{background:#f6f7f9;color:#111;padding:16px}
@@ -17,7 +17,6 @@ input.code{letter-spacing:8px;text-align:center;font-size:22px;font-weight:800}
 .msg{text-align:center;font-size:13px;padding:10px;border-radius:10px;display:none}
 .msg.ok{display:block;background:#dcfce7;color:#166534}
 .msg.err{display:block;background:#fee2e2;color:#991b1b}
-.msg.warn{display:block;background:#fffbeb;color:#92400e;border:1px solid #fde68a}
 .etape{display:none;gap:12px}
 .etape.show{display:grid}
 .pwdWrap{position:relative}
@@ -29,14 +28,10 @@ input.code{letter-spacing:8px;text-align:center;font-size:22px;font-weight:800}
 <body><div class="top"><div class="card">
 <h1>🔑 Mot de passe oublié</h1>
 <p id="sousTitre">Entre ton WhatsApp ou ton Email. Si tu as un mail, on t'envoie un <b>code à 6 chiffres</b>. Si tu n'as pas de mail, tu pourras écrire à l'Admin.</p>
-
-<!-- ÉTAPE 1 : WhatsApp / Email -->
 <div id="etape1" class="etape show">
   <div><label>TON WHATSAPP OU EMAIL *</label><input id="identifiant" placeholder="Ex : 01 97 00 00 00 ou jean@gmail.com"></div>
   <div id="msg1" class="msg"></div>
   <button class="btn" id="btnEnvoi" onclick="envoyerCode()">Envoyer le code à 6 chiffres →</button>
-
-  <!-- CAS 2 : PAS DE MAIL -> WhatsApp Admin, uniquement dans ce cas -->
   <div id="boxWa" class="box-wa">
     <p style="color:#166534;font-weight:700">⚠️ Ton compte n'a pas de vrai Email.</p>
     <p style="color:#166534">Tu ne peux pas recevoir le code par mail. Clique ici, ton message est déjà prêt, l'Admin va t'aider à récupérer ton compte.</p>
@@ -44,8 +39,6 @@ input.code{letter-spacing:8px;text-align:center;font-size:22px;font-weight:800}
     <p style="font-size:12px;text-align:center">N'envoie jamais ton ancien mot de passe. L'Admin ne te le demandera jamais.</p>
   </div>
 </div>
-
-<!-- ÉTAPE 2 : Code à 6 chiffres -->
 <div id="etape2" class="etape">
   <div><label>CODE À 6 CHIFFRES *</label><input id="code" class="code" placeholder="••••••" inputmode="numeric" maxlength="6"></div>
   <p style="font-size:12px">Code envoyé à <b id="emailMasque"></b>. Vérifie tes spams. Il expire en 1 heure.</p>
@@ -54,25 +47,22 @@ input.code{letter-spacing:8px;text-align:center;font-size:22px;font-weight:800}
   <button class="btn-sec" id="btnRenvoyer" onclick="envoyerCode(true)">Renvoyer le code</button>
   <button class="btn-sec" onclick="retourEtape1()">← Changer de WhatsApp / Email</button>
 </div>
-
-<!-- ÉTAPE 3 : Nouveau mot de passe -->
 <div id="etape3" class="etape">
   <div><label>NOUVEAU MOT DE PASSE *</label><div class="pwdWrap"><input id="mdp1" type="password" placeholder="Min 6 caractères"><button type="button" class="eyeBtn" onclick="togglePwd('mdp1',this)">👁️</button></div></div>
   <div><label>CONFIRME LE MOT DE PASSE *</label><div class="pwdWrap"><input id="mdp2" type="password" placeholder="Retape le même"><button type="button" class="eyeBtn" onclick="togglePwd('mdp2',this)">👁️</button></div></div>
   <div id="msg3" class="msg"></div>
   <button class="btn" id="btnChange" onclick="changerMdp()">Changer mon mot de passe →</button>
 </div>
-
 <p style="text-align:center"><a href="connexion.html">← Retour connexion</a></p>
 </div></div>
 <script>
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 const ADMIN_WHATSAPP = "2290191478460";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+window.supabaseClient = sb;
 let emailFinal = '';
 let whatsappFinal = '';
-
 function showMsg(id, txt, ok){
   const m = document.getElementById(id);
   m.textContent = txt; m.className = 'msg ' + (ok ? 'ok' : 'err'); m.style.display = 'block';
@@ -97,14 +87,11 @@ function retourEtape1(){
   allerEtape(1);
 }
 function afficherAideAdmin(){
-  // On prépare le message WhatsApp avec le WhatsApp de l'utilisateur, sans mot de passe
   const texte = 'Bonjour Admin Rocyinter, j\'ai oublié mon mot de passe. Mon WhatsApp est ' + (whatsappFinal || document.getElementById('identifiant').value.trim()) + '. Je n\'ai pas de Email pour recevoir le code. Aidez-moi à récupérer mon compte, merci.';
   const lien = document.getElementById('lienWaAdmin');
   lien.href = 'https://wa.me/' + ADMIN_WHATSAPP + '?text=' + encodeURIComponent(texte);
   document.getElementById('boxWa').classList.add('show');
 }
-
-// ÉTAPE 1 : 2 cas
 async function envoyerCode(renvoi){
   const brut = document.getElementById('identifiant').value.trim();
   if(!brut){ showMsg('msg1','Entre ton WhatsApp ou ton Email', false); return; }
@@ -113,19 +100,13 @@ async function envoyerCode(renvoi){
   btn.disabled = true; btn.textContent = 'Envoi...';
   try{
     if(brut.includes('@')){
-      emailFinal = brut.toLowerCase();
-      whatsappFinal = '';
-      // CAS 1 : vrai Email -> code Supabase
+      emailFinal = brut.toLowerCase(); whatsappFinal = '';
     } else {
       const chiffres = brut.replace(/[^0-9]/g,'');
       whatsappFinal = chiffres;
-      const {data: emailViaWhats, error: errRpc} = await supabase.rpc('get_email_by_whatsapp', { p_whatsapp: chiffres });
-      if(errRpc || !emailViaWhats){
-        emailFinal = chiffres + '@rocyinter.com';
-      } else {
-        emailFinal = String(emailViaWhats).toLowerCase().trim();
-      }
-      // CAS 2 : pas de vrai Email -> on n'essaie même pas d'envoyer le code, on montre WhatsApp Admin
+      const {data: emailViaWhats, error: errRpc} = await sb.rpc('get_email_by_whatsapp', { p_whatsapp: chiffres });
+      if(errRpc || !emailViaWhats){ emailFinal = chiffres + '@rocyinter.com'; }
+      else { emailFinal = String(emailViaWhats).toLowerCase().trim(); }
       if(emailFinal.endsWith('@rocyinter.com')){
         showMsg('msg1','⚠️ Ton compte n\'a pas de vrai Email, on ne peut pas t\'envoyer le code par mail.', false);
         afficherAideAdmin();
@@ -133,8 +114,7 @@ async function envoyerCode(renvoi){
         return;
       }
     }
-    // CAS 1 : Supabase envoie le code à 6 chiffres par Email
-    const {error} = await supabase.auth.signInWithOtp({ email: emailFinal, options: { shouldCreateUser: false } });
+    const {error} = await sb.auth.signInWithOtp({ email: emailFinal, options: { shouldCreateUser: false } });
     if(error){
       showMsg('msg1','Si ce compte existe, un code a été envoyé. Vérifie ta boîte mail.', true);
       btn.disabled = false; btn.textContent = 'Envoyer le code à 6 chiffres →';
@@ -148,13 +128,12 @@ async function envoyerCode(renvoi){
   }
   btn.disabled = false; btn.textContent = 'Envoyer le code à 6 chiffres →';
 }
-
 async function verifierCode(){
   const code = document.getElementById('code').value.trim();
   if(code.length !== 6){ showMsg('msg2','Entre les 6 chiffres', false); return; }
   const btn = document.getElementById('btnVerif');
   btn.disabled = true; btn.textContent = 'Vérification...';
-  const {data, error} = await supabase.auth.verifyOtp({ email: emailFinal, token: code, type: 'email' });
+  const {data, error} = await sb.auth.verifyOtp({ email: emailFinal, token: code, type: 'email' });
   if(error || !data?.user){
     showMsg('msg2','❌ Code incorrect ou expiré. Demande un nouveau code.', false);
     btn.disabled = false; btn.textContent = 'Vérifier le code →';
@@ -164,7 +143,6 @@ async function verifierCode(){
   allerEtape(3);
   btn.disabled = false; btn.textContent = 'Vérifier le code →';
 }
-
 async function changerMdp(){
   const a = document.getElementById('mdp1').value;
   const b = document.getElementById('mdp2').value;
@@ -172,9 +150,9 @@ async function changerMdp(){
   if(a !== b){ showMsg('msg3','❌ Les 2 mots de passe ne sont pas identiques', false); return; }
   const btn = document.getElementById('btnChange');
   btn.disabled = true; btn.textContent = 'Changement...';
-  const {error} = await supabase.auth.updateUser({ password: a });
+  const {error} = await sb.auth.updateUser({ password: a });
   if(error){ showMsg('msg3','Erreur : ' + error.message, false); btn.disabled = false; btn.textContent = 'Changer mon mot de passe →'; return; }
-  await supabase.auth.signOut();
+  await sb.auth.signOut();
   showMsg('msg3','✅ Mot de passe changé ! Redirection vers connexion...', true);
   setTimeout(()=> location.href = 'connexion.html', 1200);
 }
