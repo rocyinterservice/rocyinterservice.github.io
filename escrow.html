@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Escrow - Rocyinter</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
 body{background:#f6f7f9;color:#111;padding:16px}
@@ -25,12 +25,15 @@ h1{font-size:22px;margin:14px 0 12px} h1 span{color:#f59e0b}
 <script>
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+window.supabaseClient = sb;
 async function charger(){
-  const uid = localStorage.getItem('rocy_user_id');
-  if(!uid){location.href='connexion.html';return;}
-  const role = localStorage.getItem('rocy_role')||'client';
-  let query = supabase.from('transactions').select('*').order('created_at',{ascending:false});
+  const {data:{user}} = await sb.auth.getUser();
+  if(!user){location.href='connexion.html';return;}
+  const uid = user.id;
+  const {data: profil} = await sb.from('profiles').select('type_compte, role').eq('id', uid).maybeSingle();
+  const role = String(profil?.type_compte || profil?.role || 'client').toLowerCase();
+  let query = sb.from('transactions').select('montant_total, commission, montant_prestataire, statut, created_at').order('created_at',{ascending:false});
   if(role==='prestataire'||role==='livreur') query = query.eq('prestataire_id',uid);
   else query = query.eq('client_id',uid);
   const {data} = await query;
@@ -39,7 +42,8 @@ async function charger(){
   list.forEach(t=>{ if(t.statut==='bloque'||t.statut==='en_escrow') bloque+=Number(t.montant_total||0); if(t.statut==='libere') libere+=Number(t.montant_total||0); });
   document.getElementById('bloque').textContent = bloque.toLocaleString()+' FCFA';
   document.getElementById('libere').textContent = libere.toLocaleString()+' FCFA';
-  document.getElementById('liste').innerHTML = list.length ? list.map(t=>`<div class="card"><p><b>${Number(t.montant_total||0).toLocaleString()} FCFA</b> - Statut : ${t.statut}<br>Commission Rocyinter : ${Number(t.commission||0).toLocaleString()} FCFA<br>${role==='prestataire'?'Tu reçois : '+Number(t.montant_prestataire||0).toLocaleString()+' FCFA':''}</p></div>`).join('') : '<p style="text-align:center;color:#64748b">Aucune transaction Escrow pour l’instant.</p>';
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  document.getElementById('liste').innerHTML = list.length ? list.map(t=>`<div class="card"><p><b>${Number(t.montant_total||0).toLocaleString()} FCFA</b> - Statut : ${esc(t.statut)}<br>Commission Rocyinter : ${Number(t.commission||0).toLocaleString()} FCFA<br>${role==='prestataire'?'Tu reçois : '+Number(t.montant_prestataire||0).toLocaleString()+' FCFA':''}</p></div>`).join('') : '<p style="text-align:center;color:#64748b">Aucune transaction Escrow pour l’instant.</p>';
 }
 charger();
 </script></body></html>
