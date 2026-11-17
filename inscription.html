@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Inscription - Rocyinter</title>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title data-i18n="inscriptionTitre">Inscription - Rocyinter</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="pays.js"></script>
 <script src="rocy-layout.js"></script>
@@ -35,114 +35,395 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
 .pwdWrap{position:relative}
 .pwdWrap input{padding-right:46px}
 .eyeBtn{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:none;background:transparent;cursor:pointer;font-size:19px;line-height:1;border-radius:8px}
+.eyeBtn:active{background:#f1f5f9}
 </style></head>
 <body><div class="top">
-<div class="back" onclick="location.href='index.html'">← Accueil</div>
-<h1>Créez votre compte <span>Rocyinter</span></h1>
-<p class="sub">Client, Fournisseur ou Livreur ? En 1 minute, sans faux profil.</p>
+<div class="back" onclick="location.href='index.html'">← <span data-i18n="accueil">Accueil</span></div>
+<h1><span data-i18n="inscriptionTitre">Créez votre compte</span> <span>Rocyinter</span></h1>
+<p class="sub" data-i18n="inscriptionSous">Client, Fournisseur ou Livreur ? En 1 minute, sans faux profil.</p>
 <div class="card">
-<div><label>VOUS ÊTES ?</label><div class="choix">
-<button type="button" id="btnClient" class="active" onclick="setType('client')">🙋‍♂️ Client</button>
-<button type="button" id="btnPresta" onclick="setType('prestataire')">💼 Fournisseur</button>
-<button type="button" id="btnLivreur" onclick="setType('livreur')">🛵 Livreur</button>
+<div><label data-i18n="vousEtes">VOUS ÊTES ?</label><div class="choix">
+<button type="button" id="btnClient" class="active" onclick="setType('client')">🙋‍♂️ <span data-i18n="typeClient">Client</span><br><small data-i18n="typeClientSous">Je cherche un service</small></button>
+<button type="button" id="btnPresta" onclick="setType('prestataire')">💼 <span data-i18n="typePresta">Fournisseur</span><br><small data-i18n="typePrestaSous">Je propose un service</small></button>
+<button type="button" id="btnLivreur" onclick="setType('livreur')">🛵 <span data-i18n="typeLivreur">Livreur</span><br><small data-i18n="typeLivreurSous">Je livre</small></button>
 </div></div>
-<div><label>NOM COMPLET *</label><input id="nom" placeholder="Ex: Jean Kouassi"></div>
-<div><label>WHATSAPP *</label>
+<div><label data-i18n="nomComplet">NOM COMPLET *</label><input id="nom" data-i18n-ph="nomPh" placeholder="Ex: Jean Kouassi" oninput="clearErr(this)"></div>
+<div><label data-i18n="whatsapp">WHATSAPP *</label>
 <div class="telRow">
-<select id="indicatif" onchange="majIndicatif()"><option value="+229" selected>🇧🇯 +229 Bénin</option><option value="+228">🇹🇬 +228 Togo</option><option value="+225">🇨🇮 +225 Côte d'Ivoire</option><option value="+221">🇸🇳 +221 Sénégal</option><option value="+223">🇲🇱 +223 Mali</option><option value="+227">🇳🇪 +227 Niger</option><option value="+226">🇧🇫 +226 Burkina Faso</option><option value="+237">🇨🇲 +237 Cameroun</option><option value="+233">🇬🇭 +233 Ghana</option><option value="+234">🇳🇬 +234 Nigeria</option><option value="+33">🇫🇷 +33 France</option><option value="+1">🇺🇸 +1 USA</option><option value="+44">🇬🇧 +44 Royaume-Uni</option><option value="+32">🇧🇪 +32 Belgique</option></select>
+<select id="indicatif" onchange="majIndicatif()">
+<option value="+229" selected>🇧🇯 +229 Bénin</option>
+<option value="+213">🇩🇿 +213 Algérie</option><option value="+244">🇦🇴 +244 Angola</option><option value="+226">🇧🇫 +226 Burkina Faso</option><option value="+257">🇧🇮 +257 Burundi</option><option value="+237">🇨🇲 +237 Cameroun</option><option value="+238">🇨🇻 +238 Cap-Vert</option><option value="+236">🇨🇫 +236 Centrafrique</option><option value="+235">🇹🇩 +235 Tchad</option><option value="+269">🇰🇲 +269 Comores</option><option value="+242">🇨🇬 +242 Congo</option><option value="+243">🇨🇩 +243 Congo RDC</option><option value="+225">🇨🇮 +225 Côte d'Ivoire</option><option value="+253">🇩🇯 +253 Djibouti</option><option value="+20">🇪🇬 +20 Égypte</option><option value="+240">🇬🇶 +240 Guinée Équatoriale</option><option value="+291">🇪🇷 +291 Érythrée</option><option value="+251">🇪🇹 +251 Éthiopie</option><option value="+241">🇬🇦 +241 Gabon</option><option value="+220">🇬🇲 +220 Gambie</option><option value="+233">🇬🇭 +233 Ghana</option><option value="+224">🇬🇳 +224 Guinée</option><option value="+245">🇬🇼 +245 Guinée-Bissau</option><option value="+254">🇰🇪 +254 Kenya</option><option value="+266">🇱🇸 +266 Lesotho</option><option value="+231">🇱🇷 +231 Liberia</option><option value="+218">🇱🇾 +218 Libye</option><option value="+261">🇲🇬 +261 Madagascar</option><option value="+265">🇲🇼 +265 Malawi</option><option value="+223">🇲🇱 +223 Mali</option><option value="+212">🇲🇦 +212 Maroc</option><option value="+230">🇲🇺 +230 Maurice</option><option value="+222">🇲🇷 +222 Mauritanie</option><option value="+258">🇲🇿 +258 Mozambique</option><option value="+264">🇳🇦 +264 Namibie</option><option value="+227">🇳🇪 +227 Niger</option><option value="+234">🇳🇬 +234 Nigeria</option><option value="+250">🇷🇼 +250 Rwanda</option><option value="+239">🇸🇹 +239 Sao Tomé</option><option value="+221">🇸🇳 +221 Sénégal</option><option value="+248">🇸🇨 +248 Seychelles</option><option value="+232">🇸🇱 +232 Sierra Leone</option><option value="+252">🇸🇴 +252 Somalie</option><option value="+27">🇿🇦 +27 Afrique du Sud</option><option value="+211">🇸🇸 +211 Soudan du Sud</option><option value="+249">🇸🇩 +249 Soudan</option><option value="+268">🇸🇿 +268 Eswatini</option><option value="+255">🇹🇿 +255 Tanzanie</option><option value="+228">🇹🇬 +228 Togo</option><option value="+216">🇹🇳 +216 Tunisie</option><option value="+256">🇺🇬 +256 Ouganda</option><option value="+260">🇿🇲 +260 Zambie</option><option value="+263">🇿🇼 +263 Zimbabwe</option>
+<option value="+33">🇫🇷 +33 France</option><option value="+32">🇧🇪 +32 Belgique</option><option value="+41">🇨🇭 +41 Suisse</option><option value="+352">🇱🇺 +352 Luxembourg</option><option value="+39">🇮🇹 +39 Italie</option><option value="+34">🇪🇸 +34 Espagne</option><option value="+351">🇵🇹 +351 Portugal</option><option value="+49">🇩🇪 +49 Allemagne</option><option value="+44">🇬🇧 +44 Royaume-Uni</option><option value="+31">🇳🇱 +31 Pays-Bas</option><option value="+43">🇦🇹 +43 Autriche</option><option value="+45">🇩🇰 +45 Danemark</option><option value="+46">🇸🇪 +46 Suède</option><option value="+47">🇳🇴 +47 Norvège</option><option value="+358">🇫🇮 +358 Finlande</option><option value="+353">🇮🇪 +353 Irlande</option><option value="+30">🇬🇷 +30 Grèce</option><option value="+48">🇵🇱 +48 Pologne</option><option value="+40">🇷🇴 +40 Roumanie</option><option value="+36">🇭🇺 +36 Hongrie</option><option value="+420">🇨🇿 +420 Tchéquie</option><option value="+421">🇸🇰 +421 Slovaquie</option><option value="+385">🇭🇷 +385 Croatie</option><option value="+386">🇸🇮 +386 Slovénie</option><option value="+387">🇧🇦 +387 Bosnie</option><option value="+381">🇷🇸 +381 Serbie</option><option value="+382">🇲🇪 +382 Monténégro</option><option value="+355">🇦🇱 +355 Albanie</option><option value="+359">🇧🇬 +359 Bulgarie</option><option value="+380">🇺🇦 +380 Ukraine</option><option value="+375">🇧🇾 +375 Biélorussie</option><option value="+370">🇱🇹 +370 Lituanie</option><option value="+371">🇱🇻 +371 Lettonie</option><option value="+372">🇪🇪 +372 Estonie</option><option value="+354">🇮🇸 +354 Islande</option><option value="+356">🇲🇹 +356 Malte</option><option value="+357">🇨🇾 +357 Chypre</option><option value="+7">🇷🇺 +7 Russie</option><option value="+90">🇹🇷 +90 Turquie</option><option value="+374">🇦🇲 +374 Arménie</option><option value="+994">🇦🇿 +994 Azerbaïdjan</option><option value="+995">🇬🇪 +995 Géorgie</option><option value="+373">🇲🇩 +373 Moldavie</option>
+<option value="+1">🇺🇸 +1 USA</option><option value="+1">🇨🇦 +1 Canada</option><option value="+52">🇲🇽 +52 Mexique</option><option value="+55">🇧🇷 +55 Brésil</option><option value="+54">🇦🇷 +54 Argentine</option><option value="+57">🇨🇴 +57 Colombie</option><option value="+51">🇵🇪 +51 Pérou</option><option value="+56">🇨🇱 +56 Chili</option><option value="+58">🇻🇪 +58 Venezuela</option><option value="+593">🇪🇨 +593 Équateur</option><option value="+591">🇧🇴 +591 Bolivie</option><option value="+595">🇵🇾 +595 Paraguay</option><option value="+598">🇺🇾 +598 Uruguay</option><option value="+502">🇬🇹 +502 Guatemala</option><option value="+503">🇸🇻 +503 Salvador</option><option value="+504">🇭🇳 +504 Honduras</option><option value="+505">🇳🇮 +505 Nicaragua</option><option value="+506">🇨🇷 +506 Costa Rica</option><option value="+507">🇵🇦 +507 Panama</option><option value="+509">🇭🇹 +509 Haïti</option><option value="+53">🇨🇺 +53 Cuba</option><option value="+1">🇩🇴 +1 République Dominicaine</option><option value="+1">🇯🇲 +1 Jamaïque</option><option value="+1">🇹🇹 +1 Trinité-et-Tobago</option>
+<option value="+91">🇮🇳 +91 Inde</option><option value="+86">🇨🇳 +86 Chine</option><option value="+81">🇯🇵 +81 Japon</option><option value="+82">🇰🇷 +82 Corée du Sud</option><option value="+84">🇻🇳 +84 Vietnam</option><option value="+66">🇹🇭 +66 Thaïlande</option><option value="+62">🇮🇩 +62 Indonésie</option><option value="+63">🇵🇭 +63 Philippines</option><option value="+60">🇲🇾 +60 Malaisie</option><option value="+65">🇸🇬 +65 Singapour</option><option value="+95">🇲🇲 +95 Myanmar</option><option value="+855">🇰🇭 +855 Cambodge</option><option value="+856">🇱🇦 +856 Laos</option><option value="+880">🇧🇩 +880 Bangladesh</option><option value="+92">🇵🇰 +92 Pakistan</option><option value="+94">🇱🇰 +94 Sri Lanka</option><option value="+977">🇳🇵 +977 Népal</option><option value="+93">🇦🇫 +93 Afghanistan</option><option value="+98">🇮🇷 +98 Iran</option><option value="+964">🇮🇶 +964 Irak</option><option value="+971">🇦🇪 +971 Émirats</option><option value="+966">🇸🇦 +966 Arabie Saoudite</option><option value="+974">🇶🇦 +974 Qatar</option><option value="+965">🇰🇼 +965 Koweït</option><option value="+973">🇧🇭 +973 Bahreïn</option><option value="+968">🇴🇲 +968 Oman</option><option value="+962">🇯🇴 +962 Jordanie</option><option value="+961">🇱🇧 +961 Liban</option><option value="+963">🇸🇾 +963 Syrie</option><option value="+972">🇮🇱 +972 Israël</option><option value="+970">🇵🇸 +970 Palestine</option><option value="+61">🇦🇺 +61 Australie</option><option value="+64">🇳🇿 +64 Nouvelle-Zélande</option><option value="+679">🇫🇯 +679 Fidji</option><option value="+675">🇵🇬 +675 Papouasie</option><option value="+677">🇸🇧 +677 Îles Salomon</option><option value="+678">🇻🇺 +678 Vanuatu</option><option value="+682">🇨🇰 +682 Îles Cook</option><option value="+687">🇳🇨 +687 Nouvelle-Calédonie</option><option value="+689">🇵🇫 +689 Polynésie</option>
+</select>
 <input id="whatsappNum" placeholder="01 97 00 00 00" inputmode="numeric" oninput="verifTel(this)">
 </div>
-<div id="errTel" class="errTxt"></div>
-<p id="telAide" style="font-size:11px;color:#64748b;margin-top:4px">Bénin : 10 chiffres, commence par 01.</p>
+<div id="errTel" class="errTxt">❌ Numéro incorrect.</div>
+<p id="telAide" style="font-size:11px;color:#64748b;margin-top:4px">Bénin : 10 chiffres, commence par 01. Ex : 01 97 00 00 00</p>
 </div>
-<div><label>MOT DE PASSE *</label><div class="pwdWrap"><input id="password" type="password" placeholder="Min 6 caractères" oninput="verifMdp()"><button type="button" class="eyeBtn" onclick="togglePwd('password', this)">👁️</button></div></div>
-<div><label>CONFIRME TON MOT DE PASSE *</label><div class="pwdWrap"><input id="password2" type="password" placeholder="Retape le même" oninput="verifMdp()"><button type="button" class="eyeBtn" onclick="togglePwd('password2', this)">👁️</button></div><div id="errMdp" class="errTxt">❌ Les 2 mots de passe ne sont pas identiques</div></div>
-<div><label>EMAIL *</label><input id="email" type="email" placeholder="Ex: jean@gmail.com"></div>
+<div><label data-i18n="mdp">MOT DE PASSE *</label><div class="pwdWrap"><input id="password" type="password" data-i18n-ph="mdpPh" placeholder="Min 6 caractères" oninput="verifMdp()"><button type="button" class="eyeBtn" onclick="togglePwd('password', this)">👁️</button></div></div>
+<div><label data-i18n="mdp2">CONFIRME TON MOT DE PASSE *</label><div class="pwdWrap"><input id="password2" type="password" data-i18n-ph="mdp2Ph" placeholder="Retape le même mot de passe" oninput="verifMdp()"><button type="button" class="eyeBtn" onclick="togglePwd('password2', this)">👁️</button></div>
+<div id="errMdp" class="errTxt" data-i18n="mdpErreur">❌ Les 2 mots de passe ne sont pas identiques</div>
+</div>
+<div><label data-i18n="email">EMAIL (optionnel - obligatoire pour Admin)</label><input id="email" type="email" placeholder="Ex: jean@gmail.com"></div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-<div><label>PAYS *</label><select id="pays" onchange="syncPaysVersIndicatif()"><option value="Bénin" selected>🇧🇯 Bénin</option><option value="Togo">🇹🇬 Togo</option><option value="Côte d'Ivoire">🇨🇮 Côte d'Ivoire</option><option value="Sénégal">🇸🇳 Sénégal</option><option value="France">🇫🇷 France</option><option value="Cameroun">🇨🇲 Cameroun</option></select></div>
-<div><label>VILLE *</label><input id="ville" placeholder="Ex: Abomey-Calavi"></div>
+<div><label data-i18n="pays">PAYS *</label><select id="pays" onchange="syncPaysVersIndicatif()"><option value="Bénin" selected>🇧🇯 Bénin</option></select></div>
+<div><label data-i18n="ville">VILLE *</label>
+<input id="ville" data-i18n-ph="villePh" placeholder="Ex: Abomey-Calavi" list="listeVilles" oninput="verifVille(this)" autocomplete="off">
+<datalist id="listeVilles"></datalist>
+<div id="errVille" class="errTxt" data-i18n="villeErreur">❌ Cette ville n'existe pas dans ce pays. Choisis une ville dans la liste.</div>
 </div>
-<div><label>LOCALITÉ / QUARTIER *</label><input id="localite" placeholder="Ex: Godomey"></div>
+</div>
+<div><label data-i18n="localite">LOCALITÉ / QUARTIER *</label><input id="localite" data-i18n-ph="localitePh" placeholder="Ex: Godomey" oninput="clearErr(this)"></div>
 <div id="blocPrestataire">
-<div><label>CATÉGORIE DE SERVICE *</label><select id="categorie" onchange="checkAutreInscription()">
-<option value="">Choisir...</option>
-<optgroup label="🍽️ Se nourrir"><option value="Traiteur">Traiteur</option><option value="Restaurant">Restaurant / Maquis</option><option value="Livraison repas">Livraison repas</option><option value="Pâtisserie">Pâtisserie</option></optgroup>
+<div><label data-i18n="categorieService">CATÉGORIE DE SERVICE *</label><select id="categorie" onchange="checkAutreInscription()">
+<option value="" data-i18n="choisir">Choisir...</option>
+<optgroup label="🍽️ Se nourrir"><option value="Traiteur">Traiteur</option><option value="Restaurant">Restaurant / Maquis</option><option value="Livraison repas">Livraison repas</option><option value="Pâtisserie">Pâtisserie</option><option value="Jus / Boissons">Jus / Boissons</option></optgroup>
 <optgroup label="🏠 Domicile"><option value="Nettoyage / Ménage">Nettoyage / Ménage</option><option value="Plomberie">Plomberie</option><option value="Électricité">Électricité</option><option value="Climatisation">Climatisation</option><option value="Menuiserie">Menuiserie</option><option value="Peinture">Peinture</option><option value="Jardinage">Jardinage</option><option value="Mécanique">Mécanique</option><option value="Déménagement">Déménagement</option></optgroup>
-<optgroup label="💼 Pro"><option value="Design">Design / Graphisme</option><option value="Développement">Développement Web</option><option value="Marketing">Marketing</option><option value="Comptabilité">Comptabilité</option><option value="Traduction">Traduction</option><option value="Cours">Cours / Coaching</option></optgroup>
-<optgroup label="✈️ Séjour"><option value="Hôtel">Hôtel / Appartement</option><option value="Location voiture">Location voiture</option><option value="Guide touristique">Guide touristique</option><option value="Transport">Transport / Moto</option></optgroup>
+<optgroup label="💼 Pro"><option value="Design">Design / Graphisme</option><option value="Développement">Développement Web</option><option value="Marketing">Marketing / Réseaux sociaux</option><option value="Comptabilité">Comptabilité</option><option value="Traduction">Traduction</option><option value="Cours">Cours / Coaching</option></optgroup>
+<optgroup label="✈️ Séjour"><option value="Hôtel">Hôtel / Appartement</option><option value="Location voiture">Location voiture</option><option value="Guide touristique">Guide touristique</option><option value="Transport">Transport / Moto</option><option value="Location salle">Location salle</option></optgroup>
 <optgroup label="🏘️ Immobilier"><option value="Location maison / Appartement">Location maison / Appartement</option><option value="Vente maison / Terrain">Vente maison / Terrain</option><option value="Location chambre / Studio">Location chambre / Studio</option></optgroup>
 <optgroup label="➕ Autre"><option value="__AUTRE__">➕ Autre - Écrire ma catégorie...</option></optgroup>
 </select></div>
-<div id="blocAutreInscription" style="display:none"><label>ÉCRIS TA CATÉGORIE *</label><input id="autreCategorie" placeholder="Ex: Nettoyage, Désinfection..."></div>
-<div><label>DÉCRIVEZ VOTRE SERVICE *</label><textarea id="description" placeholder="Ex: Je suis plombier à Calavi depuis 5 ans..."></textarea></div>
+<div id="blocAutreInscription" style="display:none"><label data-i18n="ecrisCategorie">ÉCRIS TA CATÉGORIE *</label><input id="autreCategorie" data-i18n-ph="categoriePh" placeholder="Ex: Nettoyage, Désinfection..."></div>
+<div><label data-i18n="decrisService">DÉCRIVEZ VOTRE SERVICE *</label><textarea id="description" data-i18n-ph="descriptionPh" placeholder="Ex: Je suis plombier à Calavi depuis 5 ans..."></textarea></div>
+</div>
+<div><label data-i18n="photoProfil">PHOTO DE PROFIL (optionnel - max 2 Mo)</label>
+<div class="photoBox" id="photoBox" onclick="document.getElementById('photoFile').click()">
+<img id="photoPreview" src="">
+<div style="font-size:28px">📷</div>
+<div style="font-weight:700;font-size:14px" data-i18n="choisirPhoto">Choisir une photo</div>
+<div style="font-size:12px;color:#94a3b8" data-i18n="photoAide">Ça ouvre les fichiers / galerie de ton téléphone</div>
+</div>
+<input type="file" id="photoFile" accept="image/*" style="display:none" onchange="previewPhoto(this)">
 </div>
 <div id="msg" class="msg"></div>
-<button class="btn" id="btnInscrire" type="button" onclick="inscrire()">Créer mon compte →</button>
-<small>Déjà inscrit ? <a href="connexion.html">Connectez-vous</a></small>
+<button class="btn" id="btnInscrire" type="button" onclick="inscrire()" data-i18n="creerCompte">Créer mon compte →</button>
+<small><span data-i18n="dejaInscrit">Déjà inscrit ?</span> <a href="connexion.html" data-i18n="connectezVous">Connectez-vous</a></small>
 </div></div>
 <script>
-const ADMIN_EMAIL='rocyinter@gmail.com';
+const ADMIN_EMAIL = 'rocyinter@gmail.com';
+const supabase = window.supabase.createClient("https://gdwgjsloivrpxxvggxyz.supabase.co", "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF");
 let typeCompte='client'; let photoBase64='';
-const supabase = window.supabase.createClient("https://gdwgjsloivrpxxvggxyz.supabase.co","sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF");
-function setType(t){typeCompte=t;document.getElementById('btnClient').classList.toggle('active',t==='client');document.getElementById('btnPresta').classList.toggle('active',t==='prestataire');document.getElementById('btnLivreur').classList.toggle('active',t==='livreur');document.getElementById('blocPrestataire').classList.toggle('show',t==='prestataire');}
-function checkAutreInscription(){document.getElementById('blocAutreInscription').style.display=document.getElementById('categorie').value==='__AUTRE__'?'block':'none';}
-function showMsg(txt,ok){const m=document.getElementById('msg');m.textContent=txt;m.className='msg '+(ok?'ok':'err');m.style.display='block';}
-function togglePwd(id,btn){const i=document.getElementById(id);const s=i.type==='password';i.type=s?'text':'password';btn.textContent=s?'🙈':'👁️';}
-function universPourCategorie(cat){const manger=['Traiteur','Restaurant','Restaurant / Maquis','Livraison repas','Pâtisserie'];const domicile=['Nettoyage / Ménage','Plomberie','Électricité','Climatisation','Menuiserie','Peinture','Jardinage','Mécanique','Déménagement'];const pro=['Design','Design / Graphisme','Développement','Développement Web','Marketing','Comptabilité','Traduction','Cours','Cours / Coaching'];const sejour=['Hôtel','Hôtel / Appartement','Location voiture','Guide touristique','Transport','Transport / Moto'];const immo=['Location maison / Appartement','Vente maison / Terrain','Location chambre / Studio'];if(manger.includes(cat))return'manger';if(domicile.includes(cat))return'domicile';if(pro.includes(cat))return'pro';if(sejour.includes(cat))return'sejour';if(immo.includes(cat))return'immobilier';return'domicile';}
-// Longueur par pays, Bénin seul = 10 avec 01
-const LONGUEUR_PAR_PAYS={'Bénin':[10],'Togo':[8],"Côte d'Ivoire":[10],'Sénégal':[9],'Mali':[8],'Niger':[8],'Burkina Faso':[8],'Ghana':[10],'Nigeria':[10],'Cameroun':[9],'France':[9],'USA':[10],'Royaume-Uni':[10],'Belgique':[9]};
-const MAP_PAYS_CODE={'Bénin':'+229','Togo':'+228',"Côte d'Ivoire":'+225','Sénégal':'+221','Mali':'+223','Niger':'+227','Burkina Faso':'+226','Cameroun':'+237','Ghana':'+233','Nigeria':'+234','France':'+33','USA':'+1','Royaume-Uni':'+44','Belgique':'+32'};
-function paysDepuisIndicatif(indic){const p=document.getElementById('pays').value;if(MAP_PAYS_CODE[p]===indic)return p;for(let k in MAP_PAYS_CODE){if(MAP_PAYS_CODE[k]===indic)return k;}return p;}
-function texteLongueur(pays){const lens=LONGUEUR_PAR_PAYS[pays]||[7,8,9,10,11];if(pays==='Bénin')return'Bénin : 10 chiffres, commence par 01. Ex : 01 97 00 00 00';return pays+' : '+lens.join(' ou ')+' chiffres.';}
-function majAideTel(){const indic=document.getElementById('indicatif').value;const pays=paysDepuisIndicatif(indic);document.getElementById('telAide').textContent=texteLongueur(pays);}
-function majIndicatif(){verifTel(document.getElementById('whatsappNum'));const code=document.getElementById('indicatif').value;for(let p in MAP_PAYS_CODE){if(MAP_PAYS_CODE[p]===code){document.getElementById('pays').value=p;break;}}majAideTel();}
-function syncPaysVersIndicatif(){const pays=document.getElementById('pays').value;if(MAP_PAYS_CODE[pays])document.getElementById('indicatif').value=MAP_PAYS_CODE[pays];verifTel(document.getElementById('whatsappNum'));majAideTel();}
-function normaliseNumero(indic,numBrut){let num=numBrut.replace(/[^0-9]/g,'');if(indic==='+229'){if(num.length===13&&num.startsWith('229'))num=num.slice(3);if(num.length===11&&num.startsWith('229'))num=num.slice(3);if(num.length===8)num='01'+num;}else{const c=indic.replace('+','');if(num.startsWith(c)&&num.length>8)num=num.slice(c.length);if(num.startsWith('0'))num=num.slice(1);}return num;}
-function verifTel(el){const indic=document.getElementById('indicatif').value;const pays=paysDepuisIndicatif(indic);const lens=LONGUEUR_PAR_PAYS[pays]||[7,8,9,10,11];const brut=el.value.replace(/[^0-9]/g,'');const num=normaliseNumero(indic,brut);let ok=pays==='Bénin'?(num.length===10&&num.startsWith('01'))||brut.length===8:lens.includes(num.length);document.getElementById('errTel').textContent='❌ '+texteLongueur(pays);document.getElementById('errTel').classList.toggle('show',brut.length>0&&!ok);el.classList.toggle('err',brut.length>0&&!ok);majAideTel();return ok;}
-function verifMdp(){const a=document.getElementById('password').value;const b=document.getElementById('password2').value;const bad=b.length>0&&a!==b;document.getElementById('errMdp').classList.toggle('show',bad);return !bad;}
+function setType(t){ typeCompte=t; document.getElementById('btnClient').classList.toggle('active', t==='client'); document.getElementById('btnPresta').classList.toggle('active', t==='prestataire'); document.getElementById('btnLivreur').classList.toggle('active', t==='livreur'); document.getElementById('blocPrestataire').classList.toggle('show', t==='prestataire'); }
+function checkAutreInscription(){ const s=document.getElementById('categorie'); document.getElementById('blocAutreInscription').style.display = s.value==='__AUTRE__' ? 'block' : 'none'; }
+function showMsg(txt, ok){ const m=document.getElementById('msg'); m.textContent=txt; m.className='msg '+(ok?'ok':'err'); m.style.display='block'; }
+function clearErr(el){ el.classList.remove('err'); }
+function togglePwd(id, btn){ const inp=document.getElementById(id); const show = inp.type==='password'; inp.type = show ? 'text' : 'password'; btn.textContent = show ? '🙈' : '👁️'; inp.focus(); }
+function universPourCategorie(cat){
+  const manger=['Traiteur','Restaurant','Restaurant / Maquis','Livraison repas','Pâtisserie','Jus / Boissons'];
+  const domicile=['Nettoyage / Ménage','Plomberie','Électricité','Climatisation','Menuiserie','Peinture','Jardinage','Mécanique','Déménagement'];
+  const pro=['Design','Design / Graphisme','Développement','Développement Web','Marketing','Marketing / Réseaux sociaux','Comptabilité','Traduction','Cours','Cours / Coaching'];
+  const sejour=['Hôtel','Hôtel / Appartement','Location voiture','Guide touristique','Transport','Transport / Moto','Location salle'];
+  const immo=['Location maison / Appartement','Vente maison / Terrain','Location chambre / Studio'];
+  if(manger.includes(cat)) return 'manger';
+  if(domicile.includes(cat)) return 'domicile';
+  if(pro.includes(cat)) return 'pro';
+  if(sejour.includes(cat)) return 'sejour';
+  if(immo.includes(cat)) return 'immobilier';
+  return 'domicile';
+}
+async function redirigerSiDejaConnecte(){
+  try{
+    const {data:{user}} = await supabase.auth.getUser();
+    if(!user) return;
+    const {data: prof} = await supabase.from('profiles').select('type,type_compte,role').eq('id', user.id).single();
+    const type = prof ? (prof.type || prof.type_compte || prof.role || 'client') : 'client';
+    if(type==='admin') location.href='admin.html';
+    else if(type==='prestataire' || type==='livreur') location.href='dashboard-prestataire.html';
+    else location.href='dashboard-client.html';
+  }catch(e){}
+}
+const MAP_PAYS_CODE = {
+  'Bénin':'+229','Algérie':'+213','Angola':'+244','Burkina Faso':'+226','Burundi':'+257','Cameroun':'+237','Cap-Vert':'+238','Centrafrique':'+236','Tchad':'+235','Comores':'+269','Congo':'+242','Congo RDC':'+243',"Côte d'Ivoire":'+225','Djibouti':'+253','Égypte':'+20','Guinée Équatoriale':'+240','Érythrée':'+291','Éthiopie':'+251','Gabon':'+241','Gambie':'+220','Ghana':'+233','Guinée':'+224','Guinée-Bissau':'+245','Kenya':'+254','Lesotho':'+266','Liberia':'+231','Libye':'+218','Madagascar':'+261','Malawi':'+265','Mali':'+223','Maroc':'+212','Maurice':'+230','Mauritanie':'+222','Mozambique':'+258','Namibie':'+264','Niger':'+227','Nigeria':'+234','Rwanda':'+250','Sao Tomé':'+239','Sénégal':'+221','Seychelles':'+248','Sierra Leone':'+232','Somalie':'+252','Afrique du Sud':'+27','Soudan du Sud':'+211','Soudan':'+249','Eswatini':'+268','Tanzanie':'+255','Togo':'+228','Tunisie':'+216','Ouganda':'+256','Zambie':'+260','Zimbabwe':'+263',
+  'France':'+33','Belgique':'+32','Suisse':'+41','Luxembourg':'+352','Italie':'+39','Espagne':'+34','Portugal':'+351','Allemagne':'+49','Royaume-Uni':'+44','Pays-Bas':'+31','Autriche':'+43','Danemark':'+45','Suède':'+46','Norvège':'+47','Finlande':'+358','Irlande':'+353','Grèce':'+30','Pologne':'+48','Roumanie':'+40','Hongrie':'+36','Tchéquie':'+420','Slovaquie':'+421','Croatie':'+385','Slovénie':'+386','Bosnie':'+387','Serbie':'+381','Monténégro':'+382','Albanie':'+355','Bulgarie':'+359','Ukraine':'+380','Biélorussie':'+375','Lituanie':'+370','Lettonie':'+371','Estonie':'+372','Islande':'+354','Malte':'+356','Chypre':'+357','Russie':'+7','Turquie':'+90','Arménie':'+374','Azerbaïdjan':'+994','Géorgie':'+995','Moldavie':'+373',
+  'USA':'+1','Canada':'+1','Mexique':'+52','Brésil':'+55','Argentine':'+54','Colombie':'+57','Pérou':'+51','Chili':'+56','Venezuela':'+58','Équateur':'+593','Bolivie':'+591','Paraguay':'+595','Uruguay':'+598','Guatemala':'+502','Salvador':'+503','Honduras':'+504','Nicaragua':'+505','Costa Rica':'+506','Panama':'+507','Haïti':'+509','Cuba':'+53','République Dominicaine':'+1','Jamaïque':'+1','Trinité-et-Tobago':'+1',
+  'Inde':'+91','Chine':'+86','Japon':'+81','Corée du Sud':'+82','Vietnam':'+84','Thaïlande':'+66','Indonésie':'+62','Philippines':'+63','Malaisie':'+60','Singapour':'+65','Myanmar':'+95','Cambodge':'+855','Laos':'+856','Bangladesh':'+880','Pakistan':'+92','Sri Lanka':'+94','Népal':'+977','Afghanistan':'+93','Iran':'+98','Irak':'+964','Émirats':'+971','Arabie Saoudite':'+966','Qatar':'+974','Koweït':'+965','Bahreïn':'+973','Oman':'+968','Jordanie':'+962','Liban':'+961','Syrie':'+963','Israël':'+972','Palestine':'+970','Australie':'+61','Nouvelle-Zélande':'+64','Fidji':'+679','Papouasie':'+675','Îles Salomon':'+677','Vanuatu':'+678','Îles Cook':'+682','Nouvelle-Calédonie':'+687','Polynésie':'+689'
+};
+const DRAPEAUX_PAYS = {
+  'Bénin':'🇧🇯','Algérie':'🇩🇿','Angola':'🇦🇴','Burkina Faso':'🇧🇫','Burundi':'🇧🇮','Cameroun':'🇨🇲','Cap-Vert':'🇨🇻','Centrafrique':'🇨🇫','Tchad':'🇹🇩','Comores':'🇰🇲','Congo':'🇨🇬','Congo RDC':'🇨🇩',"Côte d'Ivoire":'🇨🇮','Djibouti':'🇩🇯','Égypte':'🇪🇬','Guinée Équatoriale':'🇬🇶','Érythrée':'🇪🇷','Éthiopie':'🇪🇹','Gabon':'🇬🇦','Gambie':'🇬🇲','Ghana':'🇬🇭','Guinée':'🇬🇳','Guinée-Bissau':'🇬🇼','Kenya':'🇰🇪','Lesotho':'🇱🇸','Liberia':'🇱🇷','Libye':'🇱🇾','Madagascar':'🇲🇬','Malawi':'🇲🇼','Mali':'🇲🇱','Maroc':'🇲🇦','Maurice':'🇲🇺','Mauritanie':'🇲🇷','Mozambique':'🇲🇿','Namibie':'🇳🇦','Niger':'🇳🇪','Nigeria':'🇳🇬','Rwanda':'🇷🇼','Sao Tomé':'🇸🇹','Sénégal':'🇸🇳','Seychelles':'🇸🇨','Sierra Leone':'🇸🇱','Somalie':'🇸🇴','Afrique du Sud':'🇿🇦','Soudan du Sud':'🇸🇸','Soudan':'🇸🇩','Eswatini':'🇸🇿','Tanzanie':'🇹🇿','Togo':'🇹🇬','Tunisie':'🇹🇳','Ouganda':'🇺🇬','Zambie':'🇿🇲','Zimbabwe':'🇿🇼',
+  'France':'🇫🇷','Belgique':'🇧🇪','Suisse':'🇨🇭','Luxembourg':'🇱🇺','Italie':'🇮🇹','Espagne':'🇪🇸','Portugal':'🇵🇹','Allemagne':'🇩🇪','Royaume-Uni':'🇬🇧','Pays-Bas':'🇳🇱','Autriche':'🇦🇹','Danemark':'🇩🇰','Suède':'🇸🇪','Norvège':'🇳🇴','Finlande':'🇫🇮','Irlande':'🇮🇪','Grèce':'🇬🇷','Pologne':'🇵🇱','Roumanie':'🇷🇴','Hongrie':'🇭🇺','Tchéquie':'🇨🇿','Slovaquie':'🇸🇰','Croatie':'🇭🇷','Slovénie':'🇸🇮','Bosnie':'🇧🇦','Serbie':'🇷🇸','Monténégro':'🇲🇪','Albanie':'🇦🇱','Bulgarie':'🇧🇬','Ukraine':'🇺🇦','Biélorussie':'🇧🇾','Lituanie':'🇱🇹','Lettonie':'🇱🇻','Estonie':'🇪🇪','Islande':'🇮🇸','Malte':'🇲🇹','Chypre':'🇨🇾','Russie':'🇷🇺','Turquie':'🇹🇷','Arménie':'🇦🇲','Azerbaïdjan':'🇦🇿','Géorgie':'🇬🇪','Moldavie':'🇲🇩',
+  'USA':'🇺🇸','Canada':'🇨🇦','Mexique':'🇲🇽','Brésil':'🇧🇷','Argentine':'🇦🇷','Colombie':'🇨🇴','Pérou':'🇵🇪','Chili':'🇨🇱','Venezuela':'🇻🇪','Équateur':'🇪🇨','Bolivie':'🇧🇴','Paraguay':'🇵🇾','Uruguay':'🇺🇾','Guatemala':'🇬🇹','Salvador':'🇸🇻','Honduras':'🇭🇳','Nicaragua':'🇳🇮','Costa Rica':'🇨🇷','Panama':'🇵🇦','Haïti':'🇭🇹','Cuba':'🇨🇺','République Dominicaine':'🇩🇴','Jamaïque':'🇯🇲','Trinité-et-Tobago':'🇹🇹',
+  'Inde':'🇮🇳','Chine':'🇨🇳','Japon':'🇯🇵','Corée du Sud':'🇰🇷','Vietnam':'🇻🇳','Thaïlande':'🇹🇭','Indonésie':'🇮🇩','Philippines':'🇵🇭','Malaisie':'🇲🇾','Singapour':'🇸🇬','Myanmar':'🇲🇲','Cambodge':'🇰🇭','Laos':'🇱🇦','Bangladesh':'🇧🇩','Pakistan':'🇵🇰','Sri Lanka':'🇱🇰','Népal':'🇳🇵','Afghanistan':'🇦🇫','Iran':'🇮🇷','Irak':'🇮🇶','Émirats':'🇦🇪','Arabie Saoudite':'🇸🇦','Qatar':'🇶🇦','Koweït':'🇰🇼','Bahreïn':'🇧🇭','Oman':'🇴🇲','Jordanie':'🇯🇴','Liban':'🇱🇧','Syrie':'🇸🇾','Israël':'🇮🇱','Palestine':'🇵🇸','Australie':'🇦🇺','Nouvelle-Zélande':'🇳🇿','Fidji':'🇫🇯','Papouasie':'🇵🇬','Îles Salomon':'🇸🇧','Vanuatu':'🇻🇺','Îles Cook':'🇨🇰','Nouvelle-Calédonie':'🇳🇨','Polynésie':'🇵🇫'
+};
+const LONGUEUR_PAR_PAYS = {
+  'Bénin':[10], 'Togo':[8], "Côte d'Ivoire":[10], 'Sénégal':[9], 'Mali':[8], 'Niger':[8], 'Burkina Faso':[8], 'Ghana':[10], 'Nigeria':[10], 'Cameroun':[9], 'Guinée':[9], 'Gabon':[9], 'Congo':[9], 'Congo RDC':[10], 'Kenya':[10], 'Éthiopie':[9], 'Afrique du Sud':[9], 'Algérie':[9], 'Tunisie':[8], 'Maroc':[9], 'Égypte':[10], 'Rwanda':[9], 'Ouganda':[9], 'Tanzanie':[9], 'Zambie':[9], 'Zimbabwe':[9], 'Angola':[9], 'Mozambique':[9], 'Madagascar':[9], 'Maurice':[7,8], 'Mauritanie':[8], 'Libye':[9], 'Soudan':[9], 'Soudan du Sud':[9], 'Somalie':[9], 'Djibouti':[8], 'Cap-Vert':[7], 'Centrafrique':[8], 'Tchad':[8], 'Comores':[7], 'Guinée Équatoriale':[9], 'Érythrée':[7], 'Gambie':[7], 'Guinée-Bissau':[9], 'Lesotho':[8], 'Liberia':[7,9], 'Malawi':[9], 'Namibie':[9], 'Sao Tomé':[7], 'Seychelles':[7], 'Sierra Leone':[8], 'Eswatini':[8], 'Burundi':[8],
+  'France':[9], 'Belgique':[9], 'Suisse':[9], 'Luxembourg':[9], 'Italie':[10], 'Espagne':[9], 'Portugal':[9], 'Allemagne':[10,11], 'Royaume-Uni':[10], 'Pays-Bas':[9], 'Autriche':[9,10], 'Danemark':[8], 'Suède':[9], 'Norvège':[8], 'Finlande':[9,10], 'Irlande':[9], 'Grèce':[10], 'Pologne':[9], 'Roumanie':[10], 'Hongrie':[9], 'Tchéquie':[9], 'Slovaquie':[9], 'Croatie':[9], 'Slovénie':[8], 'Bosnie':[8,9], 'Serbie':[9], 'Monténégro':[8], 'Albanie':[9], 'Bulgarie':[9], 'Ukraine':[9], 'Biélorussie':[9], 'Lituanie':[8], 'Lettonie':[8], 'Estonie':[7,8], 'Islande':[7], 'Malte':[8], 'Chypre':[8], 'Russie':[10], 'Turquie':[10], 'Arménie':[8], 'Azerbaïdjan':[9], 'Géorgie':[9], 'Moldavie':[8],
+  'USA':[10], 'Canada':[10], 'Mexique':[10], 'Brésil':[11], 'Argentine':[10], 'Colombie':[10], 'Pérou':[9], 'Chili':[9], 'Venezuela':[10], 'Équateur':[9], 'Bolivie':[8], 'Paraguay':[9], 'Uruguay':[8], 'Guatemala':[8], 'Salvador':[8], 'Honduras':[8], 'Nicaragua':[8], 'Costa Rica':[8], 'Panama':[8], 'Haïti':[8], 'Cuba':[8], 'République Dominicaine':[10], 'Jamaïque':[10], 'Trinité-et-Tobago':[10],
+  'Inde':[10], 'Chine':[11], 'Japon':[10], 'Corée du Sud':[10], 'Vietnam':[9], 'Thaïlande':[9], 'Indonésie':[10,11], 'Philippines':[10], 'Malaisie':[9,10], 'Singapour':[8], 'Myanmar':[9], 'Cambodge':[9], 'Laos':[9], 'Bangladesh':[10], 'Pakistan':[10], 'Sri Lanka':[9], 'Népal':[10], 'Afghanistan':[9], 'Iran':[10], 'Irak':[10], 'Émirats':[9], 'Arabie Saoudite':[9], 'Qatar':[8], 'Koweït':[8], 'Bahreïn':[8], 'Oman':[8], 'Jordanie':[9], 'Liban':[8], 'Syrie':[9], 'Israël':[9], 'Palestine':[9], 'Australie':[9], 'Nouvelle-Zélande':[9], 'Fidji':[7], 'Papouasie':[8], 'Îles Salomon':[7], 'Vanuatu':[7], 'Îles Cook':[7], 'Nouvelle-Calédonie':[7], 'Polynésie':[8]
+};
+function paysDepuisIndicatif(indic){
+  const paysSel = document.getElementById('pays');
+  if(paysSel && paysSel.value && MAP_PAYS_CODE[paysSel.value]===indic) return paysSel.value;
+  for(let p in MAP_PAYS_CODE){ if(MAP_PAYS_CODE[p]===indic) return p; }
+  return paysSel ? paysSel.value : 'Bénin';
+}
+function longueursPourPays(pays, indic){
+  if(LONGUEUR_PAR_PAYS[pays]) return LONGUEUR_PAR_PAYS[pays];
+  if(indic==='+1') return [10];
+  if(indic==='+33') return [9];
+  return [7,8,9,10,11];
+}
+function texteLongueur(pays){
+  const lens = longueursPourPays(pays, MAP_PAYS_CODE[pays]||'');
+  if(pays==='Bénin') return 'Bénin : 10 chiffres, commence par 01. Ex : 01 97 00 00 00';
+  if(lens.length===1) return pays + ' : ' + lens[0] + ' chiffres.';
+  return pays + ' : ' + lens.join(' ou ') + ' chiffres.';
+}
+function majAideTel(){
+  const indic = document.getElementById('indicatif').value;
+  const pays = paysDepuisIndicatif(indic);
+  const aide = document.getElementById('telAide');
+  if(aide) aide.textContent = texteLongueur(pays);
+  const inp = document.getElementById('whatsappNum');
+  if(pays==='Bénin') inp.placeholder = '01 97 00 00 00';
+  else inp.placeholder = 'Ex : ' + longueursPourPays(pays, indic)[0] + ' chiffres';
+}
+const VILLES_PAR_PAYS = {
+  'Bénin': ["Abomey","Abomey-Calavi","Adja-Ouèrè","Adjarra","Agbangnizoun","Allada","Aplahoué","Athieme","Avrankou","Bantè","Bassila","Bembèrèkè","Bohicon","Bopa","Boukoumbé","Cobly","Comè","Copargo","Cotonou","Covè","Dangbo","Dassa-Zoumè","Djakotomey","Djogou","Dogbo","Glazoué","Gogounou","Grand-Popo","Houéyogbé","Ifangni","Kalalé","Kandi","Karimama","Kérou","Kétou","Klouékanmè","Kouandé","Kpomassè","Lalo","Lokossa","Malanville","Matéri","Natitingou","Nikki","Ouaké","Ouèssè","Ouidah","Ouinhi","Pehunco","Pobè","Porto-Novo","Sakété","Savalou","Savè","Ségbana","Sèmè-Podji","Sinendé","So-Ava","Tanguiéta","Tchaourou","Toffo","Tori-Bossito","Toucountouna","Zagnanado","Za-Kpota","Zè","Zogbodomey"],
+  'Togo': ["Lomé","Sokodé","Kara","Kpalimé","Atakpamé","Dapaong","Tsévié","Aného","Notsé","Sotouboua","Bafilo","Badou","Kanté"],
+  "Côte d'Ivoire": ["Abidjan","Bouaké","Daloa","Yamoussoukro","San-Pédro","Korhogo","Man","Gagnoa","Divo","Abengourou","Grand-Bassam","Anyama","Bingerville","Dabou","Agboville"],
+  'Sénégal': ["Dakar","Thiès","Kaolack","Ziguinchor","Saint-Louis","Mbour","Rufisque","Diourbel","Tambacounda","Kolda","Louga","Fatick","Kaffrine","Matam"],
+  'Cameroun': ["Douala","Yaoundé","Garoua","Bamenda","Bafoussam","Ngaoundéré","Maroua","Kumba","Kribi","Bertoua","Ebolowa","Foumban"],
+  'Nigeria': ["Lagos","Abuja","Kano","Ibadan","Port Harcourt","Benin City","Maiduguri","Zaria","Aba","Jos","Ilorin","Oyo","Enugu","Abeokuta","Calabar","Kaduna"],
+  'Ghana': ["Accra","Kumasi","Takoradi","Tamale","Cape Coast","Tema","Ho","Sunyani","Bolgatanga","Wa","Koforidua"],
+  'France': ["Paris","Lyon","Marseille","Toulouse","Bordeaux","Lille","Nantes","Montpellier","Strasbourg","Rennes","Reims","Le Havre","Toulon","Grenoble","Dijon","Angers","Nîmes","Clermont-Ferrand","Le Mans","Aix-en-Provence"],
+  'Canada': ["Toronto","Montréal","Vancouver","Ottawa","Calgary","Edmonton","Québec","Winnipeg","Halifax","Victoria","Saskatoon","Regina"],
+  'USA': ["New York","Los Angeles","Chicago","Houston","Miami","Atlanta","Dallas","Boston","Seattle","San Francisco","Washington","Philadelphia"],
+  'Maroc': ["Casablanca","Rabat","Fès","Marrakech","Agadir","Tanger","Meknès","Oujda","Kénitra","Tétouan"],
+  'Mali': ["Bamako","Sikasso","Mopti","Koutiala","Ségou","Kayes","Gao","Kati"],
+  'Niger': ["Niamey","Zinder","Maradi","Agadez","Tahoua","Dosso","Diffa"],
+  'Burkina Faso': ["Ouagadougou","Bobo-Dioulasso","Koudougou","Ouahigouya","Banfora","Kaya","Dédougou"],
+  'Guinée': ["Conakry","Nzérékoré","Kankan","Kindia","Labé","Mamou","Faranah","Boké"],
+  'Gabon': ["Libreville","Port-Gentil","Franceville","Oyem","Moanda","Mouila"],
+  'Congo': ["Brazzaville","Pointe-Noire","Dolisie","Nkayi","Owando"],
+  'Congo RDC': ["Kinshasa","Lubumbashi","Mbuji-Mayi","Kisangani","Goma","Bukavu","Kananga","Kolwezi"],
+  'Kenya': ["Nairobi","Mombasa","Kisumu","Nakuru","Eldoret","Thika"],
+  'Éthiopie': ["Addis-Abeba","Dire Dawa","Adama","Gondar","Mekele","Hawassa","Bahir Dar"],
+  'Afrique du Sud': ["Johannesburg","Le Cap","Durban","Pretoria","Port Elizabeth","Bloemfontein"],
+  'Algérie': ["Alger","Oran","Constantine","Annaba","Sétif","Blida","Tlemcen","Béjaïa"],
+  'Tunisie': ["Tunis","Sfax","Sousse","Kairouan","Bizerte","Gabès","Ariana"],
+  'Égypte': ["Le Caire","Alexandrie","Gizeh","Port-Saïd","Suez","Louxor","Assouan"],
+  'Inde': ["Mumbai","Delhi","Bangalore","Hyderabad","Chennai","Kolkata","Pune","Ahmedabad"],
+  'Chine': ["Pékin","Shanghai","Guangzhou","Shenzhen","Chengdu","Chongqing","Wuhan"],
+  'Royaume-Uni': ["Londres","Manchester","Birmingham","Liverpool","Leeds","Glasgow","Édimbourg"],
+  'Allemagne': ["Berlin","Munich","Hambourg","Cologne","Francfort","Stuttgart","Düsseldorf"],
+  'Belgique': ["Bruxelles","Anvers","Gand","Charleroi","Liège","Bruges","Namur"],
+  'Suisse': ["Zurich","Genève","Bâle","Lausanne","Berne","Lucerne"],
+  'Italie': ["Rome","Milan","Naples","Turin","Florence","Venise","Bologne"],
+  'Espagne': ["Madrid","Barcelone","Valence","Séville","Bilbao","Malaga"],
+  'Brésil': ["São Paulo","Rio de Janeiro","Salvador","Brasilia","Fortaleza","Belo Horizonte"],
+  'Mexique': ["Mexico","Guadalajara","Monterrey","Puebla","Cancún","Tijuana"]
+};
+function majListeVilles(){
+  const pays = document.getElementById('pays').value;
+  const dl = document.getElementById('listeVilles');
+  const villes = VILLES_PAR_PAYS[pays] || [];
+  dl.innerHTML = villes.map(v => `<option value="${v}">`).join('');
+  const villeInput = document.getElementById('ville');
+  if(villeInput.value && villes.length>0 && !villes.some(v => normaliseVille(v) === normaliseVille(villeInput.value.trim()))){ villeInput.value = ''; }
+  verifVille(villeInput);
+}
+function normaliseVille(s){ return s.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/-/g,' ').replace(/\s+/g,' ').trim(); }
+function verifVille(el){
+  const pays = document.getElementById('pays').value;
+  const villes = VILLES_PAR_PAYS[pays];
+  const val = el.value.trim();
+  if(!val){ document.getElementById('errVille').classList.remove('show'); el.classList.remove('err'); return true; }
+  if(!villes) return true;
+  const ok = villes.some(v => normaliseVille(v) === normaliseVille(val));
+  document.getElementById('errVille').classList.toggle('show', !ok);
+  el.classList.toggle('err', !ok);
+  return ok;
+}
+function majIndicatif(){
+  verifTel(document.getElementById('whatsappNum'));
+  const code = document.getElementById('indicatif').value;
+  const paysSel = document.getElementById('pays');
+  for(let p in MAP_PAYS_CODE){ if(MAP_PAYS_CODE[p]===code){ paysSel.value = p; break; } }
+  majListeVilles(); majAideTel();
+}
+function syncPaysVersIndicatif(){
+  const pays = document.getElementById('pays').value;
+  const code = MAP_PAYS_CODE[pays];
+  if(code) document.getElementById('indicatif').value = code;
+  verifTel(document.getElementById('whatsappNum'));
+  majListeVilles(); majAideTel();
+}
+function normaliseNumero(indic, numBrut){
+  let num = numBrut.replace(/[^0-9]/g,'');
+  const pays = paysDepuisIndicatif(indic);
+  if(indic==='+229'){
+    if(num.length===13 && num.startsWith('229')) num = num.slice(3);
+    if(num.length===11 && num.startsWith('229')) num = num.slice(3);
+    if(num.length===8) num = '01' + num;
+    if(num.length===8) num = '01' + num;
+  } else {
+    const codeSansPlus = indic.replace('+','');
+    if(num.startsWith(codeSansPlus) && num.length > 8) num = num.slice(codeSansPlus.length);
+    if(num.startsWith('0')) num = num.slice(1);
+  }
+  return num;
+}
+function verifTel(el){
+  const indic = document.getElementById('indicatif').value;
+  const pays = paysDepuisIndicatif(indic);
+  const lens = longueursPourPays(pays, indic);
+  let numBrut = el.value.replace(/[^0-9]/g,'');
+  let num = normaliseNumero(indic, numBrut);
+  let ok = false;
+  if(pays==='Bénin'){
+    ok = (num.length===10 && num.startsWith('01')) || numBrut.length===8;
+  } else {
+    ok = lens.includes(num.length);
+  }
+  let msg = '❌ ' + texteLongueur(pays);
+  const errEl = document.getElementById('errTel');
+  errEl.textContent = msg;
+  errEl.classList.toggle('show', numBrut.length>0 && !ok);
+  el.classList.toggle('err', numBrut.length>0 && !ok);
+  majAideTel();
+  return ok;
+}
+function verifMdp(){
+  const a=document.getElementById('password').value;
+  const b=document.getElementById('password2').value;
+  const bad = b.length>0 && a!==b;
+  document.getElementById('errMdp').classList.toggle('show', bad);
+  document.getElementById('password2').classList.toggle('err', bad);
+  return !bad;
+}
+function previewPhoto(input){
+  const f = input.files[0]; if(!f) return;
+  if(f.size > 2*1024*1024){ showMsg('Photo trop lourde, max 2 Mo. Choisis une plus petite.', false); input.value=''; return; }
+  if(!f.type.startsWith('image/')){ showMsg('Choisis une image.', false); input.value=''; return; }
+  const r = new FileReader();
+  r.onload = function(e){ photoBase64 = e.target.result; const img=document.getElementById('photoPreview'); img.src=photoBase64; document.getElementById('photoBox').classList.add('hasImg'); };
+  r.readAsDataURL(f);
+}
+function getWhatsAppComplet(){
+  const indic = document.getElementById('indicatif').value;
+  let num = normaliseNumero(indic, document.getElementById('whatsappNum').value);
+  return indic + ' ' + num;
+}
 async function inscrire(){
   const nom=document.getElementById('nom').value.trim();
-  const indic=document.getElementById('indicatif').value;
-  const num=normaliseNumero(indic,document.getElementById('whatsappNum').value);
-  const whatsapp=indic+' '+num;
+  const whatsapp=getWhatsAppComplet();
+  const numSeul=document.getElementById('whatsappNum').value.trim();
   const password=document.getElementById('password').value;
   const password2=document.getElementById('password2').value;
-  const email=document.getElementById('email').value.trim().toLowerCase();
+  const emailRaw=document.getElementById('email').value.trim().toLowerCase();
   const pays=document.getElementById('pays').value;
   const ville=document.getElementById('ville').value.trim();
   const localite=document.getElementById('localite').value.trim();
   let categorie=document.getElementById('categorie').value;
   const description=document.getElementById('description').value.trim();
   const btn=document.getElementById('btnInscrire');
-  if(!nom||!num||!ville||!localite){showMsg('Remplis Nom + WhatsApp + Ville + Localité',false);return;}
-  if(!verifTel(document.getElementById('whatsappNum'))){showMsg('❌ Numéro incorrect. '+texteLongueur(paysDepuisIndicatif(indic)),false);return;}
-  if(!password||password.length<6){showMsg('Mot de passe : min 6 caractères',false);return;}
-  if(password!==password2){showMsg('❌ Les 2 mots de passe ne sont pas identiques',false);return;}
-  if(!email||!email.includes('@')){showMsg('Email obligatoire (sécurité mondiale)',false);return;}
-  let typeFinal=typeCompte;
-  if(email===ADMIN_EMAIL) typeFinal='admin';
-  if(typeFinal==='prestataire'){
-    if(categorie==='__AUTRE__'){const a=document.getElementById('autreCategorie').value.trim();if(!a){showMsg('Écris ta catégorie',false);return;}categorie=a;}
-    if(!categorie||!description){showMsg('Prestataire : catégorie + description',false);return;}
+  if(!nom || !numSeul || !ville || !localite){ showMsg('Remplis Nom + WhatsApp + Ville + Localité', false); return; }
+  if(!verifTel(document.getElementById('whatsappNum'))){ const indic=document.getElementById('indicatif').value; const p=paysDepuisIndicatif(indic); showMsg('❌ Numéro incorrect. ' + texteLongueur(p), false); return; }
+  if(!verifVille(document.getElementById('ville'))){ showMsg('❌ Cette ville n\'existe pas dans le pays choisi.', false); return; }
+  if(!password || password.length<6){ showMsg('Mot de passe : min 6 caractères', false); return; }
+  if(password!==password2){ showMsg('❌ Les 2 mots de passe ne sont pas identiques', false); return; }
+  if(emailRaw && !emailRaw.includes('@')){ showMsg('Email invalide', false); return; }
+  // SÉCURITÉ MONDIALE : personne ne peut se créer Admin par inscription.
+  // L'Admin existe déjà, on ne le crée pas ici.
+  if(emailRaw === ADMIN_EMAIL){
+    showMsg('⛔ Cet email est réservé. Si c\'est toi l\'Admin, va sur Connexion.', false);
+    return;
   }
-  btn.disabled=true;btn.textContent='Création...';
+  let typeFinal = typeCompte;
+  // On force : typeFinal ne peut JAMAIS être admin ici
+  if(typeFinal === 'admin') typeFinal = 'client';
+  if(typeFinal==='prestataire'){
+    if(categorie==='__AUTRE__'){ const a=document.getElementById('autreCategorie').value.trim(); if(!a){ showMsg('Écris ta catégorie', false); return; } categorie=a; }
+    if(!categorie || !description){ showMsg('Prestataire : choisis ta catégorie + décris ton service', false); return; }
+  }
+  btn.disabled=true; btn.textContent='Création...';
   try{
-    // 1. SÉCURITÉ : création Auth, mot de passe haché par Supabase, jamais en clair
-    const {data:authData,error:authErr}=await supabase.auth.signUp({email,password});
-    if(authErr){showMsg(authErr.message.includes('already')?'Ce email existe déjà, connecte-toi.':authErr.message,false);btn.disabled=false;btn.textContent='Créer mon compte →';return;}
-    const userId=authData.user?.id;
-    if(!userId){showMsg('Vérifie ton email pour valider ton compte, puis connecte-toi.',true);btn.disabled=false;btn.textContent='Créer mon compte →';return;}
-    // 2. Profil, id = id Auth, SANS password
-    const payload={id:userId,nom,full_name:nom,whatsapp,phone:whatsapp,email,password:undefined,type:typeFinal,type_compte:typeFinal,role:typeFinal,pays,country:pays,ville,city:ville,localite,description:description||null,description_profil:description||null,categorie:typeFinal==='prestataire'?categorie:null,categorie_prestataire:typeFinal==='prestataire'?categorie:null,univers:typeFinal==='prestataire'?universPourCategorie(categorie):null,statut_validation:typeFinal==='admin'?'valide':(typeFinal==='prestataire'?'en_attente':'valide'),status_prestataire:typeFinal==='prestataire'?'en_attente':'valide'};
-    delete payload.password;
-    const {error}=await supabase.from('profiles').insert([payload]);
-    if(error){showMsg('Erreur profil : '+error.message,false);btn.disabled=false;btn.textContent='Créer mon compte →';return;}
-    // 3. Session déjà créée, on ne stocke que l'affichage, jamais la preuve
-    localStorage.setItem('rocy_user_id',userId);localStorage.setItem('rocy_user_nom',nom);localStorage.setItem('rocy_user_type',typeFinal);localStorage.setItem('rocy_user_email',email);localStorage.setItem('rocy_user_pays',pays);localStorage.setItem('rocy_user_ville',ville);localStorage.setItem('rocy_user_localite',localite);
-    showMsg('✅ Compte créé ! Redirection...',true);
-    setTimeout(()=>{if(typeFinal==='admin')location.href='admin.html';else if(typeFinal==='prestataire')location.href='creer-annonce.html';else if(typeFinal==='livreur')location.href='dashboard-prestataire.html';else location.href='index.html';},1000);
-  }catch(e){showMsg('Erreur : '+e.message,false);btn.disabled=false;btn.textContent='Créer mon compte →';}
+    const chiffres = whatsapp.replace(/[^0-9]/g,'');
+    const emailFinal=(emailRaw||(chiffres+'@rocyinter.com')).toLowerCase();
+    try{
+      const {data: emailExistant} = await supabase.rpc('get_email_by_whatsapp', { p_whatsapp: chiffres });
+      if(emailExistant){
+        const {data: login, error: errLogin} = await supabase.auth.signInWithPassword({email: String(emailExistant).toLowerCase(), password});
+        if(!errLogin && login?.user){
+          const {data: prof} = await supabase.from('profiles').select('id,nom,full_name,type,type_compte,role,pays,ville,localite').eq('id', login.user.id).single();
+          const typeExiste = prof ? (prof.type||prof.type_compte||prof.role||typeFinal) : typeFinal;
+          localStorage.setItem('rocy_user_id', login.user.id); localStorage.setItem('rocy_user_nom', prof?.nom||prof?.full_name||nom); localStorage.setItem('rocy_user_type', typeExiste); localStorage.setItem('rocy_role', typeExiste); localStorage.setItem('rocy_user_email', String(emailExistant).toLowerCase()); localStorage.setItem('rocy_email', String(emailExistant).toLowerCase()); localStorage.setItem('rocy_user_whatsapp', whatsapp); localStorage.setItem('rocy_user_pays', prof?.pays||pays); localStorage.setItem('rocy_user_ville', prof?.ville||ville); localStorage.setItem('rocy_user_localite', prof?.localite||localite);
+          showMsg('✅ Ce compte existe déjà, on te connecte...', true);
+          setTimeout(()=>{ if(typeExiste==='admin') location.href='admin.html'; else if(typeExiste==='prestataire' || typeExiste==='livreur') location.href='dashboard-prestataire.html'; else location.href='dashboard-client.html'; },1000); return;
+        } else {
+          showMsg('Ce WhatsApp existe déjà. Va sur Connexion, mot de passe incorrect.', false); btn.disabled=false; btn.textContent='Créer mon compte →'; return;
+        }
+      }
+    }catch(e){}
+    const {data: authData, error: authErr} = await supabase.auth.signUp({email: emailFinal, password});
+    if(authErr){
+      if(authErr.message.toLowerCase().includes('already') || authErr.message.toLowerCase().includes('exists')){
+        showMsg('Ce email existe déjà, connecte-toi.', false);
+      } else {
+        showMsg(authErr.message, false);
+      }
+      btn.disabled=false; btn.textContent='Créer mon compte →'; return;
+    }
+    let userId = authData.user?.id;
+    if(!userId){
+      showMsg('Vérifie ton email pour valider ton compte, puis connecte-toi.', true);
+      btn.disabled=false; btn.textContent='Créer mon compte →'; return;
+    }
+    if(!authData.session){
+      const {data: login2} = await supabase.auth.signInWithPassword({email: emailFinal, password});
+      if(login2?.user) userId = login2.user.id;
+    }
+    const univers = typeFinal==='prestataire' ? universPourCategorie(categorie) : null;
+    const payload = {
+      id:userId, nom, full_name: nom, whatsapp, phone: whatsapp,
+      email:emailFinal,
+      type:typeFinal, type_compte:typeFinal, role:typeFinal,
+      pays, country: pays, ville, city: ville, localite,
+      description:description||null, description_profil:description||null,
+      photo_url:photoBase64||null, avatar_url:photoBase64||null,
+      categorie:typeFinal==='prestataire'?categorie:null,
+      categorie_prestataire:typeFinal==='prestataire'?categorie:null,
+      univers:univers,
+      statut_validation:(typeFinal==='prestataire'?'en_attente':'valide'),
+      status_prestataire:typeFinal==='prestataire'?'en_attente':'valide'
+    };
+    let {data,error}=await supabase.from('profiles').insert([payload]).select().single();
+    if(error && (error.message.includes("Could not find the") || error.message.includes("column"))){
+      const minimal = { id:userId, nom, whatsapp, phone: whatsapp, email:emailFinal, type:typeFinal, type_compte:typeFinal, pays, ville, localite, description_profil:description||null, categorie_prestataire:typeFinal==='prestataire'?categorie:null, statut_validation:(typeFinal==='prestataire'?'en_attente':'valide'), status_prestataire:typeFinal==='prestataire'?'en_attente':'valide' };
+      const retry = await supabase.from('profiles').insert([minimal]).select().single();
+      data = retry.data; error = retry.error;
+    }
+    if(error){ showMsg('Erreur profil : '+error.message, false); btn.disabled=false; btn.textContent='Créer mon compte →'; return; }
+    localStorage.setItem('rocy_user_id', userId); localStorage.setItem('rocy_user_nom', nom); localStorage.setItem('rocy_user_type', typeFinal); localStorage.setItem('rocy_role', typeFinal); localStorage.setItem('rocy_user_email', emailFinal); localStorage.setItem('rocy_email', emailFinal); localStorage.setItem('rocy_user_whatsapp', whatsapp); localStorage.setItem('rocy_user_pays', pays); localStorage.setItem('rocy_user_ville', ville); localStorage.setItem('rocy_user_localite', localite);
+    showMsg('✅ Compte créé ! Redirection...', true);
+    setTimeout(()=>{ if(typeFinal==='prestataire') location.href='creer-annonce.html'; else if(typeFinal==='livreur') location.href='dashboard-prestataire.html'; else location.href='index.html'; },1200);
+  }catch(e){ showMsg('Erreur : '+e.message, false); btn.disabled=false; btn.textContent='Créer mon compte →'; }
 }
-document.addEventListener('DOMContentLoaded',()=>{majAideTel();if(window.rocyAppliquerTraduction)window.rocyAppliquerTraduction();});
+document.addEventListener('DOMContentLoaded', ()=>{
+  const sel = document.getElementById('pays');
+  let liste = Object.keys(MAP_PAYS_CODE).map(nom => ({ nom: nom, drapeau: DRAPEAUX_PAYS[nom] || '', code: MAP_PAYS_CODE[nom] }));
+  (window.ROCY_PAYS || window.PAYS || []).forEach(p => {
+    const nom = (typeof p === 'string' ? p : (p.nom || p.name || p.pays || '')) || '';
+    if(nom && !MAP_PAYS_CODE[nom]){
+      const drapeau = typeof p === 'string' ? '' : (p.drapeau || p.flag || p.emoji || DRAPEAUX_PAYS[nom] || '');
+      liste.push({ nom: nom, drapeau: drapeau, code: '' });
+    }
+  });
+  liste = liste.filter(p => p.nom && p.nom !== 'undefined' && p.nom !== 'null');
+  liste.sort((a,b)=> a.nom==='Bénin' ? -1 : b.nom==='Bénin' ? 1 : a.nom.localeCompare(b.nom));
+  sel.innerHTML = liste.map(p => {
+    const aff = (p.drapeau ? p.drapeau + ' ' : '') + p.nom;
+    return `<option value="${p.nom}" ${p.nom==='Bénin'?'selected':''}>${aff}</option>`;
+  }).join('');
+  const params = new URLSearchParams(location.search);
+  const t = params.get('type');
+  if(t==='prestataire' || t==='livreur' || t==='client') setType(t);
+  supabase.auth.getUser().then(({data:{user}})=>{ if(user) redirigerSiDejaConnecte(); });
+  majListeVilles(); majAideTel();
+  if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
+});
 </script>
 </body></html>
