@@ -84,7 +84,6 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 window.supabaseClient = sb;
 const ADMIN_EMAIL = 'rocyinter@gmail.com';
 let tabActuel = 'annonces';
-
 function allerConnexion(){ window.location.href='connexion.html'; }
 async function deconnecterAdmin(){
   try{ await sb.auth.signOut(); }catch(e){}
@@ -184,31 +183,37 @@ async function chargerTout(){
         </div>`).join('');
     }
     if(tabActuel==='prestataires'){
-      const {data} = await sb.from('profiles').select('*').eq('type_compte','prestataire').order('created_at',{ascending:false});
+      // CORRIGÉ : tous les types de fournisseurs, pas seulement "prestataire"
+      const {data} = await sb.from('profiles').select('*').in('type_compte',['prestataire','professionnel','entreprise','livreur','fournisseur','pro']).order('created_at',{ascending:false});
       const enAttente = (data||[]).filter(u=> String(u.statut_validation||u.status_prestataire||'en_attente').toLowerCase()==='en_attente');
       if(!enAttente.length){ box.innerHTML = `<div class="empty">✅ Aucun prestataire en attente.</div>`; return; }
-      box.innerHTML = enAttente.map(u=>`
+      box.innerHTML = enAttente.map(u=>{
+        const labelType = u.type_compte==='entreprise' ? '🏢 Entreprise' : u.type_compte==='professionnel' ? '👨‍🔧 Professionnel' : u.type_compte==='livreur' ? '🛵 Livreur' : '💼 Fournisseur';
+        return `
         <div class="card">
-          <span class="badge attente">⏳ Prestataire en attente</span>
-          <h3 style="margin-top:8px">${esc(u.nom)}</h3>
-          <p>WhatsApp : ${esc(u.whatsapp)} • 📍 ${esc(u.localite)} - ${esc(u.ville)} - ${esc(u.pays)}<br>${esc(u.description_profil || '')}<br><b>Catégorie :</b> ${esc(u.categorie_prestataire || '-')}</p>
+          <span class="badge attente">⏳ ${labelType} en attente</span>
+          <h3 style="margin-top:8px">${esc(u.nom_entreprise || u.nom)}</h3>
+          <p>Contact : ${esc(u.nom)} • WhatsApp : ${esc(u.whatsapp)} • 📍 ${esc(u.localite || u.quartier)} - ${esc(u.ville)} - ${esc(u.pays)}<br>${esc(u.description_profil || '')}<br><b>Catégorie :</b> ${esc(u.categorie_prestataire || '-')} • <b>Type :</b> ${esc(u.type_compte)}</p>
           <div class="actions">
             <button type="button" class="btn-val" onclick="validerPrestataire('${esc(u.id)}')">✅ Valider le compte</button>
             <button type="button" class="btn-rej" onclick="rejeterPrestataire('${esc(u.id)}')">❌ Refuser</button>
           </div>
-        </div>`).join('');
+        </div>`;
+      }).join('');
     }
     if(tabActuel==='quartiers'){
-      const {data} = await sb.from('profiles').select('*').eq('verification_quartier','demande_envoyee').order('created_at',{ascending:false});
+      // CORRIGÉ : en_attente + demande_envoyee (les 2 statuts)
+      const {data} = await sb.from('profiles').select('*').in('verification_quartier',['en_attente','demande_envoyee']).order('created_at',{ascending:false});
       if(!data || data.length===0){ box.innerHTML = `<div class="empty">✅ Aucune demande de vérification quartier.<br>Tout le monde est déjà vérifié ou personne n'a demandé.</div>`; return; }
       box.innerHTML = data.map(u=>{
         const quartier = u.quartier || u.localite || '-';
         const photoPiece = u.photo_piece_url || '';
         const photoAtelier = u.photo_atelier_url || '';
+        const labelType = u.type_compte==='entreprise' ? '🏢 Entreprise' : u.type_compte==='professionnel' ? '👨‍🔧 Professionnel' : u.type_compte==='livreur' ? '🛵 Livreur' : u.type_compte==='client' ? '🛒 Client' : '💼 Fournisseur';
         return `
         <div class="card">
           <span class="badge attente">📍 Vérification quartier - ${esc(quartier)}</span>
-          <h3 style="margin-top:8px">${esc(u.nom)} - ${esc(u.categorie_prestataire||'Prestataire')}</h3>
+          <h3 style="margin-top:8px">${esc(u.nom_entreprise || u.nom)} - ${labelType} - ${esc(u.categorie_prestataire||'')}</h3>
           <p>WhatsApp : ${esc(u.whatsapp)} • 📍 ${esc(u.localite)} - ${esc(u.ville)} - ${esc(u.pays)}<br><b>Quartier déclaré :</b> ${esc(quartier)}<br>${esc(u.description_profil || '')}</p>
           <div class="photos">
             <div>${photoPiece ? `<img src="${photoPiece}" onclick="window.open('${photoPiece}','_blank')"><small>🪪 Pièce d'identité - Clique pour agrandir</small>` : '<small>Aucune photo pièce</small>'}</div>
@@ -257,7 +262,7 @@ async function chargerTout(){
       const {data} = await sb.from('profiles').select('*').order('created_at',{ascending:false}).limit(100);
       if(!data || data.length===0){ box.innerHTML = `<div class="empty">Aucun utilisateur.</div>`; return; }
       box.innerHTML = data.map(u=>`
-        <div class="card"><b>${esc(u.nom)}</b> • ${esc(u.type_compte)} ${u.type_compte==='prestataire' ? '• ' + esc(u.categorie_prestataire||'') + ' • Statut : ' + esc(u.statut_validation||'en_attente') : ''}
+        <div class="card"><b>${esc(u.nom_entreprise || u.nom)}</b> • ${esc(u.type_compte)} ${['prestataire','professionnel','entreprise','livreur'].includes(String(u.type_compte||'').toLowerCase()) ? '• ' + esc(u.categorie_prestataire||'') + ' • Statut : ' + esc(u.statut_validation||'en_attente') : ''}
         <p>WhatsApp : ${esc(u.whatsapp)} • 📍 ${esc(u.localite)} - ${esc(u.ville)} - ${esc(u.pays)} • Quartier : ${esc(u.quartier||u.localite||'-')} ${u.quartier_verifie ? '✅ Vérifié' : ''}<br>${esc(u.description_profil || '')}</p></div>`).join('');
     }
     if(tabActuel==='avis'){
@@ -290,7 +295,6 @@ async function rejeterPrestataire(id){
   await sb.from('profiles').update({statut_validation:'rejete', status_prestataire:'rejete'}).eq('id', id);
   chargerTout();
 }
-// NOUVEAU : Validation quartier en 1 clic
 async function validerQuartier(id, quartier){
   if(!confirm('Valider ce prestataire comme Vérifié à '+quartier+' ? Il aura le badge ✅')) return;
   const {error} = await sb.from('profiles').update({verification_quartier:'valide', quartier_verifie:true}).eq('id', id);
