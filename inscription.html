@@ -169,7 +169,7 @@ async function redirigerSiDejaConnecte(){
     if(!sb) return;
     const {data:{user}} = await sb.auth.getUser();
     if(!user) return;
-    const {data: prof} = await sb.from('profiles').select('type,type_compte,role,type_fournisseur').eq('id', user.id).single();
+    const {data: prof} = await sb.from('profiles').select('type,type_compte,role,type_fournisseur').eq('id', user.id).maybeSingle();
     const type = prof ? (prof.type || prof.type_compte || prof.role || 'client') : 'client';
     if(type==='admin') location.href='admin.html';
     else if(['prestataire','livreur','professionnel','entreprise','fournisseur','pro'].includes(String(type).toLowerCase())) location.href='dashboard-prestataire.html';
@@ -180,7 +180,7 @@ const MAP_PAYS_CODE = {
   'Bénin':'+229','Algérie':'+213','Angola':'+244','Burkina Faso':'+226','Burundi':'+257','Cameroun':'+237','Cap-Vert':'+238','Centrafrique':'+236','Tchad':'+235','Comores':'+269','Congo':'+242','Congo RDC':'+243',"Côte d'Ivoire":'+225','Djibouti':'+253','Égypte':'+20','Guinée Équatoriale':'+240','Érythrée':'+291','Éthiopie':'+251','Gabon':'+241','Gambie':'+220','Ghana':'+233','Guinée':'+224','Guinée-Bissau':'+245','Kenya':'+254','Lesotho':'+266','Liberia':'+231','Libye':'+218','Madagascar':'+261','Malawi':'+265','Mali':'+223','Maroc':'+212','Maurice':'+230','Mauritanie':'+222','Mozambique':'+258','Namibie':'+264','Niger':'+227','Nigeria':'+234','Rwanda':'+250','Sao Tomé':'+239','Sénégal':'+221','Seychelles':'+248','Sierra Leone':'+232','Somalie':'+252','Afrique du Sud':'+27','Soudan du Sud':'+211','Soudan':'+249','Eswatini':'+268','Tanzanie':'+255','Togo':'+228','Tunisie':'+216','Ouganda':'+256','Zambie':'+260','Zimbabwe':'+263',
   'France':'+33','Belgique':'+32','Suisse':'+41','Luxembourg':'+352','Italie':'+39','Espagne':'+34','Portugal':'+351','Allemagne':'+49','Royaume-Uni':'+44','Pays-Bas':'+31','Autriche':'+43','Danemark':'+45','Suède':'+46','Norvège':'+47','Finlande':'+358','Irlande':'+353','Grèce':'+30','Pologne':'+48','Roumanie':'+40','Hongrie':'+36','Tchéquie':'+420','Slovaquie':'+421','Croatie':'+385','Slovénie':'+386','Bosnie':'+387','Serbie':'+381','Monténégro':'+382','Albanie':'+355','Bulgarie':'+359','Ukraine':'+380','Biélorussie':'+375','Lituanie':'+370','Lettonie':'+371','Estonie':'+372','Islande':'+354','Malte':'+356','Chypre':'+357','Russie':'+7','Turquie':'+90','Arménie':'+374','Azerbaïdjan':'+994','Géorgie':'+995','Moldavie':'+373',
   'USA':'+1','Canada':'+1','Mexique':'+52','Brésil':'+55','Argentine':'+54','Colombie':'+57','Pérou':'+51','Chili':'+56','Venezuela':'+58','Équateur':'+593','Bolivie':'+591','Paraguay':'+595','Uruguay':'+598','Guatemala':'+502','Salvador':'+503','Honduras':'+504','Nicaragua':'+505','Costa Rica':'+506','Panama':'+507','Haïti':'+509','Cuba':'+53','République Dominicaine':'+1','Jamaïque':'+1','Trinité-et-Tobago':'+1',
-  'Inde':'+91','Chine':'+86','Japon':'+81','Corée du Sud':'+82','Vietnam':'+84','Thaïlande':'+66','Indonésie':'+62','Philippines':'+63','Malaisie':'+60','Singapour':'+65','Myanmar':'+95','Cambodge':'+855','Laos':'+856','Bangladesh':'+880','Pakistan':'+92','Sri Lanka':'+94','Népal':'+977','Afghanistan':'+93','Iran':'+98','Irak':'+964','Émirats':'+971','Arabie Saoudite':'+966','Qatar':'+974','Koweït':'+965','Bahreïn':'+973','Oman':'+968','Jordanie':'+962','Liban':'+961','Syrie':'+963','Israël':'+972','Palestine':'+970','Australie':'+61','Nouvelle-Zélande':'+64','Fidji':'+679','Papouasie':'+675','Îles Salomon':'+677','Vanuatu':'+678','Îles Cook':'+682','Nouvelle-Calédonie':'+687','Polynésie':'+689'
+  'Inde':'+91','Chine':'+86','Japon':'+81','Corée du Sud':'+82','Vietnam':'+84','Thaïlande':'+66','Indonésie':'+62','Philippines':'+63','Malaisie':'+60','Singapour':'+65','Myanmar':'+95','Cambodge':'+855','Laos':'+856','Bangladesh':'+880','Pakistan':'+92','Sri Lanka':'+94','Népal':'+977','Afghanistan':'+93','Iran':'+98','Irak':'+964','Émirats':'+971','Arabie Saoudite':'+966','Qatar':'+974','Koweït':'+965','Bahreïn':'+973','Oman':'+968','Jordanie':'+962','Liban':'+961','Syrie':'+963','Israël':'+972','Palestine':'+970','Australie':'+61','Nouvelle-Zélande':'+64','Fidji':''+679','Papouasie':'+675','Îles Salomon':'+677','Vanuatu':'+678','Îles Cook':'+682','Nouvelle-Calédonie':'+687','Polynésie':'+689'
 };
 const DRAPEAUX_PAYS = {
   'Bénin':'🇧🇯','Algérie':'🇩🇿','Angola':'🇦🇴','Burkina Faso':'🇧🇫','Burundi':'🇧🇮','Cameroun':'🇨🇲','Cap-Vert':'🇨🇻','Centrafrique':'🇨🇫','Tchad':'🇹🇩','Comores':'🇰🇲','Congo':'🇨🇬','Congo RDC':'🇨🇩',"Côte d'Ivoire":'🇨🇮','Djibouti':'🇩🇯','Égypte':'🇪🇬','Guinée Équatoriale':'🇬🇶','Érythrée':'🇪🇷','Éthiopie':'🇪🇹','Gabon':'🇬🇦','Gambie':'🇬🇲','Ghana':'🇬🇭','Guinée':'🇬🇳','Guinée-Bissau':'🇬🇼','Kenya':'🇰🇪','Lesotho':'🇱🇸','Liberia':'🇱🇷','Libye':'🇱🇾','Madagascar':'🇲🇬','Malawi':'🇲🇼','Mali':'🇲🇱','Maroc':'🇲🇦','Maurice':'🇲🇺','Mauritanie':'🇲🇷','Mozambique':'🇲🇿','Namibie':'🇳🇦','Niger':'🇳🇪','Nigeria':'🇳🇬','Rwanda':'🇷🇼','Sao Tomé':'🇸🇹','Sénégal':'🇸🇳','Seychelles':'🇸🇨','Sierra Leone':'🇸🇱','Somalie':'🇸🇴','Afrique du Sud':'🇿🇦','Soudan du Sud':'🇸🇸','Soudan':'🇸🇩','Eswatini':'🇸🇿','Tanzanie':'🇹🇿','Togo':'🇹🇬','Tunisie':'🇹🇳','Ouganda':'🇺🇬','Zambie':'🇿🇲','Zimbabwe':'🇿🇼',
@@ -407,6 +407,7 @@ async function inscrire(){
       if(!nom && !nomContact){ showMsg('Entreprise : mets le nom du responsable / contact', false); return; }
     }
   }
+  const nomFinalPre = (typeFinal==='prestataire' && typeFournisseur==='entreprise') ? (nom || nomContact || nomEntreprise) : nom;
   btn.disabled=true; btn.textContent='Création...';
   try{
     if(!sb){ showMsg('Connexion en cours, réessaie dans 2 secondes...', false); btn.disabled=false; btn.textContent='Créer mon compte →'; return; }
@@ -417,7 +418,7 @@ async function inscrire(){
       if(emailExistant){
         const {data: login, error: errLogin} = await sb.auth.signInWithPassword({email: String(emailExistant).toLowerCase(), password});
         if(!errLogin && login?.user){
-          const {data: prof} = await sb.from('profiles').select('id,nom,full_name,type,type_compte,role,pays,ville,localite').eq('id', login.user.id).single();
+          const {data: prof} = await sb.from('profiles').select('id,nom,full_name,type,type_compte,role,pays,ville,localite').eq('id', login.user.id).maybeSingle();
           const typeExiste = prof ? (prof.type||prof.type_compte||prof.role||typeFinal) : typeFinal;
           localStorage.setItem('rocy_user_id', login.user.id); localStorage.setItem('rocy_user_nom', prof?.nom||prof?.full_name||nom); localStorage.setItem('rocy_user_type', typeExiste); localStorage.setItem('rocy_role', typeExiste); localStorage.setItem('rocy_user_email', String(emailExistant).toLowerCase()); localStorage.setItem('rocy_email', String(emailExistant).toLowerCase()); localStorage.setItem('rocy_user_whatsapp', whatsapp); localStorage.setItem('rocy_user_pays', prof?.pays||pays); localStorage.setItem('rocy_user_ville', prof?.ville||ville); localStorage.setItem('rocy_user_localite', prof?.localite||localite);
           showMsg('✅ Ce compte existe déjà, on te connecte...', true);
@@ -427,7 +428,24 @@ async function inscrire(){
         }
       }
     }catch(e){}
-    const {data: authData, error: authErr} = await sb.auth.signUp({email: emailFinal, password});
+    const {data: authData, error: authErr} = await sb.auth.signUp({
+      email: emailFinal,
+      password,
+      options: {
+        data: {
+          nom: nomFinalPre,
+          full_name: nomFinalPre,
+          type_compte: typeFinal,
+          role: typeFinal,
+          type: typeFinal,
+          type_fournisseur: typeFinal === 'prestataire' ? typeFournisseur : typeFinal,
+          pays: pays,
+          ville: ville,
+          localite: localite,
+          whatsapp: whatsapp
+        }
+      }
+    });
     if(authErr){
       if(authErr.message.toLowerCase().includes('already') || authErr.message.toLowerCase().includes('exists')){
         showMsg('Ce email existe déjà, connecte-toi.', false);
@@ -445,8 +463,8 @@ async function inscrire(){
       const {data: login2} = await sb.auth.signInWithPassword({email: emailFinal, password});
       if(login2?.user) userId = login2.user.id;
     }
-    const univers = typeFinal==='prestataire' ? universPourCategorie(categorie) : null;
     const nomFinal = (typeFinal==='prestataire' && typeFournisseur==='entreprise') ? (nom || nomContact || nomEntreprise) : nom;
+    const univers = typeFinal==='prestataire' ? universPourCategorie(categorie) : null;
     const payload = {
       id:userId, nom: nomFinal, full_name: nomFinal, whatsapp, phone: whatsapp,
       email:emailFinal,
@@ -467,10 +485,10 @@ async function inscrire(){
       statut_validation:(typeFinal==='prestataire'?'en_attente':'valide'),
       status_prestataire:typeFinal==='prestataire'?'en_attente':'valide'
     };
-    let {data,error}=await sb.from('profiles').insert([payload]).select().single();
+    let {data,error}=await sb.from('profiles').upsert([payload], {onConflict:'id'}).select().single();
     if(error && (error.message.includes("Could not find the") || error.message.includes("column"))){
-      const minimal = { id:userId, nom: nomFinal, whatsapp, phone: whatsapp, email:emailFinal, type:typeFinal, type_compte:typeFinal, pays, ville, localite, quartier: localite, quartier_verifie: false, verification_quartier: 'non_envoye', photo_url:photoBase64||null, avatar_url:photoBase64||null, photo_profil_url:photoBase64||null, description_profil:description||null, categorie_prestataire:typeFinal==='prestataire'?categorie:null, statut_validation:(typeFinal==='prestataire'?'en_attente':'valide'), status_prestataire:typeFinal==='prestataire'?'en_attente':'valide' };
-      const retry = await sb.from('profiles').insert([minimal]).select().single();
+      const minimal = { id:userId, nom: nomFinal, whatsapp, phone: whatsapp, email:emailFinal, type:typeFinal, type_compte:typeFinal, pays, ville, localite, quartier: localite, quartier_verifie: false, verification_quartier: 'non_envoye', photo_url:photoBase64||null, avatar_url:photoBase64||null, photo_profil_url:photoBase64||null, description_profil:description||null, categorie_prestataire:typeFinal==='prestataire'?categorie:null, univers:univers, statut_validation:(typeFinal==='prestataire'?'en_attente':'valide'), status_prestataire:typeFinal==='prestataire'?'en_attente':'valide' };
+      const retry = await sb.from('profiles').upsert([minimal], {onConflict:'id'}).select().single();
       data = retry.data; error = retry.error;
     }
     if(error){ showMsg('Erreur profil : '+error.message, false); btn.disabled=false; btn.textContent='Créer mon compte →'; return; }
