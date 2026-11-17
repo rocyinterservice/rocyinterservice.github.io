@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title data-i18n="connexionTitre">Connexion - Rocyinter</title>
+<title data-i18n="connexionTitre">Connexion - Rocyinter service</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="rocy-layout.js"></script>
 <style>
@@ -199,14 +199,21 @@ async function connecter(){
   try{
     const {data: login, error: errLogin} = await sb.auth.signInWithPassword({email: emailCherche, password});
     if(errLogin || !login?.user){ showMsg('Email / WhatsApp ou mot de passe incorrect.', false); btn.disabled = false; btn.textContent = 'Se connecter →'; return; }
-    const {data: prof, error: perr} = await sb.from('profiles').select('id,nom,full_name,email,whatsapp,phone,type,type_compte,role,pays,country,ville,city,localite').eq('id', login.user.id).single();
+    const {data: prof, error: perr} = await sb.from('profiles').select('id,nom,full_name,email,whatsapp,phone,type,type_compte,role,type_fournisseur,pays,country,ville,city,localite,quartier').eq('id', login.user.id).single();
     if(perr || !prof){ showMsg('Profil introuvable. Réinscris-toi.', false); btn.disabled = false; btn.textContent = 'Se connecter →'; return; }
     const emailFinal = String(prof.email || emailCherche || '').toLowerCase().trim();
+    // CORRIGÉ : on garde professionnel / entreprise / fournisseur, on ne les force plus en client
     let typeFinal = String(prof.type || prof.type_compte || prof.role || 'client').toLowerCase().trim();
     if(typeFinal === 'admin' && emailFinal !== ADMIN_EMAIL){
       typeFinal = 'client';
     }
-    if(typeFinal !== 'admin' && typeFinal !== 'prestataire' && typeFinal !== 'livreur' && typeFinal !== 'client') typeFinal = 'client';
+    const TYPES_VALIDES = ['admin','prestataire','livreur','client','professionnel','entreprise','fournisseur','pro'];
+    if(!TYPES_VALIDES.includes(typeFinal)){
+      // Si c'est un type_fournisseur, on le garde
+      const tf = String(prof.type_fournisseur||'').toLowerCase().trim();
+      if(TYPES_VALIDES.includes(tf)) typeFinal = tf;
+      else typeFinal = 'client';
+    }
     const nomFinal = prof.nom || prof.full_name || '';
     const langueAvant = localStorage.getItem('rocy_langue');
     localStorage.setItem('rocy_user_id', prof.id);
@@ -218,12 +225,12 @@ async function connecter(){
     localStorage.setItem('rocy_user_whatsapp', prof.whatsapp || prof.phone || '');
     localStorage.setItem('rocy_user_pays', prof.pays || prof.country || 'Bénin');
     localStorage.setItem('rocy_user_ville', prof.ville || prof.city || '');
-    localStorage.setItem('rocy_user_localite', prof.localite || '');
+    localStorage.setItem('rocy_user_localite', prof.localite || prof.quartier || '');
     if(langueAvant) localStorage.setItem('rocy_langue', langueAvant);
     showMsg('✅ Bienvenue ' + nomFinal + ' ! Redirection...', true);
     setTimeout(()=>{
       if(typeFinal==='admin') location.href='admin.html';
-      else if(typeFinal==='prestataire' || typeFinal==='livreur') location.href='dashboard-prestataire.html';
+      else if(['prestataire','livreur','professionnel','entreprise','fournisseur','pro'].includes(typeFinal)) location.href='dashboard-prestataire.html';
       else location.href='dashboard-client.html';
     }, 800);
   }catch(e){ showMsg('Erreur : '+e.message, false); btn.disabled=false; btn.textContent='Se connecter →'; }
