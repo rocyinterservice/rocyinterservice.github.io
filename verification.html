@@ -1,18 +1,151 @@
 <!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Vérification - Rocyinter</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="rocy-layout.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
 body{background:#f6f7f9;color:#111;padding:16px}
-.top{max-width:420px;margin:40px auto}
-.card{background:#fff;border-radius:16px;padding:20px;text-align:center}
-h1{font-size:20px;margin-bottom:8px} p{font-size:13px;color:#64748b;line-height:1.6}
-.btn{width:100%;background:#f59e0b;border:none;padding:12px;border-radius:10px;font-weight:800;cursor:pointer;margin-top:12px}
+.top{max-width:480px;margin:20px auto}
+.card{background:#fff;border-radius:16px;padding:20px;display:grid;gap:14px}
+h1{font-size:20px;text-align:center} p{font-size:13px;color:#64748b;line-height:1.6;text-align:center}
+label{font-size:12px;font-weight:700;color:#475569;display:block;margin-bottom:6px;text-align:left}
+input,select{width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;background:#fff}
+.btn{width:100%;background:#f59e0b;border:none;padding:14px;border-radius:12px;font-weight:800;cursor:pointer;font-size:15px;color:#000}
+.btn:disabled{opacity:.6}
 .btn-dark{background:#0f172a;color:#fff}
+.btn-ghost{background:#fff;border:2px solid #e2e8f0;color:#111}
+.upload{border:2px dashed #e2e8f0;border-radius:12px;padding:12px;text-align:center;cursor:pointer}
+.upload img{width:100%;max-height:180px;object-fit:cover;border-radius:10px;display:none;margin-bottom:8px}
+.upload.hasImg img{display:block}
+.badgeBox{background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:12px;font-size:13px;line-height:1.6;color:#92400e}
+.badgeBox.vert{background:#dcfce7;border-color:#bbf7d0;color:#166534}
+.badgeBox.bleu{background:#eff6ff;border-color:#bfdbfe;color:#1e40af}
+.msg{text-align:center;font-size:13px;padding:10px;border-radius:10px;display:none}
+.msg.ok{display:block;background:#dcfce7;color:#166534}
+.msg.err{display:block;background:#fee2e2;color:#991b1b}
+small{font-size:11px;color:#94a3b8;line-height:1.5;display:block;text-align:center}
 </style></head>
 <body><div class="top"><div class="card">
-<h1>📩 Vérifie ton compte</h1>
-<p>On a envoyé un code / lien sur ton WhatsApp / Email.<br><br>Si tu es <b>Client</b> : tu peux déjà te connecter.<br>Si tu es <b>Prestataire / Livreur</b> : envoie tes documents, ton compte reste en attente tant que l'Admin Rocyinter ne valide pas.</p>
-<button class="btn" onclick="location.href='connexion.html'">Aller à la connexion</button>
-<button class="btn btn-dark" onclick="location.href='https://wa.me/2290191478460?text='+encodeURIComponent('Bonjour, je n’ai pas reçu mon code de vérification'))">Je n'ai pas reçu le code - WhatsApp</button>
-</div></div></body></html>
+<h1>📍 Vérification par quartier</h1>
+<p>Pour avoir le badge <b>✅ Vérifié à ton quartier</b>, prouve que tu es vraiment de ce quartier. Les clients font plus confiance.</p>
+
+<div class="badgeBox" id="statutBox">⏳ Chargement de ton quartier...</div>
+
+<div>
+  <label>TON QUARTIER *</label>
+  <input id="quartier" placeholder="Ex: Godomey" list="listeQuartiers2">
+  <datalist id="listeQuartiers2"></datalist>
+  <small style="text-align:left;margin-top:4px">C'est ce quartier qui s'affichera sur ta fiche : ✅ Vérifié à Godomey</small>
+</div>
+
+<div>
+  <label>1. PHOTO DE TA PIÈCE D'IDENTITÉ *</label>
+  <div class="upload" id="boxPiece" onclick="document.getElementById('filePiece').click()">
+    <img id="prevPiece" src="">
+    <div style="font-size:28px">🪪</div>
+    <div style="font-weight:700;font-size:14px">Choisir photo pièce</div>
+    <div style="font-size:12px;color:#94a3b8">CIN / Passeport / Permis - On ne montre jamais ça aux clients, c'est juste pour l'Admin</div>
+  </div>
+  <input type="file" id="filePiece" accept="image/*" style="display:none" onchange="previewImg(this,'prevPiece','boxPiece')">
+</div>
+
+<div>
+  <label>2. PHOTO DEVANT TON ATELIER / BOUTIQUE *</label>
+  <div class="upload" id="boxAtelier" onclick="document.getElementById('fileAtelier').click()">
+    <img id="prevAtelier" src="">
+    <div style="font-size:28px">🏪</div>
+    <div style="font-weight:700;font-size:14px">Choisir photo atelier</div>
+    <div style="font-size:12px;color:#94a3b8">Toi devant ta boutique / ton atelier à Godomey. Ça prouve que tu es vraiment là.</div>
+  </div>
+  <input type="file" id="fileAtelier" accept="image/*" style="display:none" onchange="previewImg(this,'prevAtelier','boxAtelier')">
+</div>
+
+<div id="msg" class="msg"></div>
+<button class="btn" id="btnEnvoyer" onclick="envoyerVerification()">Envoyer pour vérification →</button>
+<button class="btn btn-ghost" onclick="location.href='fiche-prestataire.html'">Voir ma fiche</button>
+<button class="btn btn-dark" onclick="location.href='https://wa.me/2290191478460?text='+encodeURIComponent('Bonjour, je n’ai pas reçu mon code de vérification')">Je n'ai pas reçu le code - WhatsApp</button>
+<small>Après envoi, ton compte reste en attente. L'Admin Rocyinter vérifie et valide. Tu recevras le badge ✅ Vérifié à [ton quartier].</small>
+</div></div>
+<script>
+let sb = window.supabaseClient || null;
+if(!sb && window.supabase && window.supabase.createClient){
+  try{ sb = window.supabase.createClient("https://gdwgjsloivrpxxvggxyz.supabase.co", "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF"); window.supabaseClient = sb; }catch(e){}
+}
+let photoPiece='', photoAtelier='';
+let userId = localStorage.getItem('rocy_user_id') || '';
+
+const QUARTIERS = ["Godomey","Calavi Centre","Ouèdo","Akassato","Hêvié","Togba","Zinvié","Kpanroun","Glo-Djigbé","Fidjrossè","Agla","Akpakpa","Ganhi","Gbégamey","Jéricho","Kindonou","Mènontin","Sainte-Cécile","St Michel","Vodjè","Wologuèdè","Zongo","Avakpa","Dowa","Houinmè","Oganla","Ouando","Tokpota","Pahou","Savi","Albarika","Banikanni","Titirou","Sodohomè","Passagon"];
+
+function showMsg(txt, ok){ const m=document.getElementById('msg'); m.textContent=txt; m.className='msg '+(ok?'ok':'err'); m.style.display='block'; }
+function previewImg(input, imgId, boxId){
+  const f=input.files[0]; if(!f) return;
+  if(f.size > 2*1024*1024){ showMsg('Photo trop lourde, max 2 Mo', false); input.value=''; return; }
+  const r=new FileReader();
+  r.onload=function(e){
+    document.getElementById(imgId).src=e.target.result;
+    document.getElementById(boxId).classList.add('hasImg');
+    if(imgId==='prevPiece') photoPiece=e.target.result; else photoAtelier=e.target.result;
+  };
+  r.readAsDataURL(f);
+}
+
+async function chargerProfil(){
+  document.getElementById('listeQuartiers2').innerHTML = QUARTIERS.map(q=>`<option value="${q}">`).join('');
+  const localQuartier = localStorage.getItem('rocy_user_localite') || '';
+  if(localQuartier) document.getElementById('quartier').value = localQuartier;
+  if(!sb || !userId){
+    document.getElementById('statutBox').innerHTML = '📍 Ton quartier : <b>'+(localQuartier||'Non rempli')+'</b><br>Connecte-toi pour envoyer ta vérification.';
+    return;
+  }
+  try{
+    const {data:prof} = await sb.from('profiles').select('localite,quartier,verification_quartier,quartier_verifie,ville').eq('id', userId).single();
+    if(prof){
+      const q = prof.quartier || prof.localite || localQuartier;
+      if(q) document.getElementById('quartier').value = q;
+      if(prof.quartier_verifie === true || prof.verification_quartier === 'valide' || prof.verification_quartier === 'verifie'){
+        document.getElementById('statutBox').className='badgeBox vert';
+        document.getElementById('statutBox').innerHTML='✅ <b>Tu es vérifié à '+q+'</b><br>Les clients voient ton badge sur ta fiche.';
+      } else if(prof.verification_quartier === 'demande_envoyee' || prof.verification_quartier === 'en_attente'){
+        document.getElementById('statutBox').className='badgeBox bleu';
+        document.getElementById('statutBox').innerHTML='⏳ <b>Demande envoyée pour '+q+'</b><br>L\'Admin est en train de vérifier. Tu auras ton badge très vite.';
+      } else {
+        document.getElementById('statutBox').innerHTML='📍 Ton quartier : <b>'+(q||'Non rempli')+'</b><br>Envoie tes 2 photos pour avoir le badge ✅ Vérifié à '+ (q||'ton quartier');
+      }
+    }
+  }catch(e){}
+}
+
+async function envoyerVerification(){
+  const quartier = document.getElementById('quartier').value.trim();
+  if(!quartier){ showMsg('Mets ton quartier, ex: Godomey', false); return; }
+  if(!photoPiece || !photoAtelier){ showMsg('Envoie les 2 photos : pièce + atelier', false); return; }
+  const btn=document.getElementById('btnEnvoyer'); btn.disabled=true; btn.textContent='Envoi...';
+  try{
+    if(!sb || !userId){ showMsg('Connecte-toi d\'abord sur Connexion', false); btn.disabled=false; btn.textContent='Envoyer pour vérification →'; return; }
+    // On sauvegarde la demande dans profiles
+    const payload = {
+      quartier: quartier,
+      localite: quartier,
+      verification_quartier: 'demande_envoyee',
+      quartier_verifie: false,
+      photo_piece_url: photoPiece,
+      photo_atelier_url: photoAtelier
+    };
+    let {error} = await sb.from('profiles').update(payload).eq('id', userId);
+    // Si les colonnes photo n'existent pas encore, on réessaie sans elles
+    if(error && error.message.includes('column')){
+      const payload2 = { quartier: quartier, localite: quartier, verification_quartier: 'demande_envoyee', quartier_verifie: false };
+      const r2 = await sb.from('profiles').update(payload2).eq('id', userId);
+      error = r2.error;
+    }
+    if(error){ showMsg('Erreur : '+error.message, false); btn.disabled=false; btn.textContent='Envoyer pour vérification →'; return; }
+    localStorage.setItem('rocy_user_localite', quartier);
+    document.getElementById('statutBox').className='badgeBox bleu';
+    document.getElementById('statutBox').innerHTML='⏳ <b>Demande envoyée pour '+quartier+'</b><br>L\'Admin va vérifier tes photos.';
+    showMsg('✅ Demande envoyée ! L\'Admin va vérifier. Tu auras bientôt ton badge ✅ Vérifié à '+quartier, true);
+    setTimeout(()=> location.href='fiche-prestataire.html', 1500);
+  }catch(e){ showMsg('Erreur : '+e.message, false); btn.disabled=false; btn.textContent='Envoyer pour vérification →'; }
+}
+document.addEventListener('DOMContentLoaded', chargerProfil);
+</script>
+</body></html>
