@@ -6,10 +6,11 @@
 
 // --- 1. CONFIG SUPABASE ---
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
-const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqPqLKlI9Q_sqzcR6dF";
+const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 let supabaseClient = null;
-if (window.supabase) {
+if (window.supabase && window.supabase.createClient) {
   supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  window.supabaseClient = supabaseClient;
 }
 
 // --- 2. ETAT GLOBAL ---
