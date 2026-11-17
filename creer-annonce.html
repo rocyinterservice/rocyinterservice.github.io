@@ -64,7 +64,7 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:8p
     <div><label data-i18n="pays">PAYS *</label><select id="pays"></select></div>
     <div><label data-i18n="ville">VILLE *</label><input id="ville" placeholder="Ex: Calavi" maxlength="60"></div>
   </div>
-  <div><label data-i18n="localite">LOCALITÉ / QUARTIER *</label><input id="localite" placeholder="Ex: Godomey" maxlength="80"></div>
+  <div><label data-i18n="localite">LOCALITÉ / QUARTIER *</label><input id="localite" placeholder="Ex: Godomey, Calavi Centre, Fidjrossè..." maxlength="80"></div>
   <div><label>PHOTO (lien - optionnel)</label><input id="photo" placeholder="Collez un lien photo https://..." maxlength="500"></div>
   <div id="msg" class="msg"></div>
   <button class="btn" id="btnPublier" onclick="publier()">Publier mon annonce →</button>
@@ -98,9 +98,14 @@ function verifierAbonnement(profil){
   const fin = profil.abonnement_fin ? new Date(profil.abonnement_fin) : null;
   const actif = profil.abonnement_actif === true || profil.abonnement_statut === 'actif';
   const offert = profil.abonnement_offert === true || profil.premier_mois_offert === true;
+  const expireExplicit = profil.abonnement_statut === 'expire' || profil.abonnement_statut === 'expiré' || profil.abonnement_statut === 'suspendu';
   if(fin && fin >= auj) return {ok:true, type:'paye', fin};
+  if(fin && fin < auj) return {ok:false, type:'expire', fin};
   if(!fin && (actif || offert)) return {ok:true, type:'offert', fin:null};
   if(actif && !fin) return {ok:true, type:'offert', fin:null};
+  // CORRIGÉ : jamais eu d'abonnement = 1er mois offert, on laisse publier
+  // Seulement si statut = expire explicitement, on bloque
+  if(!fin && !profil.abonnement_statut && !profil.abonnement_actif && !expireExplicit) return {ok:true, type:'offert', fin:null};
   return {ok:false, type:'expire', fin};
 }
 function afficherBandeauAbo(res){
@@ -108,11 +113,11 @@ function afficherBandeauAbo(res){
   const btn=document.getElementById('btnPublier');
   if(res.ok && res.type==='offert'){
     box.innerHTML=`<div class="bandeau-abo abo-offert">🎁 1er mois offert - Tu peux publier. Commissions dues dès la 1ère mission.</div>`;
-    btn.disabled=false;
+    btn.disabled=false; btn.textContent='Publier mon annonce →';
   } else if(res.ok){
     const dateFin = res.fin ? res.fin.toLocaleDateString('fr-FR') : '';
     box.innerHTML=`<div class="bandeau-abo abo-ok">✅ Abonnement à jour ${dateFin ? 'jusqu\'au '+dateFin : ''} - Tu peux publier.</div>`;
-    btn.disabled=false;
+    btn.disabled=false; btn.textContent='Publier mon annonce →';
   } else {
     box.innerHTML=`<div class="bandeau-abo abo-expire">⛔ Ton abonnement est expiré. Renouvelle pour publier une nouvelle annonce.<br><br><button class="btn btn-dark" onclick="location.href='abonnement.html'">Renouveler mon abonnement →</button></div>`;
     btn.disabled=true; btn.textContent='⛔ Abonnement expiré - Publier bloqué';
@@ -146,25 +151,26 @@ async function init(){
   if(!user){ location.href='connexion.html'; return; }
   uidActuel = user.id;
   const {data: profil, error: errProfil} = await sb.from('profiles')
-    .select('id, type_compte, role, activites, categorie, ville, localite, pays, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert')
+    .select('id, type_compte, role, type_fournisseur, nom_entreprise, activites, categorie, categorie_prestataire, ville, localite, quartier, pays, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert')
     .eq('id', uidActuel).single();
   if(errProfil || !profil){ showMsg('Profil introuvable. Reconnecte-toi.', false); await sb.auth.signOut(); setTimeout(()=> location.href='connexion.html', 1200); return; }
   profilFournisseur = profil;
-  const roleReel = (profil.type_compte || profil.role || '').toLowerCase();
+  // CORRIGÉ : tous les types fournisseurs peuvent publier
+  const roleReel = (profil.type_compte || profil.role || profil.type_fournisseur || '').toLowerCase();
   if(roleReel === 'client'){ showMsg('Client : crée un compte Prestataire pour publier.', false); setTimeout(()=> location.href='inscription.html?type=prestataire', 1500); return; }
   if(roleReel === 'admin'){ location.href='admin.html'; return; }
-  if(roleReel !== 'prestataire' && roleReel !== 'livreur' && roleReel !== 'fournisseur'){
+  if(!['prestataire','livreur','fournisseur','professionnel','entreprise','pro'].includes(roleReel)){
     showMsg('Compte non autorisé à publier.', false); return;
   }
   remplirPays(profil.pays);
   document.getElementById('ville').value = profil.ville || '';
-  document.getElementById('localite').value = profil.localite || '';
+  document.getElementById('localite').value = profil.localite || profil.quartier || '';
   const res = verifierAbonnement(profil);
   abonnementAJour = res.ok;
   afficherBandeauAbo(res);
   let acts = profil.activites || [];
   if(typeof acts === 'string'){ try{ acts = JSON.parse(acts); }catch(e){ acts = [acts]; } }
-  if(!acts.length && profil.categorie) acts = [profil.categorie];
+  if(!acts.length && (profil.categorie || profil.categorie_prestataire)) acts = [profil.categorie || profil.categorie_prestataire];
   if(roleReel === 'livreur' && !acts.length) acts = ['Livraison moto'];
   mesActivites = acts;
   const sel = document.getElementById('categorie');
@@ -214,13 +220,16 @@ async function publier(){
   btn.disabled = true; btn.textContent = 'Publication...';
   const {error} = await sb.from('annonces').insert([{
     prestataire_id: uid,
+    user_id: uid,
     univers: universChoisi,
     categorie, titre, description,
     prix_fixe: prixFixe,
     prix_indicatif: prixFixe ? Number(prix) : (prix ? Number(prix) : null),
     pays, ville, localite,
+    quartier: localite,
     photo_url: photo || null,
-    status: 'en_attente'
+    status: 'en_attente',
+    statut: 'en_attente'
   }]).select('id').single();
   if(error){ showMsg('Erreur : ' + error.message, false); btn.disabled = false; btn.textContent = 'Publier mon annonce →'; return; }
   showMsg('✅ Annonce envoyée ! En attente de validation.', true);
