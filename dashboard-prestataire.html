@@ -43,6 +43,11 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .section h2{font-size:17px;margin:18px 0 10px}
 .empty{background:#fff;border:1px dashed #cbd5e1;border-radius:14px;padding:20px;text-align:center;color:#64748b;font-size:13px}
+.profilBox{background:#fff;border-radius:14px;padding:12px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.04);display:flex;gap:12px;align-items:center}
+.profilBox img{width:56px;height:56px;border-radius:50%;object-fit:cover;background:#f1f5f9}
+.profilBox .info{flex:1}
+.profilBox .info b{font-size:15px}
+.profilBox .info span{font-size:12px;color:#64748b;display:block;margin-top:2px}
 </style>
 </head>
 <body>
@@ -50,6 +55,20 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px}
 <h1><span data-i18n="bonjour">Bonjour</span> <span id="nomUser">Prestataire</span> 👋</h1>
 <div id="badgeType"></div>
 <p class="sub" id="infoUser">Chargement...</p>
+
+<!-- PROFIL + QUARTIER -->
+<div class="profilBox" id="profilBox">
+  <img id="photoProfil" src="" alt="" onerror="this.style.display='none'">
+  <div class="info">
+    <b id="profilNom">Mon Profil</b>
+    <span id="profilQuartier">📍 Quartier : ...</span>
+    <span id="profilBadge">⏳ Vérification...</span>
+  </div>
+</div>
+<button class="btn btn-dark" onclick="location.href='profil.html'">👤 Mon Profil</button>
+<button class="btn btn-green" id="btnVerif" onclick="location.href='verification.html'" style="display:none">📍 Faire vérifier mon quartier → Obtenir le badge ✅</button>
+<button class="btn" style="background:#eff6ff;color:#1e40af" id="btnVerifAttente" onclick="location.href='verification.html'" style="display:none">⏳ Vérification en attente - Voir le statut</button>
+
 <div id="bannerStatut"></div>
 <div id="bandeauAbo"></div>
 <div class="stats">
@@ -122,9 +141,7 @@ function badgeAnnonce(a){
   if(s==='rejete' || s==='refuse' || s==='refusé' || s==='rejeté') return '<span class="badge rejete">❌ Rejetée</span>';
   return '<span class="badge attente">⏳ En attente</span>';
 }
-function nomAffiche(profil){
-  return profil.nom_entreprise || profil.nom || 'Prestataire';
-}
+function nomAffiche(profil){ return profil.nom_entreprise || profil.nom || 'Prestataire'; }
 function badgeTypeFournisseur(profil){
   const type = String(profil.type_fournisseur || profil.type_compte || profil.role || '').toLowerCase();
   const nomEnt = profil.nom_entreprise;
@@ -138,16 +155,14 @@ async function charger(){
   uid = user.id;
   let profil = null;
   let res1 = await sb.from('profiles')
-    .select('id, nom, nom_entreprise, type_fournisseur, type_compte, role, localite, ville, pays, statut_validation, status_prestataire, statut, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert')
+    .select('id, nom, full_name, nom_entreprise, type_fournisseur, type_compte, role, localite, quartier, ville, pays, quartier_verifie, verification_quartier, photo_url, avatar_url, photo_profil_url, statut_validation, status_prestataire, statut, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert')
     .eq('id', uid).maybeSingle();
   if(res1.error){
     let res2 = await sb.from('profiles')
-      .select('id, nom, type_compte, role, localite, ville, pays, statut_validation, status_prestataire, statut, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert')
+      .select('id, nom, type_compte, role, localite, quartier, ville, pays, quartier_verifie, verification_quartier, statut_validation, status_prestataire, statut, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert')
       .eq('id', uid).maybeSingle();
     profil = res2.data;
-  } else {
-    profil = res1.data;
-  }
+  } else { profil = res1.data; }
   if(!profil){ location.href='connexion.html'; return; }
   const roleReel = String(profil.type_compte || profil.role || profil.type_fournisseur || '').toLowerCase();
   const ROLES_FOURNISSEUR = ['prestataire','livreur','fournisseur','professionnel','entreprise','pro'];
@@ -157,10 +172,37 @@ async function charger(){
   document.getElementById('nomUser').textContent = nomAffiche(profil);
   document.getElementById('badgeType').innerHTML = badgeTypeFournisseur(profil);
   if(profil.nom_entreprise && profil.nom){
-    document.getElementById('infoUser').textContent = `Contact : ${profil.nom} • ${profil.localite || ''} - ${profil.ville || ''} • ${profil.pays || ''}`;
+    document.getElementById('infoUser').textContent = `Contact : ${profil.nom} • ${profil.localite || profil.quartier || ''} - ${profil.ville || ''} • ${profil.pays || ''}`;
   } else {
-    document.getElementById('infoUser').textContent = `${profil.localite || ''} - ${profil.ville || ''} • ${profil.pays || ''}`;
+    document.getElementById('infoUser').textContent = `${profil.localite || profil.quartier || ''} - ${profil.ville || ''} • ${profil.pays || ''}`;
   }
+  // --- PROFIL / QUARTIER ---
+  const quartier = profil.quartier || profil.localite || '';
+  const photo = profil.photo_profil_url || profil.photo_url || profil.avatar_url || '';
+  document.getElementById('profilNom').textContent = nomAffiche(profil);
+  document.getElementById('profilQuartier').textContent = '📍 Quartier : ' + (quartier || 'Non rempli');
+  const badgeEl = document.getElementById('profilBadge');
+  const btnVerif = document.getElementById('btnVerif');
+  const btnAttente = document.getElementById('btnVerifAttente');
+  const stQ = profil.verification_quartier || 'non_envoye';
+  if(profil.quartier_verifie === true || stQ === 'valide' || stQ === 'verifie'){
+    badgeEl.textContent = '✅ Vérifié à ' + quartier;
+    badgeEl.style.color = '#166534';
+    btnVerif.style.display='none'; btnAttente.style.display='none';
+  } else if(stQ === 'en_attente' || stQ === 'demande_envoyee'){
+    badgeEl.textContent = '⏳ Vérification en attente pour ' + quartier;
+    badgeEl.style.color = '#1e40af';
+    btnVerif.style.display='none'; btnAttente.style.display='block';
+  } else if(stQ === 'refuse' || stQ === 'rejete'){
+    badgeEl.textContent = '❌ Vérification refusée - Renvoie tes photos';
+    badgeEl.style.color = '#991b1b';
+    btnVerif.style.display='block'; btnAttente.style.display='none';
+  } else {
+    badgeEl.textContent = '❌ Non vérifié - Les clients te feront moins confiance';
+    badgeEl.style.color = '#991b1b';
+    btnVerif.style.display='block'; btnAttente.style.display='none';
+  }
+  if(photo){ const img=document.getElementById('photoProfil'); img.src=photo; img.style.display='block'; }
   const statut = String(profil?.statut_validation || profil?.status_prestataire || profil?.statut || 'en_attente').toLowerCase();
   const banner = document.getElementById('bannerStatut');
   const t = window.rocyT || (k=>k);
