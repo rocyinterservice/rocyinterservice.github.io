@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Favoris - Rocyinter</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
 body{background:#f6f7f9;color:#111;padding:16px}
@@ -20,14 +20,16 @@ h1{font-size:22px;margin:14px 0 12px} h1 span{color:#f59e0b}
 <script>
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+window.supabaseClient = sb;
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function charger(){
-  const uid = localStorage.getItem('rocy_user_id');
-  if(!uid){location.href='connexion.html';return;}
+  const {data:{user}} = await sb.auth.getUser();
+  if(!user){location.href='connexion.html';return;}
   const favs = JSON.parse(localStorage.getItem('rocy_favoris')||'[]');
   if(!favs.length){document.getElementById('liste').innerHTML='<p style="text-align:center;color:#64748b;padding:20px;background:#fff;border-radius:16px">Aucun favori pour l’instant.<br><br><button class="btn" onclick="location.href=\'index.html\'">Découvrir</button></p>';return;}
-  const {data} = await supabase.from('annonces').select('*, profiles(nom)').in('id', favs);
-  document.getElementById('liste').innerHTML = (data||[]).map(a=>`<div class="card"><h3>${a.titre}</h3><p>👤 ${a.profiles?.nom} • ${a.categorie}<br>📍 ${a.localite} - ${a.ville}<br>${a.prix_indicatif>0?Number(a.prix_indicatif).toLocaleString()+' FCFA':'💬 Prix à discuter'}</p><button class="btn" onclick="voir('${a.id}','${a.univers}')">Voir</button><button class="btn btn-dark" onclick="retirer('${a.id}')">Retirer des favoris</button></div>`).join('');
+  const {data} = await sb.from('annonces').select('id, titre, categorie, univers, localite, ville, prix_indicatif, profiles(nom)').in('id', favs).eq('status','valide');
+  document.getElementById('liste').innerHTML = (data||[]).map(a=>`<div class="card"><h3>${esc(a.titre)}</h3><p>👤 ${esc(a.profiles?.nom)} • ${esc(a.categorie)}<br>📍 ${esc(a.localite)} - ${esc(a.ville)}<br>${a.prix_indicatif>0?Number(a.prix_indicatif).toLocaleString()+' FCFA':'💬 Prix à discuter'}</p><button class="btn" onclick="voir('${esc(a.id)}','${esc(a.univers)}')">Voir</button><button class="btn btn-dark" onclick="retirer('${esc(a.id)}')">Retirer des favoris</button></div>`).join('');
 }
 function voir(id,univers){ if(univers==='immobilier'){localStorage.setItem('fiche_parcelle_id',id); location.href='fiche-parcelle.html';} else {localStorage.setItem('fiche_prestataire_id',id); location.href='fiche-prestataire.html';} }
 function retirer(id){let f=JSON.parse(localStorage.getItem('rocy_favoris')||'[]'); f=f.filter(x=>x!==id); localStorage.setItem('rocy_favoris',JSON.stringify(f)); charger();}
