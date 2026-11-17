@@ -1,12 +1,21 @@
-// rocy-layout.js - ROCYINTER SERVICE - HEADER FIXE EN SUPERPOSITION + TRADUCTION + MONNAIE + ROLES
+// rocy-layout.js - ROCYINTER SERVICE - HEADER FIXE + TRADUCTION + MONNAIE + ROLES - CORRIGÉ
 (function(){
+  // ✅ CORRECTION 1 : UN SEUL client Supabase pour tout le site, créé une seule fois
+  // On ne crée plus de client dans verifierAdmin(), ni dans chaque page
+  if (window.supabase && !window.supabaseClient) {
+    try {
+      window.supabaseClient = window.supabase.createClient("https://gdwgjsloivrpxxvggxyz.supabase.co", "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF");
+    } catch(e) {}
+  }
+  // Pour que les anciennes pages qui utilisent "supabase" continuent de marcher
+  // on ne déclare PAS "const supabase" ici, sinon ça casse les autres pages
+
   const uid = localStorage.getItem('rocy_user_id');
   const typeLocal = localStorage.getItem('rocy_user_type') || localStorage.getItem('rocy_role') || '';
   const nom = localStorage.getItem('rocy_user_nom') || '';
   const isConnecte = !!uid;
   const isPresta = typeLocal === 'prestataire' || typeLocal === 'livreur';
 
-  // LANGUES : court = ce qu'on voit quand c'est fermé, long = ce qu'on voit dans la liste ouverte
   const LANGUES = [
     {code:'fr', court:'FR', long:'Français', flag:'🇫🇷'},
     {code:'en', court:'EN', long:'English', flag:'🇬🇧'},
@@ -66,7 +75,9 @@
     const m = document.getElementById('rocyLangueMenu');
     if(m) m.classList.toggle('show');
   };
-  document.addEventListener('click', function(){
+  // ✅ CORRECTION 2 : ne fermer le menu langue QUE si on clique en dehors du bouton langue
+  document.addEventListener('click', function(e){
+    if(e.target.closest('.rocy-langue-wrap')) return;
     const m = document.getElementById('rocyLangueMenu');
     if(m) m.classList.remove('show');
   });
@@ -139,11 +150,13 @@
     return Math.round(v).toLocaleString('fr-FR') + ' ' + devise;
   };
   window.rocySetDevise = function(d){ localStorage.setItem('rocy_devise', d); location.reload(); };
+
+  // ✅ CORRECTION 3 : utiliser le client déjà créé, ne plus en créer un nouveau
   async function verifierAdmin(){
     if(!uid || typeLocal !== 'admin') return false;
     try{
-      if(!window.supabase) return false;
-      const sb = window.supabase.createClient("https://gdwgjsloivrpxxvggxyz.supabase.co", "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF");
+      const sb = window.supabaseClient;
+      if(!sb) return false;
       const {data} = await sb.from('profiles').select('type, type_compte, role').eq('id', uid).single();
       if(!data) return false;
       const vraiType = data.type || data.type_compte || data.role || '';
@@ -151,6 +164,7 @@
       return true;
     }catch(e){ return false; }
   }
+
   window.rocyOuvrirMenu = function(){ const d=document.getElementById('rocyDrawer'); const o=document.getElementById('rocyOverlay'); if(!d||!o) return; d.classList.add('open'); o.classList.add('show'); };
   window.rocyFermerMenu = function(){ const d=document.getElementById('rocyDrawer'); const o=document.getElementById('rocyOverlay'); if(!d||!o) return; d.classList.remove('open'); o.classList.remove('show'); };
   window.rocyAllerEspace = function(){ if(typeLocal==='prestataire'||typeLocal==='livreur') location.href='dashboard-prestataire.html'; else if(typeLocal==='admin') location.href='admin.html'; else location.href='dashboard-client.html'; };
@@ -160,25 +174,25 @@
     else if(isPresta) location.href='creer-annonce.html';
     else location.href='inscription.html?type=prestataire';
   };
+
   async function construire(){
+    // ✅ CORRECTION 4 : ne pas construire 2 fois si la page recharge le script
+    if(document.querySelector('.rocy-header')) return;
     await chargerTaux();
     const isAdmin = await verifierAdmin();
     const t = window.rocyT;
     const langueActuelle = LANGUES.find(l=>l.code===langue) || LANGUES[0];
-    // Liste ouverte : NOM COMPLET, pas d'abréviation
     const listeLangue = LANGUES.map(l=>`<button type="button" class="rocy-langue-item ${l.code===langue?'actif':''}" onclick="rocySetLangue('${l.code}')">${l.flag} ${l.long}</button>`).join('');
     const optsDevise = DEVISES.map(d=>`<option value="${d.code}" ${devise===d.code?'selected':''}>${d.label}</option>`).join('');
     const headerHTML = `
     <style>
       *{box-sizing:border-box}
       html,body{overflow-x:hidden;width:100%;margin:0;padding:0}
-      /* Pour que l'entête fixe ne cache pas le contenu */
       body{padding-top:92px !important}
       .rocy-header{background:#0f172a;color:#fff;padding:10px 8px 8px;display:flex;flex-direction:column;gap:8px;position:fixed;top:0;left:0;right:0;z-index:100;width:100%;max-width:100vw;overflow:visible;box-shadow:0 4px 14px rgba(0,0,0,.25)}
       .rocy-header-ligne1{display:flex;align-items:center;gap:6px;width:100%;max-width:100%}
       .rocy-header-ligne2{display:flex;justify-content:flex-end;gap:8px;width:100%}
       .rocy-burger{font-size:22px;cursor:pointer;background:none;border:none;color:#fff;line-height:1;padding:4px 4px;border-radius:8px;flex-shrink:0}
-      /* LOGO : ROCY blanc + INTER jaune, SERVICES blanc en dessous */
       .rocy-logo{cursor:pointer;flex:1;min-width:0;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
       .rocy-logo .rocy-nom{font-size:19px;font-weight:800;letter-spacing:.2px}
       .rocy-logo .rocy-blanc{color:#fff}
@@ -189,7 +203,6 @@
       .rocy-top-select{background:#1e293b;color:#fff;border:1px solid #334155;border-radius:999px;padding:6px 4px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0}
       .rocy-select-devise{width:64px;max-width:64px}
       .rocy-espace-btn{background:#1e293b;color:#fff;border:1px solid #334155;border-radius:999px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
-      /* LANGUE : bouton fermé = abréviation, liste ouverte = nom complet */
       .rocy-langue-wrap{position:relative;flex-shrink:0}
       .rocy-langue-btn{background:#1e293b;color:#fff;border:1px solid #334155;border-radius:999px;padding:6px 8px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}
       .rocy-langue-menu{display:none;position:absolute;top:calc(100% + 6px);right:0;width:180px;max-height:320px;overflow-y:auto;background:#fff;color:#111;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.25);padding:6px;z-index:300}
@@ -202,6 +215,7 @@
       .rocy-drawer-head b{font-size:18px} .rocy-drawer-head b .blanc{color:#fff} .rocy-drawer-head b .jaune{color:#f59e0b} .rocy-drawer-head small{opacity:.8}
       .rocy-menu-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid #f1f5f9;padding:14px 16px;font-size:14px;cursor:pointer;color:#111}
       .rocy-menu-label{font-size:11px;font-weight:800;color:#94a3b8;padding:14px 16px 4px}
+      /* ✅ CORRECTION 5 : l'overlay ne doit JAMAIS bloquer les clics quand il est caché */
       .rocy-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:150;display:none;pointer-events:none}
       .rocy-overlay.show{display:block;pointer-events:auto}
       .rocy-footer{text-align:center;padding:20px;color:#94a3b8;font-size:12px;line-height:1.8}
