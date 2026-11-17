@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Debug</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head><body style="font-family:sans-serif;padding:16px">
+<h2>DEBUG ROCYINTER</h2>
+<div id="out" style="white-space:pre-wrap;background:#f1f5f9;padding:12px;border-radius:10px">Chargement...</div>
+<script>
+const sb = window.supabase.createClient("https://gdwgjsloivrpxxvggxyz.supabase.co", "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF");
+async function run(){
+  let out = document.getElementById('out');
+  let r1 = await sb.auth.getUser();
+  out.textContent = "USER:\n" + JSON.stringify(r1.data.user, null, 2) + "\n\nERREUR USER: " + JSON.stringify(r1.error);
+  if(!r1.data.user){ out.textContent += "\n\n=> TU N'ES PAS CONNECTÉ. La session ne reste pas."; return; }
+  let r2 = await sb.from('profiles').select('*').eq('id', r1.data.user.id).maybeSingle();
+  out.textContent += "\n\nPROFIL:\n" + JSON.stringify(r2.data, null, 2) + "\n\nERREUR PROFIL: " + JSON.stringify(r2.error);
+  if(!r2.data){ out.textContent += "\n\n=> PAS DE PROFIL TROUVÉ. C'est ça qui te renvoie à connexion."; }
+  else { out.textContent += "\n\nROLE = " + (r2.data.type_compte || r2.data.role || r2.data.type_fournisseur || "VIDE"); }
+}
+run();
+</script></body></html>
