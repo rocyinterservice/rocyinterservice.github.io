@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html><body>
+<h1>TEST 3 PAYS / FOURNISSEUR</h1>
+
+<button id="btnPays">Pays : Choisir</button>
+<div id="listPays"></div>
+<br><br>
+<button id="btnFournisseur">Fournisseur : Choisir</button>
+<div id="listFournisseur"></div>
+
+<script>
+const pays = ["Bénin","Togo","France","Nigeria"];
+const fournisseurs = ["MTN","Moov","Orange","Airtel"];
+
+document.getElementById('btnPays').onclick = function(){
+  document.getElementById('listPays').innerHTML = pays.join('<br>');
+  alert('Pays cliqué !');
+};
+document.getElementById('btnFournisseur').onclick = function(){
+  document.getElementById('listFournisseur').innerHTML = fournisseurs.join('<br>');
+  alert('Fournisseur cliqué !');
+};
+</script>
+</body></html>
