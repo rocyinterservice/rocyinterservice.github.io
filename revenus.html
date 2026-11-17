@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Revenus - Rocyinter</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="rocy-layout.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
 body{background:#f6f7f9;color:#111;padding:16px}
@@ -24,17 +25,26 @@ h1{font-size:22px;margin:14px 0 12px} h1 span{color:#f59e0b}
 <script>
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+window.supabaseClient = sb;
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function charger(){
-  const uid = localStorage.getItem('rocy_user_id');
-  if(!uid){location.href='connexion.html';return;}
-  const {data} = await supabase.from('transactions').select('*').eq('prestataire_id',uid).order('created_at',{ascending:false});
-  const list = data||[];
+  const {data:{user}} = await sb.auth.getUser();
+  if(!user){ location.href='connexion.html'; return; }
+  const uid = user.id;
+  // Source de vérité = commandes, pas une table transactions séparée
+  const {data, error} = await sb.from('commandes').select('id, titre, montant_total, commission, montant_prestataire, status, created_at').eq('prestataire_id', uid).order('created_at',{ascending:false});
+  if(error){ document.getElementById('liste').innerHTML = `<p style="text-align:center;color:#991b1b">Erreur : ${esc(error.message)}</p>`; return; }
+  const list = data || [];
   let total=0, bloque=0;
-  list.forEach(t=>{ if(t.statut==='libere') total+=Number(t.montant_prestataire||0); if(t.statut==='bloque'||t.statut==='en_escrow') bloque+=Number(t.montant_prestataire||0); });
+  list.forEach(t=>{
+    const s = String(t.status||'').toLowerCase();
+    if(s==='libere' || s==='libéré' || s==='termine' || s==='terminé' || s==='valide') total += Number(t.montant_prestataire||0);
+    if(s==='paye' || s==='payé' || s==='bloque' || s==='bloqué' || s==='en_escrow' || s==='en_cours') bloque += Number(t.montant_prestataire||0);
+  });
   document.getElementById('total').textContent = total.toLocaleString()+' FCFA';
   document.getElementById('bloque').textContent = bloque.toLocaleString()+' FCFA';
-  document.getElementById('liste').innerHTML = list.length ? list.map(t=>`<div class="card"><p><b>${Number(t.montant_total||0).toLocaleString()} FCFA</b> - ${t.statut}<br>Tu reçois : ${Number(t.montant_prestataire||0).toLocaleString()} FCFA • Commission : ${Number(t.commission||0).toLocaleString()} FCFA</p></div>`).join('') : '<p style="text-align:center;color:#64748b">Aucun revenu pour l’instant.</p>';
+  document.getElementById('liste').innerHTML = list.length ? list.map(t=>`<div class="card"><p><b>${esc(t.titre||'Commande')}</b> - ${esc(t.status)}<br>Total : ${Number(t.montant_total||0).toLocaleString()} FCFA<br>Tu reçois : ${Number(t.montant_prestataire||0).toLocaleString()} FCFA • Commission : ${Number(t.commission||0).toLocaleString()} FCFA</p></div>`).join('') : '<p style="text-align:center;color:#64748b">Aucun revenu pour l’instant.</p>';
 }
 charger();
 </script></body></html>
