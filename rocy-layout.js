@@ -7,7 +7,7 @@
   let typeLocal = localStorage.getItem('rocy_user_type') || localStorage.getItem('rocy_role') || '';
   let nom = localStorage.getItem('rocy_user_nom') || '';
   let isConnecte = !!uid;
-  let isPresta = typeLocal === 'prestataire' || typeLocal === 'livreur';
+  let isPresta = ['prestataire','livreur','entreprise','fournisseur','professionnel','pro'].includes(typeLocal);
 
   const LANGUES = [
     {code:'fr', court:'FR', long:'Français', flag:'🇫🇷'},
@@ -126,16 +126,33 @@
     if(!uid || typeLocal !== 'admin') return false;
     try{
       const sb = window.supabaseClient; if(!sb) return false;
-      const {data} = await sb.from('profiles').select('type, type_compte, role').eq('id', uid).single();
+      const {data} = await sb.from('profiles').select('type, type_compte, role, type_fournisseur').eq('id', uid).single();
       if(!data) return false;
-      const vraiType = data.type || data.type_compte || data.role || '';
+      const vraiType = data.type || data.type_compte || data.role || data.type_fournisseur || '';
       if(vraiType !== 'admin'){ localStorage.setItem('rocy_user_type', vraiType); localStorage.setItem('rocy_role', vraiType); return false; }
       return true;
     }catch(e){ return false; }
   }
   window.rocyOuvrirMenu = function(){ const d=document.getElementById('rocyDrawer'); const o=document.getElementById('rocyOverlay'); if(!d||!o) return; d.classList.add('open'); o.classList.add('show'); };
   window.rocyFermerMenu = function(){ const d=document.getElementById('rocyDrawer'); const o=document.getElementById('rocyOverlay'); if(!d||!o) return; d.classList.remove('open'); o.classList.remove('show'); };
-  window.rocyAllerEspace = function(){ if(typeLocal==='prestataire'||typeLocal==='livreur') location.href='dashboard-prestataire.html'; else if(typeLocal==='admin') location.href='admin.html'; else location.href='dashboard-client.html'; };
+  window.rocyAllerEspace = async function(){
+    try{
+      const sb = window.supabaseClient;
+      if(sb){
+        const { data: { user } } = await sb.auth.getUser();
+        if(!user){ location.href='connexion.html'; return; }
+        const { data: prof } = await sb.from('profiles').select('type_compte, role, type, type_fournisseur').eq('id', user.id).maybeSingle();
+        const r = String(prof?.type_compte || prof?.role || prof?.type || prof?.type_fournisseur || '').toLowerCase();
+        if(r){ localStorage.setItem('rocy_user_type', r); localStorage.setItem('rocy_role', r); typeLocal = r; }
+        if(r === 'admin'){ location.href='admin.html'; return; }
+        if(['prestataire','livreur','fournisseur','professionnel','entreprise','pro'].includes(r)){ location.href='dashboard-prestataire.html'; return; }
+        if(r === 'client'){ location.href='dashboard-client.html'; return; }
+      }
+    }catch(e){}
+    if(['prestataire','livreur','entreprise','fournisseur','professionnel','pro'].includes(typeLocal)) location.href='dashboard-prestataire.html';
+    else if(typeLocal==='admin') location.href='admin.html';
+    else location.href='dashboard-client.html';
+  };
   window.rocyDeconnexion = async function(){
     try{ if(window.supabaseClient) await window.supabaseClient.auth.signOut(); }catch(e){}
     ['rocy_user_id','rocy_user_nom','rocy_user_type','rocy_role','rocy_user_whatsapp','rocy_user_pays','rocy_user_ville','rocy_user_localite'].forEach(k=>localStorage.removeItem(k));
@@ -148,7 +165,7 @@
     // ✅ Vrai user Supabase, pas localStorage
     try{
       const sb = window.supabaseClient;
-      if(sb){ const {data:{user}} = await sb.auth.getUser(); if(user){ uid = user.id; isConnecte = true; const {data:prof} = await sb.from('profiles').select('nom, type_compte, role, type').eq('id', uid).maybeSingle(); if(prof){ nom = prof.nom||nom; typeLocal = String(prof.type_compte||prof.role||prof.type||typeLocal||'').toLowerCase(); isPresta = typeLocal==='prestataire'||typeLocal==='livreur'; localStorage.setItem('rocy_user_id', uid); localStorage.setItem('rocy_user_type', typeLocal); localStorage.setItem('rocy_user_nom', nom); } } }
+      if(sb){ const {data:{user}} = await sb.auth.getUser(); if(user){ uid = user.id; isConnecte = true; const {data:prof} = await sb.from('profiles').select('nom, type_compte, role, type, type_fournisseur').eq('id', uid).maybeSingle(); if(prof){ nom = prof.nom||nom; typeLocal = String(prof.type_compte||prof.role||prof.type||prof.type_fournisseur||typeLocal||'').toLowerCase(); isPresta = ['prestataire','livreur','entreprise','fournisseur','professionnel','pro'].includes(typeLocal); localStorage.setItem('rocy_user_id', uid); localStorage.setItem('rocy_user_type', typeLocal); localStorage.setItem('rocy_user_nom', nom); } } }
     }catch(e){}
     await chargerTaux();
     const isAdmin = await verifierAdmin();
