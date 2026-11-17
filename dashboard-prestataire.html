@@ -13,6 +13,10 @@ body{background:#f6f7f9;color:#111}
 .top{max-width:560px;margin:0 auto;padding:16px}
 h1{font-size:22px;margin:16px 0 4px}
 p.sub{color:#64748b;font-size:13px;margin-bottom:14px}
+.badge-type{display:inline-block;padding:5px 10px;border-radius:999px;font-size:11px;font-weight:800;margin:6px 0}
+.badge-type.pro{background:#e0e7ff;color:#3730a3}
+.badge-type.entreprise{background:#fef3c7;color:#92400e}
+.badge-type.livreur{background:#dcfce7;color:#166534}
 .banner{padding:12px;border-radius:12px;font-size:13px;margin-bottom:14px;line-height:1.5}
 .banner.attente{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
 .banner.valide{background:#dcfce7;color:#166534}
@@ -23,7 +27,7 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px}
 .stat{background:#fff;border-radius:14px;padding:12px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.04)}
 .stat b{font-size:18px;display:block}
 .stat small{color:#64748b;font-size:11px}
-.card{background:#fff;border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.card{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
 .card h3{font-size:15px}
 .card p{font-size:13px;color:#64748b;margin:6px 0;line-height:1.5}
 .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:700}
@@ -44,6 +48,7 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px}
 <body>
 <div class="top">
 <h1><span data-i18n="bonjour">Bonjour</span> <span id="nomUser">Prestataire</span> 👋</h1>
+<div id="badgeType"></div>
 <p class="sub" id="infoUser">Chargement...</p>
 <div id="bannerStatut"></div>
 <div id="bandeauAbo"></div>
@@ -65,15 +70,16 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px}
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-const uid = localStorage.getItem('rocy_user_id');
-const roleUser = localStorage.getItem('rocy_user_type') || localStorage.getItem('rocy_role') || '';
-const nom = localStorage.getItem('rocy_user_nom') || 'Prestataire';
-if(!uid){ location.href='connexion.html'; }
-if(roleUser==='client'){ location.href='dashboard-client.html'; }
-if(roleUser==='admin'){ location.href='admin.html'; }
-document.getElementById('nomUser').textContent = nom;
-document.getElementById('infoUser').textContent = `${localStorage.getItem('rocy_user_localite') || ''} - ${localStorage.getItem('rocy_user_ville') || ''} • ${localStorage.getItem('rocy_user_pays') || ''}`;
-function deconnecter(){
+let uid = null;
+function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmt(n){ return Number(n || 0).toLocaleString('fr-FR'); }
+async function getUtilisateurSecurise(){
+  const {data:{user}, error} = await supabase.auth.getUser();
+  if(error || !user) return null;
+  return user;
+}
+async function deconnecter(){
+  await supabase.auth.signOut();
   const langue = localStorage.getItem('rocy_langue');
   localStorage.clear();
   if(langue) localStorage.setItem('rocy_langue', langue);
@@ -95,19 +101,19 @@ function badgeCommande(s){
   if(s==='valide') return '<span class="badge valide">✅ Validé</span>';
   if(s==='libere') return '<span class="badge valide">💰 Libéré</span>';
   if(s==='litige') return '<span class="badge litige">⚠️ Litige</span>';
-  return `<span class="badge attente">${s}</span>`;
+  return `<span class="badge attente">${esc(s)}</span>`;
 }
 function texteCommission(c){
-  if(c.univers==='domicile') return `Commission 8% : ${Number(c.commission).toLocaleString()} FCFA`;
+  if(c.univers==='domicile') return `Commission 8% : ${fmt(c.commission)} FCFA`;
   if(c.univers==='pro') return `Commission 5 000 FCFA fixe`;
-  if(c.univers==='manger' || c.univers==='sejour') return `Commission 12% : ${Number(c.commission).toLocaleString()} FCFA`;
-  if(c.univers==='livreur') return `Commission 20% (Livreur 80%) : ${Number(c.commission).toLocaleString()} FCFA`;
+  if(c.univers==='manger' || c.univers==='sejour') return `Commission 12% : ${fmt(c.commission)} FCFA`;
+  if(c.univers==='livreur') return `Commission 20% (Livreur 80%) : ${fmt(c.commission)} FCFA`;
   if(c.univers==='immobilier'){
     const t = String(c.titre||'').toLowerCase();
-    if(t.includes('parcelle') || t.includes('vente') || t.includes('terrain')) return `Commission Parcelle 10 000 + 2% plafonné 200 000 : ${Number(c.commission).toLocaleString()} FCFA`;
-    return `Commission Location 50% d'un mois : ${Number(c.commission).toLocaleString()} FCFA`;
+    if(t.includes('parcelle') || t.includes('vente') || t.includes('terrain')) return `Commission Parcelle 10 000 + 2% plafonné 200 000 : ${fmt(c.commission)} FCFA`;
+    return `Commission Location 50% d'un mois : ${fmt(c.commission)} FCFA`;
   }
-  return `Commission : ${Number(c.commission||0).toLocaleString()} FCFA`;
+  return `Commission : ${fmt(c.commission)} FCFA`;
 }
 function badgeAnnonce(a){
   const s = String(a.status || a.statut || '').toLowerCase();
@@ -115,17 +121,65 @@ function badgeAnnonce(a){
   if(s==='rejete' || s==='refuse' || s==='refusé' || s==='rejeté') return '<span class="badge rejete">❌ Rejetée</span>';
   return '<span class="badge attente">⏳ En attente</span>';
 }
+// CORRIGÉ PRO / ENTREPRISE : nom affiché + badge type
+function nomAffiche(profil){
+  // Entreprise : nom_entreprise d'abord, sinon nom
+  // Professionnel : nom de la personne
+  return profil.nom_entreprise || profil.nom || 'Prestataire';
+}
+function badgeTypeFournisseur(profil){
+  const type = String(profil.type_fournisseur || profil.type_compte || profil.role || '').toLowerCase();
+  const nomEnt = profil.nom_entreprise;
+  // Si on a nom_entreprise, c'est une entreprise même si type_compte = prestataire
+  if(nomEnt || type === 'entreprise') return '<span class="badge-type entreprise">🏢 Entreprise</span>';
+  if(type === 'livreur') return '<span class="badge-type livreur">🛵 Livreur</span>';
+  return '<span class="badge-type pro">👨‍🔧 Professionnel</span>';
+}
 async function charger(){
-  const {data: profil} = await supabase.from('profiles').select('*').eq('id', uid).maybeSingle();
+  const user = await getUtilisateurSecurise();
+  if(!user){ location.href='connexion.html'; return; }
+  uid = user.id;
+
+  // On essaie d'abord avec les nouveaux champs Pro/Entreprise, si Supabase ne les a pas encore, on retombe sur l'ancien select
+  let profil = null;
+  let res1 = await supabase.from('profiles')
+    .select('id, nom, nom_entreprise, type_fournisseur, type_compte, role, localite, ville, pays, statut_validation, status_prestataire, statut, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert')
+    .eq('id', uid).maybeSingle();
+  if(res1.error){
+    let res2 = await supabase.from('profiles')
+      .select('id, nom, type_compte, role, localite, ville, pays, statut_validation, status_prestataire, statut, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert')
+      .eq('id', uid).maybeSingle();
+    profil = res2.data;
+  } else {
+    profil = res1.data;
+  }
+  if(!profil){ location.href='connexion.html'; return; }
+
+  // Rôle depuis la BASE, jamais localStorage. On accepte tous les types fournisseur.
+  const roleReel = String(profil.type_compte || profil.role || profil.type_fournisseur || '').toLowerCase();
+  const ROLES_FOURNISSEUR = ['prestataire','livreur','fournisseur','professionnel','entreprise','pro'];
+  if(roleReel === 'client'){ location.href='dashboard-client.html'; return; }
+  if(roleReel === 'admin'){ location.href='admin.html'; return; }
+  if(!ROLES_FOURNISSEUR.includes(roleReel)){ location.href='connexion.html'; return; }
+
+  document.getElementById('nomUser').textContent = nomAffiche(profil);
+  document.getElementById('badgeType').innerHTML = badgeTypeFournisseur(profil);
+  // Si entreprise, on montre aussi le nom du contact en petit
+  if(profil.nom_entreprise && profil.nom){
+    document.getElementById('infoUser').textContent = `Contact : ${profil.nom} • ${profil.localite || ''} - ${profil.ville || ''} • ${profil.pays || ''}`;
+  } else {
+    document.getElementById('infoUser').textContent = `${profil.localite || ''} - ${profil.ville || ''} • ${profil.pays || ''}`;
+  }
+
   const statut = String(profil?.statut_validation || profil?.status_prestataire || profil?.statut || 'en_attente').toLowerCase();
   const banner = document.getElementById('bannerStatut');
   const t = window.rocyT || (k=>k);
   if(statut==='valide' || statut==='valid'){
-    banner.innerHTML = `<div class="banner valide">✅ <b>${t('compteValide')}</b> - ${t('compteValideSous')}</div>`;
+    banner.innerHTML = `<div class="banner valide">✅ <b>${esc(t('compteValide'))}</b> - ${esc(t('compteValideSous'))}</div>`;
   } else if(statut==='rejete' || statut==='refuse' || statut==='refusé'){
-    banner.innerHTML = `<div class="banner rejete">❌ <b>${t('compteRefuse')}</b> - ${t('compteRefuseSous')}</div>`;
+    banner.innerHTML = `<div class="banner rejete">❌ <b>${esc(t('compteRefuse'))}</b> - ${esc(t('compteRefuseSous'))}</div>`;
   } else {
-    banner.innerHTML = `<div class="banner attente">⏳ <b>${t('compteAttente')}</b> - ${t('compteAttenteSous')}</div>`;
+    banner.innerHTML = `<div class="banner attente">⏳ <b>${esc(t('compteAttente'))}</b> - ${esc(t('compteAttenteSous'))}</div>`;
   }
   const resAbo = verifierAbonnement(profil||{});
   const boxAbo = document.getElementById('bandeauAbo');
@@ -134,28 +188,32 @@ async function charger(){
     boxAbo.innerHTML = `<div class="bandeau-abo abo-offert">🎁 1er mois offert - Tu peux publier. Commissions dues dès la 1ère mission.</div>`;
     btnCreer.disabled=false;
   } else if(resAbo.ok){
-    boxAbo.innerHTML = `<div class="bandeau-abo abo-ok">✅ Abonnement à jour jusqu'au ${resAbo.fin.toLocaleDateString('fr-FR')} - Tu peux publier.</div>`;
+    boxAbo.innerHTML = `<div class="bandeau-abo abo-ok">✅ Abonnement à jour jusqu'au ${esc(resAbo.fin.toLocaleDateString('fr-FR'))} - Tu peux publier.</div>`;
     btnCreer.disabled=false;
   } else {
     boxAbo.innerHTML = `<div class="bandeau-abo abo-expire">⛔ Abonnement expiré. Tu ne peux pas publier de nouvelle annonce tant que tu ne renouvelles pas.<br><button class="btn btn-dark" onclick="location.href='abonnement.html'">Renouveler maintenant →</button></div>`;
     btnCreer.disabled=true; btnCreer.textContent='⛔ Publier bloqué - Abonnement expiré';
   }
-  const {data: annonces} = await supabase.from('annonces').select('*').eq('prestataire_id', uid).order('created_at',{ascending:false});
+  const {data: annonces} = await supabase.from('annonces')
+    .select('id, titre, categorie, localite, ville, prix_fixe, prix_indicatif, prix, status, statut, created_at')
+    .eq('prestataire_id', uid).order('created_at',{ascending:false});
   const boxA = document.getElementById('listeAnnonces');
   document.getElementById('nbAnnonces').textContent = annonces?.length || 0;
   if(!annonces || annonces.length===0){
     boxA.innerHTML = `<div class="empty">Aucune annonce. Crée ta première annonce pour commencer à gagner.</div>`;
   } else {
     boxA.innerHTML = annonces.map(a=>{
-      return `<div class="card">${badgeAnnonce(a)}<h3 style="margin-top:8px">${a.titre}</h3><p>${a.categorie} • ${a.localite} - ${a.ville}<br>${a.prix_fixe ? Number(a.prix_indicatif||a.prix||0).toLocaleString()+' FCFA - Prix fixe' : 'Prix à discuter'}</p><button class="btn btn-dark" onclick="location.href='creer-annonce.html'">✏️ Modifier / Voir</button></div>`;
+      return `<div class="card">${badgeAnnonce(a)}<h3 style="margin-top:8px">${esc(a.titre)}</h3><p>${esc(a.categorie)} • ${esc(a.localite)} - ${esc(a.ville)}<br>${a.prix_fixe ? fmt(a.prix_indicatif||a.prix||0)+' FCFA - Prix fixe' : 'Prix à discuter'}</p><button class="btn btn-dark" onclick="location.href='creer-annonce.html'">✏️ Modifier / Voir</button></div>`;
     }).join('');
   }
-  const {data: cmds} = await supabase.from('commandes').select('*').eq('prestataire_id', uid).order('created_at',{ascending:false});
+  const {data: cmds} = await supabase.from('commandes')
+    .select('id, titre, client_id, conversation_id, annonce_id, status, univers, commission, montant_total, montant_prestataire, localite, ville, litige_raison, created_at')
+    .eq('prestataire_id', uid).order('created_at',{ascending:false});
   const boxC = document.getElementById('listeCommandes');
   document.getElementById('nbCommandes').textContent = cmds?.length || 0;
   let total = 0;
   (cmds||[]).forEach(c=>{ if(['paye','en_cours','valide','libere'].includes(c.status)) total += Number(c.montant_prestataire||0); });
-  document.getElementById('totalGagne').textContent = total.toLocaleString() + ' F';
+  document.getElementById('totalGagne').textContent = fmt(total) + ' F';
   if(!cmds || cmds.length===0){
     boxC.innerHTML = `<div class="empty">Aucune commande pour l'instant. Quand un client te parlera dans le chat et créera une commande, elle apparaîtra ici.</div>`;
   } else {
@@ -167,34 +225,37 @@ async function charger(){
     }
     boxC.innerHTML = cmds.map(c=>{
       let action = '';
-      if(c.status==='paye') action = `<button class="btn btn-green" onclick="changerStatut('${c.id}','en_cours')">🔧 Commencer le service</button>`;
-      if(c.status==='en_cours') action = `<button class="btn btn-green" onclick="changerStatut('${c.id}','en_cours_termine')">✅ Marquer comme terminé (client valide)</button><p style="color:#64748b">Le client doit valider pour libérer l'argent.</p>`;
-      if(c.status==='litige') action = `<p style="color:#991b1b">⚠️ Litige : ${c.litige_raison || 'En cours'} - Argent bloqué, Admin tranche.</p>`;
+      if(c.status==='paye') action = `<button class="btn btn-green" onclick="changerStatut('${esc(c.id)}','en_cours')">🔧 Commencer le service</button>`;
+      if(c.status==='en_cours') action = `<button class="btn btn-green" onclick="changerStatut('${esc(c.id)}','en_cours_termine')">✅ Marquer comme terminé (client valide)</button><p style="color:#64748b">Le client doit valider pour libérer l'argent.</p>`;
+      if(c.status==='litige') action = `<p style="color:#991b1b">⚠️ Litige : ${esc(c.litige_raison || 'En cours')} - Argent bloqué, Admin tranche.</p>`;
       if(c.status==='valide') action = `<p style="color:#166534">⏳ Validé par le client - Libération dans 48h / lundi.</p>`;
       if(c.status==='libere') action = `<p style="color:#166534">💰 Argent libéré - Vérifie ton Mobile Money / compte.</p>`;
-      return `<div class="card">${badgeCommande(c.status)}<h3 style="margin-top:8px">${c.titre}</h3><p>Client : ${nomsClients[c.client_id] || 'Client'}<br>Total : ${Number(c.montant_total).toLocaleString()} FCFA • ${texteCommission(c)} • Tu reçois : <b>${Number(c.montant_prestataire).toLocaleString()} FCFA</b><br>📍 ${c.localite||''} - ${c.ville||''}<br><span style="color:#16a34a">🔒 Escrow : argent bloqué chez Rocyinter jusqu'à validation client</span></p>${action}<button class="btn btn-dark" onclick="voirConversation('${c.conversation_id}','${c.annonce_id}')">Ouvrir le chat</button></div>`;
+      return `<div class="card">${badgeCommande(c.status)}<h3 style="margin-top:8px">${esc(c.titre)}</h3><p>Client : ${esc(nomsClients[c.client_id] || 'Client')}<br>Total : ${fmt(c.montant_total)} FCFA • ${esc(texteCommission(c))} • Tu reçois : <b>${fmt(c.montant_prestataire)} FCFA</b><br>📍 ${esc(c.localite||'')} - ${esc(c.ville||'')}<br><span style="color:#16a34a">🔒 Escrow : argent bloqué chez Rocyinter jusqu'à validation client</span></p>${action}<button class="btn btn-dark" onclick="voirConversation('${esc(c.conversation_id)}','${esc(c.annonce_id)}')">Ouvrir le chat</button></div>`;
     }).join('');
   }
-  const {data: convsBrutes} = await supabase.from('conversations').select('*, annonces(titre)').eq('prestataire_id', uid).order('created_at',{ascending:false});
+  const {data: convsBrutes} = await supabase.from('conversations')
+    .select('id, client_id, prestataire_id, annonce_id, created_at, annonces(titre)')
+    .eq('prestataire_id', uid).order('created_at',{ascending:false});
   const convs = (convsBrutes||[]).filter(cv => String(cv.client_id)!==String(cv.prestataire_id));
   const boxV = document.getElementById('listeConvs');
   if(!convs || convs.length===0){
     boxV.innerHTML = `<div class="empty">Aucune conversation pour l'instant.</div>`;
   } else {
-    boxV.innerHTML = convs.map(cv=>`<div class="card"><b>${cv.annonces?.titre || 'Discussion'}</b><p>Conversation • ${new Date(cv.created_at).toLocaleDateString('fr-FR')}</p><button class="btn btn-green" onclick="voirConversation('${cv.id}','${cv.annonce_id}')">Répondre</button></div>`).join('');
+    boxV.innerHTML = convs.map(cv=>`<div class="card"><b>${esc(cv.annonces?.titre || 'Discussion')}</b><p>Conversation • ${esc(new Date(cv.created_at).toLocaleDateString('fr-FR'))}</p><button class="btn btn-green" onclick="voirConversation('${esc(cv.id)}','${esc(cv.annonce_id)}')">Répondre</button></div>`).join('');
   }
   if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 }
 async function changerStatut(id, action){
+  const user = await getUtilisateurSecurise();
+  if(!user) return;
   if(action==='en_cours'){
-    // CORRIGÉ : seul le vrai prestataire, seulement si paye
-    const {error} = await supabase.from('commandes').update({status:'en_cours'}).eq('id', id).eq('prestataire_id', uid).eq('status','paye');
+    const {error} = await supabase.from('commandes').update({status:'en_cours'}).eq('id', id).eq('prestataire_id', user.id).eq('status','paye');
     if(error) alert('Erreur : ' + error.message);
   } else if(action==='en_cours_termine'){
-    const {data: cmd} = await supabase.from('commandes').select('*').eq('id', id).eq('prestataire_id', uid).single();
+    const {data: cmd} = await supabase.from('commandes').select('id, titre, conversation_id').eq('id', id).eq('prestataire_id', user.id).single();
     if(!cmd){ alert('Commande introuvable.'); return; }
     if(cmd?.conversation_id){
-      await supabase.from('messages').insert([{conversation_id: cmd.conversation_id, sender_id: uid, contenu: `✅ J'ai terminé le service "${cmd.titre}". Peux-tu valider pour que l'argent soit libéré ?`, type: 'texte'}]);
+      await supabase.from('messages').insert([{conversation_id: cmd.conversation_id, sender_id: user.id, contenu: `✅ J'ai terminé le service "${cmd.titre}". Peux-tu valider pour que l'argent soit libéré ?`, type: 'texte'}]);
     }
     alert('✅ Client prévenu dans le chat. Il doit valider pour libérer l’argent.');
   }
@@ -202,12 +263,12 @@ async function changerStatut(id, action){
 }
 async function voirConversation(convId, annonceId){
   if(!convId || convId==='null' || convId==='undefined'){ alert('Conversation introuvable.'); return; }
-  const {data} = await supabase.from('conversations').select('*').eq('id', convId).eq('prestataire_id', uid).single();
+  const user = await getUtilisateurSecurise();
+  if(!user) return;
+  const {data} = await supabase.from('conversations').select('id, client_id, prestataire_id').eq('id', convId).eq('prestataire_id', user.id).single();
   if(!data){ alert('Conversation introuvable.'); return; }
   if(String(data.client_id)===String(data.prestataire_id)){ alert('Conversation invalide.'); return; }
-  localStorage.setItem('chat_prestataire', uid);
-  localStorage.setItem('chat_annonce', annonceId);
-  location.href='chat.html';
+  location.href = 'chat.html?conversation=' + encodeURIComponent(convId) + '&annonce=' + encodeURIComponent(annonceId || '');
 }
 charger();
 </script>
