@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title data-i18n="creerTitre">Créer une annonce - Rocyinter</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="pays.js"></script>
 <script src="rocy-layout.js"></script>
 <style>
@@ -74,7 +74,8 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:8p
 <script>
 const SUPABASE_URL="https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY="sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
-const supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+window.supabaseClient = sb;
 let prixFixe=false, mesActivites=[], universChoisi="", abonnementAJour=false, profilFournisseur=null, uidActuel=null;
 
 const infosCommission={manger:"🍽️ <b>Manger : 12%</b>",domicile:"🏠 <b>Domicile : 8%</b> - Tu reçois 92%",pro:"💼 <b>Pro : 5 000 FCFA fixe</b>",sejour:"✈️ <b>Séjour : 12% par nuit</b>",immobilier:"🏘️ <b>Immobilier :</b> Parcelle/Vente 10 000 FCFA/30j + 2% plafonné 200 000 FCFA. Location 50% d'un mois.",livreur:"🛵 <b>Livreur 80% / Rocyinter 20%</b>"};
@@ -135,43 +136,32 @@ function remplirPays(paysDefaut){
   else{sel.innerHTML=`<option value="Bénin">🇧🇯 Bénin</option>`;}
   sel.value=paysDefaut||'Bénin';
 }
-// SÉCURISÉ : on ne lit JAMAIS localStorage pour l'identité. On demande à Supabase qui est connecté.
 async function getUtilisateurSecurise(){
-  const {data:{user}, error} = await supabase.auth.getUser();
+  const {data:{user}, error} = await sb.auth.getUser();
   if(error || !user) return null;
   return user;
 }
 async function init(){
-  // 1. Qui est connecté ? Si personne -> connexion
   const user = await getUtilisateurSecurise();
   if(!user){ location.href='connexion.html'; return; }
   uidActuel = user.id;
-
-  // 2. Profil depuis Supabase, colonnes utiles seulement, jamais select(*)
-  // RLS doit autoriser : user ne lit que SON profil
-  const {data: profil, error: errProfil} = await supabase.from('profiles')
+  const {data: profil, error: errProfil} = await sb.from('profiles')
     .select('id, type_compte, role, activites, categorie, ville, localite, pays, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert')
     .eq('id', uidActuel).single();
-  if(errProfil || !profil){ showMsg('Profil introuvable. Reconnecte-toi.', false); await supabase.auth.signOut(); setTimeout(()=> location.href='connexion.html', 1200); return; }
+  if(errProfil || !profil){ showMsg('Profil introuvable. Reconnecte-toi.', false); await sb.auth.signOut(); setTimeout(()=> location.href='connexion.html', 1200); return; }
   profilFournisseur = profil;
-
-  // 3. Rôle depuis la BASE, jamais depuis localStorage
   const roleReel = (profil.type_compte || profil.role || '').toLowerCase();
   if(roleReel === 'client'){ showMsg('Client : crée un compte Prestataire pour publier.', false); setTimeout(()=> location.href='inscription.html?type=prestataire', 1500); return; }
   if(roleReel === 'admin'){ location.href='admin.html'; return; }
   if(roleReel !== 'prestataire' && roleReel !== 'livreur' && roleReel !== 'fournisseur'){
     showMsg('Compte non autorisé à publier.', false); return;
   }
-
   remplirPays(profil.pays);
   document.getElementById('ville').value = profil.ville || '';
   document.getElementById('localite').value = profil.localite || '';
-
-  // 4. Abonnement depuis la BASE
   const res = verifierAbonnement(profil);
   abonnementAJour = res.ok;
   afficherBandeauAbo(res);
-
   let acts = profil.activites || [];
   if(typeof acts === 'string'){ try{ acts = JSON.parse(acts); }catch(e){ acts = [acts]; } }
   if(!acts.length && profil.categorie) acts = [profil.categorie];
@@ -182,18 +172,15 @@ async function init(){
     sel.innerHTML = `<option value="">Aucune activité</option><option value="__AJOUTER__">➕ + Ajouter une autre activité</option>`;
     document.getElementById('blocAutreCategorie').style.display = 'block';
   } else {
-    // On échappe les noms pour éviter XSS si une activité contient du HTML
     const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     sel.innerHTML = `<option value="">Choisir parmi tes activités...</option>` + mesActivites.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('') + `<option value="__AJOUTER__">➕ + Ajouter une autre activité</option>`;
   }
 }
 async function publier(){
   if(!abonnementAJour){ showMsg('⛔ Abonnement expiré. Renouvelle pour publier.', false); setTimeout(()=> location.href='abonnement.html', 1200); return; }
-  // Re-vérifie l'identité au moment de publier, pas au chargement seulement
   const user = await getUtilisateurSecurise();
   if(!user){ location.href='connexion.html'; return; }
   const uid = user.id;
-
   const titre = document.getElementById('titre').value.trim();
   const description = document.getElementById('description').value.trim();
   let categorie = document.getElementById('categorie').value;
@@ -203,10 +190,7 @@ async function publier(){
   let photo = document.getElementById('photo').value.trim();
   const prix = document.getElementById('prix').value;
   const btn = document.getElementById('btnPublier');
-
-  // Photo : seulement https://, sinon on rejette (évite javascript: ou data: malveillant)
   if(photo && !/^https:\/\//i.test(photo)){ showMsg('Photo : colle un lien https:// valide', false); return; }
-
   if(categorie === '__AJOUTER__'){
     const autre = document.getElementById('autreCategorie').value.trim();
     if(!autre){ showMsg('Écris ta nouvelle activité', false); return; }
@@ -215,8 +199,7 @@ async function publier(){
     universChoisi = universPourCategorie(categorie);
     if(!mesActivites.includes(categorie)){
       const n = [...mesActivites, categorie];
-      // RLS : on ne peut mettre à jour que SON profil, avec son propre id = auth.uid()
-      const {error: errUp} = await supabase.from('profiles').update({activites: n}).eq('id', uid);
+      const {error: errUp} = await sb.from('profiles').update({activites: n}).eq('id', uid);
       if(errUp){ showMsg('Erreur ajout activité : ' + errUp.message, false); return; }
       mesActivites = n;
     }
@@ -229,8 +212,7 @@ async function publier(){
   if(description.length < 20){ showMsg('Description trop courte, min 20 caractères', false); return; }
   if(prixFixe && (!prix || Number(prix) <= 0)){ showMsg('Mets un prix fixe > 0', false); return; }
   btn.disabled = true; btn.textContent = 'Publication...';
-  // prestataire_id = uid de la SESSION, jamais de localStorage. RLS doit vérifier prestataire_id = auth.uid()
-  const {error} = await supabase.from('annonces').insert([{
+  const {error} = await sb.from('annonces').insert([{
     prestataire_id: uid,
     univers: universChoisi,
     categorie, titre, description,
