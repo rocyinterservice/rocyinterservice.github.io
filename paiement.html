@@ -80,14 +80,15 @@ async function init(){
   const {data:{user}} = await sb.auth.getUser();
   if(!user){ location.href='connexion.html'; return; }
   uid = user.id;
-  const {data:p}=await sb.from('profiles').select('type_compte, role').eq('id',uid).maybeSingle();
-  monRole = String(p?.type_compte||p?.role||'').toLowerCase();
-  if(monRole==='prestataire' || monRole==='livreur'){ location.href='dashboard-prestataire.html'; return; }
+  const {data:p}=await sb.from('profiles').select('type_compte, role, type_fournisseur').eq('id',uid).maybeSingle();
+  monRole = String(p?.type_compte||p?.role||p?.type_fournisseur||'').toLowerCase();
+  // CORRIGÉ : on ne bloque plus les prestataires / professionnels / entreprises
+  // Un prestataire peut aussi être client d'une autre commande. On vérifie dans charger() si c'est bien SA commande.
   if(monRole==='admin'){ location.href='admin.html'; return; }
   if(!commandeId){ document.getElementById('resume').innerHTML = 'Aucune commande à payer. Va dans Mes commandes.'; document.getElementById('blocPaiement').style.display='none'; return; }
   charger();
 }
-function showMsg(txt, ok){ const m = document.getElementById('msg'); m.textContent = txt; m.className = 'msg ' + (ok ? 'ok' : 'err'); }
+function showMsg(txt, ok){ const m = document.getElementById('msg'); m.textContent = txt; m.className = 'msg ' + (ok ? 'ok' : 'err'); m.style.display='block'; }
 function texteCommission(c){
   if(c.univers==='domicile') return 'Commission 8%';
   if(c.univers==='pro') return 'Commission 5 000 FCFA fixe';
@@ -108,6 +109,11 @@ async function charger(){
   if(error || !data){ document.getElementById('resume').innerHTML = 'Commande introuvable.'; document.getElementById('blocPaiement').style.display='none'; return; }
   if(String(data.client_id)!==String(uid)){
     document.getElementById('resume').innerHTML = `<b>⛔ Accès refusé.</b><p>Cette commande ne t'appartient pas.</p><button class="btn btn-dark" onclick="location.href='dashboard-client.html'">Voir mes commandes</button>`;
+    document.getElementById('blocPaiement').style.display='none'; return;
+  }
+  // Sécurité : on ne paie jamais sa propre commande
+  if(String(data.prestataire_id)===String(uid)){
+    document.getElementById('resume').innerHTML = `<b>⛔ Impossible.</b><p>Tu ne peux pas payer ta propre commande.</p><button class="btn btn-dark" onclick="location.href='dashboard-prestataire.html'">Voir mon dashboard</button>`;
     document.getElementById('blocPaiement').style.display='none'; return;
   }
   commande = data;
@@ -138,7 +144,6 @@ async function confirmerPaiement(mode){
   if(commande.conversation_id){
     await sb.from('messages').insert([{conversation_id: commande.conversation_id, sender_id: uid, contenu: `💳 Paiement reçu (${mode}) - ${Number(commande.montant_total).toLocaleString()} FCFA bloqué en escrow. Tu peux commencer le service.`, type: 'texte'}]);
   }
-  // 🔔 Notif prestataire + client
   await notifier(commande.prestataire_id, '💰 Paiement reçu', `Commande "${commande.titre}" payée : ${Number(commande.montant_total).toLocaleString()} FCFA bloqué en escrow. Tu peux commencer.`, 'paiement', 'dashboard-prestataire.html');
   await notifier(uid, '✅ Paiement confirmé', `Ton paiement pour "${commande.titre}" est sécurisé en escrow.`, 'validation', 'dashboard-client.html');
   showMsg('✅ Paiement confirmé ! Argent bloqué en escrow. Redirection...', true);
