@@ -33,12 +33,30 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px;line-height:1.5}
 .step{flex:1;text-align:center;font-size:10px;padding:6px 2px;border-radius:8px;background:#f1f5f9;color:#94a3b8}
 .step.active{background:#0f172a;color:#fff}
 .step.done{background:#dcfce7;color:#166534}
+.profilBox{background:#fff;border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.04);display:flex;gap:12px;align-items:center}
+.profilBox img{width:56px;height:56px;border-radius:50%;object-fit:cover;background:#f1f5f9}
+.profilBox .info{flex:1}
+.profilBox .info b{font-size:15px}
+.profilBox .info span{font-size:12px;color:#64748b;display:block;margin-top:2px}
 </style>
 </head>
 <body>
 <div class="top">
 <h1><span data-i18n="bonjour">Bonjour</span> <span id="nomUser">Client</span> 👋</h1>
 <p class="sub" data-i18n="dashboardClientSous">Suivez vos commandes en temps réel. Votre argent est en sécurité jusqu'à la fin du service.</p>
+
+<!-- PROFIL + QUARTIER -->
+<div class="profilBox" id="profilBox">
+  <img id="photoProfil" src="" alt="" onerror="this.style.display='none'">
+  <div class="info">
+    <b id="profilNom">Mon Profil</b>
+    <span id="profilQuartier">📍 Quartier : ...</span>
+    <span id="profilBadge">⏳ Vérification...</span>
+  </div>
+</div>
+<button class="btn btn-dark" onclick="location.href='profil.html'">👤 Mon Profil</button>
+<button class="btn btn-gris" id="btnVerif" onclick="location.href='verification.html'" style="display:none">📍 Faire vérifier mon quartier</button>
+
 <button class="btn" onclick="location.href='index.html'">🔍 <span data-i18n="trouverService">Trouver un service</span></button>
 <button class="btn btn-gris" onclick="location.href='inscription.html?type=prestataire'">💼 <span data-i18n="devenirPresta">Devenir Fournisseur aussi ? Publier mes services →</span></button>
 <div class="section">
@@ -105,14 +123,35 @@ async function charger(){
   if(!user){ location.href='connexion.html'; return; }
   uid = user.id;
   const {data: profil} = await sb.from('profiles')
-    .select('id, nom, nom_entreprise, type_fournisseur, type_compte, role')
+    .select('id, nom, full_name, nom_entreprise, type_fournisseur, type_compte, role, quartier, localite, ville, quartier_verifie, verification_quartier, photo_url, avatar_url, photo_profil_url')
     .eq('id', uid).maybeSingle();
   if(!profil){ location.href='connexion.html'; return; }
   const roleReel = String(profil.type_compte || profil.role || profil.type_fournisseur || '').toLowerCase();
   if(['prestataire','livreur','fournisseur','professionnel','entreprise','pro'].includes(roleReel)){ location.href='dashboard-prestataire.html'; return; }
   if(roleReel === 'admin'){ location.href='admin.html'; return; }
   if(roleReel !== 'client'){ location.href='connexion.html'; return; }
-  document.getElementById('nomUser').textContent = profil.nom || 'Client';
+  document.getElementById('nomUser').textContent = profil.nom || profil.full_name || 'Client';
+  // --- PROFIL / QUARTIER ---
+  const quartier = profil.quartier || profil.localite || '';
+  const photo = profil.photo_profil_url || profil.photo_url || profil.avatar_url || '';
+  document.getElementById('profilNom').textContent = profil.nom || profil.full_name || 'Mon Profil';
+  document.getElementById('profilQuartier').textContent = '📍 Quartier : ' + (quartier || 'Non rempli');
+  const badgeEl = document.getElementById('profilBadge');
+  const btnVerif = document.getElementById('btnVerif');
+  if(profil.quartier_verifie === true || profil.verification_quartier === 'valide' || profil.verification_quartier === 'verifie'){
+    badgeEl.textContent = '✅ Vérifié à ' + quartier;
+    badgeEl.style.color = '#166534';
+    btnVerif.style.display = 'none';
+  } else if(profil.verification_quartier === 'en_attente' || profil.verification_quartier === 'demande_envoyee'){
+    badgeEl.textContent = '⏳ Vérification en attente pour ' + quartier;
+    badgeEl.style.color = '#1e40af';
+    btnVerif.style.display = 'none';
+  } else {
+    badgeEl.textContent = '❌ Non vérifié - Fais vérifier ton quartier';
+    badgeEl.style.color = '#991b1b';
+    btnVerif.style.display = 'block';
+  }
+  if(photo){ const img=document.getElementById('photoProfil'); img.src=photo; img.style.display='block'; }
   const {data: cmds} = await sb.from('commandes')
     .select('id, titre, prestataire_id, conversation_id, annonce_id, status, univers, commission, montant_total, montant_prestataire, localite, ville, created_at')
     .eq('client_id', uid).order('created_at',{ascending:false});
@@ -149,9 +188,7 @@ async function charger(){
   }
   if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 }
-function payer(id){
-  location.href = 'paiement.html?commande=' + encodeURIComponent(id);
-}
+function payer(id){ location.href = 'paiement.html?commande=' + encodeURIComponent(id); }
 async function demarrer(id){
   const user = await getUtilisateurSecurise();
   if(!user) return;
