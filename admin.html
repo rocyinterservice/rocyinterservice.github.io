@@ -35,6 +35,9 @@ header button{background:#fff;color:#000;border:none;padding:8px 12px;border-rad
 .empty{background:#1e293b;border-radius:14px;padding:20px;text-align:center;opacity:.7;font-size:13px}
 #main{display:none}
 .msg-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px;margin-top:8px;font-size:12px;line-height:1.5;max-height:200px;overflow-y:auto}
+.photos{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+.photos img{width:100%;height:140px;object-fit:cover;border-radius:10px;border:1px solid #e2e8f0;cursor:pointer}
+.photos small{display:block;text-align:center;color:#64748b;font-size:11px;margin-top:4px}
 </style>
 </head>
 <body>
@@ -64,6 +67,7 @@ header button{background:#fff;color:#000;border:none;padding:8px 12px;border-rad
   <div class="tabs">
     <button type="button" id="tab-annonces" class="active" onclick="setTab('annonces')">📋 Annonces</button>
     <button type="button" id="tab-prestataires" onclick="setTab('prestataires')">👷 Prestataires</button>
+    <button type="button" id="tab-quartiers" onclick="setTab('quartiers')">📍 Quartiers</button>
     <button type="button" id="tab-commandes" onclick="setTab('commandes')">💰 Commandes</button>
     <button type="button" id="tab-litiges" onclick="setTab('litiges')">⚠️ Litiges</button>
     <button type="button" id="tab-users" onclick="setTab('users')">👥 Utilisateurs</button>
@@ -126,7 +130,7 @@ async function initAdmin(){
 }
 function setTab(t){
   tabActuel = t;
-  ['annonces','prestataires','commandes','litiges','users','avis'].forEach(k=>{
+  ['annonces','prestataires','quartiers','commandes','litiges','users','avis'].forEach(k=>{
     document.getElementById('tab-'+k).classList.toggle('active', k===t);
   });
   chargerTout();
@@ -194,6 +198,29 @@ async function chargerTout(){
           </div>
         </div>`).join('');
     }
+    if(tabActuel==='quartiers'){
+      const {data} = await sb.from('profiles').select('*').eq('verification_quartier','demande_envoyee').order('created_at',{ascending:false});
+      if(!data || data.length===0){ box.innerHTML = `<div class="empty">✅ Aucune demande de vérification quartier.<br>Tout le monde est déjà vérifié ou personne n'a demandé.</div>`; return; }
+      box.innerHTML = data.map(u=>{
+        const quartier = u.quartier || u.localite || '-';
+        const photoPiece = u.photo_piece_url || '';
+        const photoAtelier = u.photo_atelier_url || '';
+        return `
+        <div class="card">
+          <span class="badge attente">📍 Vérification quartier - ${esc(quartier)}</span>
+          <h3 style="margin-top:8px">${esc(u.nom)} - ${esc(u.categorie_prestataire||'Prestataire')}</h3>
+          <p>WhatsApp : ${esc(u.whatsapp)} • 📍 ${esc(u.localite)} - ${esc(u.ville)} - ${esc(u.pays)}<br><b>Quartier déclaré :</b> ${esc(quartier)}<br>${esc(u.description_profil || '')}</p>
+          <div class="photos">
+            <div>${photoPiece ? `<img src="${photoPiece}" onclick="window.open('${photoPiece}','_blank')"><small>🪪 Pièce d'identité - Clique pour agrandir</small>` : '<small>Aucune photo pièce</small>'}</div>
+            <div>${photoAtelier ? `<img src="${photoAtelier}" onclick="window.open('${photoAtelier}','_blank')"><small>🏪 Photo atelier - Clique pour agrandir</small>` : '<small>Aucune photo atelier</small>'}</div>
+          </div>
+          <div class="actions">
+            <button type="button" class="btn-val" onclick="validerQuartier('${esc(u.id)}','${esc(quartier)}')">✅ Valider quartier - Donner badge</button>
+            <button type="button" class="btn-rej" onclick="rejeterQuartier('${esc(u.id)}')">❌ Refuser - Photos pas bonnes</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
     if(tabActuel==='commandes'){
       const {data} = await sb.from('commandes').select('*').order('created_at',{ascending:false}).limit(50);
       if(!data || data.length===0){ box.innerHTML = `<div class="empty">Aucune commande pour l'instant.</div>`; return; }
@@ -231,7 +258,7 @@ async function chargerTout(){
       if(!data || data.length===0){ box.innerHTML = `<div class="empty">Aucun utilisateur.</div>`; return; }
       box.innerHTML = data.map(u=>`
         <div class="card"><b>${esc(u.nom)}</b> • ${esc(u.type_compte)} ${u.type_compte==='prestataire' ? '• ' + esc(u.categorie_prestataire||'') + ' • Statut : ' + esc(u.statut_validation||'en_attente') : ''}
-        <p>WhatsApp : ${esc(u.whatsapp)} • 📍 ${esc(u.localite)} - ${esc(u.ville)} - ${esc(u.pays)}<br>${esc(u.description_profil || '')}</p></div>`).join('');
+        <p>WhatsApp : ${esc(u.whatsapp)} • 📍 ${esc(u.localite)} - ${esc(u.ville)} - ${esc(u.pays)} • Quartier : ${esc(u.quartier||u.localite||'-')} ${u.quartier_verifie ? '✅ Vérifié' : ''}<br>${esc(u.description_profil || '')}</p></div>`).join('');
     }
     if(tabActuel==='avis'){
       const {data} = await sb.from('avis').select('*').order('created_at',{ascending:false}).limit(50);
@@ -261,6 +288,20 @@ async function validerPrestataire(id){
 async function rejeterPrestataire(id){
   if(!confirm('Refuser ce prestataire ?')) return;
   await sb.from('profiles').update({statut_validation:'rejete', status_prestataire:'rejete'}).eq('id', id);
+  chargerTout();
+}
+// NOUVEAU : Validation quartier en 1 clic
+async function validerQuartier(id, quartier){
+  if(!confirm('Valider ce prestataire comme Vérifié à '+quartier+' ? Il aura le badge ✅')) return;
+  const {error} = await sb.from('profiles').update({verification_quartier:'valide', quartier_verifie:true}).eq('id', id);
+  if(error) alert('Erreur : '+error.message);
+  else alert('✅ Quartier validé ! Badge ✅ Vérifié à '+quartier+' activé.');
+  chargerTout();
+}
+async function rejeterQuartier(id){
+  if(!confirm('Refuser cette vérification quartier ? Le prestataire devra renvoyer de meilleures photos.')) return;
+  await sb.from('profiles').update({verification_quartier:'refuse', quartier_verifie:false}).eq('id', id);
+  alert('❌ Vérification quartier refusée.');
   chargerTout();
 }
 async function liberer(id){
