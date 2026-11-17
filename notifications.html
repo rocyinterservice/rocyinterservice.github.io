@@ -1,14 +1,19 @@
 <!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Notifications - Rocyinter</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="rocy-layout.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
 body{background:#f6f7f9;color:#111;padding:16px}
 .top{max-width:520px;margin:0 auto}
 .back{color:#64748b;font-size:13px;cursor:pointer}
 h1{font-size:22px;margin:14px 0 12px} h1 span{color:#f59e0b}
-.card{background:#fff;border-radius:16px;padding:14px;margin-bottom:12px}
-.card p{font-size:13px;color:#64748b;line-height:1.6}
+.card{background:#fff;border-radius:16px;padding:14px;margin-bottom:12px;cursor:pointer}
+.card.non-lu{border-left:4px solid #f59e0b}
+.card b{font-size:14px} .card p{font-size:13px;color:#64748b;line-height:1.6;margin-top:4px}
+.card small{font-size:11px;color:#94a3b8}
 .btn{width:100%;background:#0f172a;color:#fff;border:none;padding:11px;border-radius:10px;font-weight:800;cursor:pointer;margin-top:8px}
+.btn-sec{width:100%;background:#f1f5f9;border:none;padding:11px;border-radius:10px;font-weight:700;cursor:pointer;margin-top:8px}
 </style></head>
 <body><div class="top">
 <div class="back" onclick="location.href='index.html'">← Accueil</div>
@@ -16,16 +21,42 @@ h1{font-size:22px;margin:14px 0 12px} h1 span{color:#f59e0b}
 <div id="liste">Chargement...</div>
 </div>
 <script>
-function charger(){
-  const uid = localStorage.getItem('rocy_user_id');
-  if(!uid){location.href='connexion.html';return;}
-  const notifs = JSON.parse(localStorage.getItem('rocy_notifications')||'[]');
-  if(!notifs.length){
-    document.getElementById('liste').innerHTML = `<div class="card"><p><b>👋 Bienvenue sur Rocyinter</b><br>Tu recevras ici : nouveau message, proposition de prix, paiement reçu, validation, litige.</p></div><div class="card"><p><b>💡 Astuce :</b> Active WhatsApp pour recevoir les alertes. On t'écrit sur 2290191478460.</p></div>`;
+const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
+const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+window.supabaseClient = sb;
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ICONES = { message:'💬', paiement:'💰', commande:'🛒', validation:'✅', litige:'⚠️', info:'🔔', avis:'⭐' };
+async function charger(){
+  const {data:{user}} = await sb.auth.getUser();
+  if(!user){ location.href='connexion.html'; return; }
+  const {data, error} = await sb.from('notifications').select('*').eq('user_id', user.id).order('created_at',{ascending:false}).limit(50);
+  if(error){ document.getElementById('liste').innerHTML = `<div class="card"><p>Erreur : ${esc(error.message)}</p></div>`; return; }
+  if(!data || !data.length){
+    document.getElementById('liste').innerHTML = `<div class="card"><p><b>👋 Bienvenue sur Rocyinter</b><br>Tu recevras ici : nouveau message, proposition de prix, paiement reçu, validation, litige.</p></div>`;
     return;
   }
-  document.getElementById('liste').innerHTML = notifs.map(n=>`<div class="card"><p>${n}</p></div>`).join('') + `<button class="btn" onclick="effacer()">Tout effacer</button>`;
+  document.getElementById('liste').innerHTML = data.map(n=>{
+    const date = new Date(n.created_at).toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+    return `<div class="card ${n.lu?'':'non-lu'}" onclick="ouvrirNotif('${esc(n.id)}','${esc(n.lien||'')}')">
+      <b>${ICONES[n.type]||'🔔'} ${esc(n.titre)}</b>
+      <p>${esc(n.message)}</p>
+      <small>${esc(date)} ${n.lu?'• Lu':'• Non lu'}</small>
+    </div>`;
+  }).join('') + `<button class="btn-sec" onclick="toutLire()">Tout marquer comme lu</button>`;
 }
-function effacer(){localStorage.removeItem('rocy_notifications'); charger();}
+async function ouvrirNotif(id, lien){
+  await sb.from('notifications').update({lu:true}).eq('id', id);
+  if(lien && lien !== 'null' && lien !== '') location.href = lien;
+  else charger();
+}
+async function toutLire(){
+  const {data:{user}} = await sb.auth.getUser();
+  if(!user) return;
+  await sb.from('notifications').update({lu:true}).eq('user_id', user.id).eq('lu', false);
+  charger();
+}
+// Temps réel : quand une nouvelle notif arrive, on recharge
+sb.channel('notifs').on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications'},()=>charger()).subscribe();
 charger();
 </script></body></html>
