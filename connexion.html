@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title data-i18n="connexionTitre">Connexion - Rocyinter</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="rocy-layout.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
@@ -80,12 +80,11 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
 </div>
 <script>
 const ADMIN_EMAIL = 'rocyinter@gmail.com';
-// ✅ CORRIGÉ : ne plante plus si Supabase n'est pas encore chargé
-let supabase = window.supabaseClient || null;
-if(!supabase && window.supabase && window.supabase.createClient){
+let sb = window.supabaseClient || null;
+if(!sb && window.supabase && window.supabase.createClient){
   try{
-    supabase = window.supabase.createClient("https://gdwgjsloivrpxxvggxyz.supabase.co", "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF");
-    window.supabaseClient = supabase;
+    sb = window.supabase.createClient("https://gdwgjsloivrpxxvggxyz.supabase.co", "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF");
+    window.supabaseClient = sb;
   }catch(e){ console.log('Supabase pas encore chargé', e); }
 }
 let modeConnexion='whatsapp';
@@ -179,13 +178,13 @@ function verifTelConnexion(){
 async function connecter(){
   const password = document.getElementById('password').value;
   const btn = document.getElementById('btnCo');
-  if(!supabase){ showMsg('Connexion en cours, réessaie dans 2 secondes...', false); return; }
+  if(!sb){ showMsg('Connexion en cours, réessaie dans 2 secondes...', false); return; }
   let emailCherche = '';
   if(modeConnexion==='whatsapp'){
     const r = normaliseWhatsApp();
     if(!r.num || !password){ showMsg('Remplis WhatsApp + Mot de passe', false); return; }
     if(!verifTelConnexion()){ const indic=document.getElementById('indicatif').value; const p=paysDepuisIndicatifCo(indic); showMsg('❌ Numéro incorrect. ' + texteLongueurCo(p), false); return; }
-    const {data: emailViaWhats, error: errRpc} = await supabase.rpc('get_email_by_whatsapp', { p_whatsapp: r.chiffres });
+    const {data: emailViaWhats, error: errRpc} = await sb.rpc('get_email_by_whatsapp', { p_whatsapp: r.chiffres });
     if(errRpc || !emailViaWhats){
       emailCherche = r.chiffres + '@rocyinter.com';
     } else {
@@ -198,9 +197,9 @@ async function connecter(){
   }
   btn.disabled = true; btn.textContent = 'Vérification...';
   try{
-    const {data: login, error: errLogin} = await supabase.auth.signInWithPassword({email: emailCherche, password});
+    const {data: login, error: errLogin} = await sb.auth.signInWithPassword({email: emailCherche, password});
     if(errLogin || !login?.user){ showMsg('Email / WhatsApp ou mot de passe incorrect.', false); btn.disabled = false; btn.textContent = 'Se connecter →'; return; }
-    const {data: prof, error: perr} = await supabase.from('profiles').select('id,nom,full_name,email,whatsapp,phone,type,type_compte,role,pays,country,ville,city,localite').eq('id', login.user.id).single();
+    const {data: prof, error: perr} = await sb.from('profiles').select('id,nom,full_name,email,whatsapp,phone,type,type_compte,role,pays,country,ville,city,localite').eq('id', login.user.id).single();
     if(perr || !prof){ showMsg('Profil introuvable. Réinscris-toi.', false); btn.disabled = false; btn.textContent = 'Se connecter →'; return; }
     const emailFinal = String(prof.email || emailCherche || '').toLowerCase().trim();
     let typeFinal = String(prof.type || prof.type_compte || prof.role || 'client').toLowerCase().trim();
