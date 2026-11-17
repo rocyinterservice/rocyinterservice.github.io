@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title data-i18n="inscriptionTitre">Inscription - Rocyinter</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="pays.js"></script>
 <script src="rocy-layout.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
@@ -119,7 +118,14 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
 </div></div>
 <script>
 const ADMIN_EMAIL = 'rocyinter@gmail.com';
-const supabase = window.supabase.createClient("https://gdwgjsloivrpxxvggxyz.supabase.co", "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF");
+// ✅ CORRIGÉ : ne plante plus si Supabase n'est pas encore chargé
+let supabase = window.supabaseClient || null;
+if(!supabase && window.supabase && window.supabase.createClient){
+  try{
+    supabase = window.supabase.createClient("https://gdwgjsloivrpxxvggxyz.supabase.co", "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF");
+    window.supabaseClient = supabase;
+  }catch(e){ console.log('Supabase pas encore chargé', e); }
+}
 let typeCompte='client'; let photoBase64='';
 let typeFournisseur='professionnel';
 function setType(t){ typeCompte=t; document.getElementById('btnClient').classList.toggle('active', t==='client'); document.getElementById('btnPresta').classList.toggle('active', t==='prestataire'); document.getElementById('btnLivreur').classList.toggle('active', t==='livreur'); document.getElementById('blocPrestataire').classList.toggle('show', t==='prestataire'); if(t!=='prestataire'){ typeFournisseur='professionnel'; } }
@@ -152,6 +158,7 @@ function universPourCategorie(cat){
 }
 async function redirigerSiDejaConnecte(){
   try{
+    if(!supabase) return;
     const {data:{user}} = await supabase.auth.getUser();
     if(!user) return;
     const {data: prof} = await supabase.from('profiles').select('type,type_compte,role').eq('id', user.id).single();
@@ -181,8 +188,6 @@ const LONGUEUR_PAR_PAYS = {
 };
 function remplirIndicatif(){
   const sel=document.getElementById('indicatif');
-  // On garde un seul +1 pour USA/Canada/RD/Jamaïque/Trinité : on affiche USA, les autres ont le même code et marchent pareil
-  const dejaVu=new Set();
   let html='';
   const ordre=Object.keys(MAP_PAYS_CODE);
   ordre.sort((a,b)=> a==='Bénin' ? -1 : b==='Bénin' ? 1 : a.localeCompare(b));
@@ -389,6 +394,7 @@ async function inscrire(){
   }
   btn.disabled=true; btn.textContent='Création...';
   try{
+    if(!supabase){ showMsg('Connexion en cours, réessaie dans 2 secondes...', false); btn.disabled=false; btn.textContent='Créer mon compte →'; return; }
     const chiffres = whatsapp.replace(/[^0-9]/g,'');
     const emailFinal=(emailRaw||(chiffres+'@rocyinter.com')).toLowerCase();
     try{
@@ -475,7 +481,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
   const params = new URLSearchParams(location.search);
   const t = params.get('type');
   if(t==='prestataire' || t==='livreur' || t==='client') setType(t);
-  supabase.auth.getUser().then(({data:{user}})=>{ if(user) redirigerSiDejaConnecte(); });
+  if(supabase) supabase.auth.getUser().then(({data:{user}})=>{ if(user) redirigerSiDejaConnecte(); });
   majListeVilles(); majAideTel();
   if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 });
