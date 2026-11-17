@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title data-i18n="paiementTitre">Paiement sécurisé - Rocyinter</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="pays.js"></script>
 <script src="rocy-layout.js"></script>
 <style>
@@ -68,20 +68,26 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
 <script>
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+window.supabaseClient = sb;
 const WHATSAPP_ROCY = '2290191478460';
-const uid = localStorage.getItem('rocy_user_id');
-const roleUser = localStorage.getItem('rocy_user_type') || localStorage.getItem('rocy_role') || '';
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const commandeId = localStorage.getItem('paiement_commande_id');
-let commande = null;
-if(!uid){ location.href='connexion.html'; }
-if(roleUser==='prestataire' || roleUser==='livreur'){ location.href='dashboard-prestataire.html'; }
-if(roleUser==='admin'){ location.href='admin.html'; }
-if(!commandeId){ document.getElementById('resume').innerHTML = 'Aucune commande à payer. Va dans Mes commandes.'; document.getElementById('blocPaiement').style.display='none'; }
+let commande = null; let uid=''; let monRole='';
+async function init(){
+  const {data:{user}} = await sb.auth.getUser();
+  if(!user){ location.href='connexion.html'; return; }
+  uid = user.id;
+  const {data:p}=await sb.from('profiles').select('type_compte, role').eq('id',uid).maybeSingle();
+  monRole = String(p?.type_compte||p?.role||'').toLowerCase();
+  if(monRole==='prestataire' || monRole==='livreur'){ location.href='dashboard-prestataire.html'; return; }
+  if(monRole==='admin'){ location.href='admin.html'; return; }
+  if(!commandeId){ document.getElementById('resume').innerHTML = 'Aucune commande à payer. Va dans Mes commandes.'; document.getElementById('blocPaiement').style.display='none'; return; }
+  charger();
+}
 function showMsg(txt, ok){
   const m = document.getElementById('msg');
-  m.textContent = txt;
-  m.className = 'msg ' + (ok ? 'ok' : 'err');
+  m.textContent = txt; m.className = 'msg ' + (ok ? 'ok' : 'err');
 }
 function texteCommission(c){
   if(c.univers==='domicile') return 'Commission 8%';
@@ -89,55 +95,53 @@ function texteCommission(c){
   if(c.univers==='manger') return 'Commission 12%';
   if(c.univers==='sejour') return 'Commission 12% par nuit';
   if(c.univers==='livreur') return 'Commission 20% (Livreur 80%)';
-  if(c.univers==='immobilier'){
-    // On distingue via le titre / annonce si dispo, sinon texte générique immobilier
-    return 'Commission Immobilier (voir détail ci-dessous)';
-  }
+  if(c.univers==='immobilier') return 'Commission Immobilier (voir détail ci-dessous)';
   return 'Commission';
 }
 function detailImmobilier(c){
-  // Si la commande vient d'une parcelle, le titre contient souvent Parcelle / Vente
   const t = String(c.titre||'').toLowerCase();
   if(t.includes('parcelle') || t.includes('vente') || t.includes('terrain')) return '📜 Parcelle : Réservation 10 000 FCFA + 2% plafonné 200 000 FCFA. Reste devant notaire, pas en escrow.';
   return '🏠 Location : 50% d\'un mois en escrow pour bloquer. Libération après visite et signature.';
 }
 async function charger(){
   if(!commandeId) return;
-  const {data, error} = await supabase.from('commandes').select('*').eq('id', commandeId).maybeSingle();
+  const {data, error} = await sb.from('commandes').select('*').eq('id', commandeId).maybeSingle();
   if(error || !data){ document.getElementById('resume').innerHTML = 'Commande introuvable.'; document.getElementById('blocPaiement').style.display='none'; return; }
   if(String(data.client_id)!==String(uid)){
     document.getElementById('resume').innerHTML = `<b>⛔ Accès refusé.</b><p>Cette commande ne t'appartient pas.</p><button class="btn btn-dark" onclick="location.href='dashboard-client.html'">Voir mes commandes</button>`;
-    document.getElementById('blocPaiement').style.display='none';
-    return;
+    document.getElementById('blocPaiement').style.display='none'; return;
   }
   commande = data;
   if(data.status !== 'en_attente'){
-    document.getElementById('resume').innerHTML = `<b>${data.titre}</b><p>Cette commande est déjà : <b>${data.status}</b>. Pas besoin de payer 2 fois.</p><button class="btn btn-dark" onclick="location.href='dashboard-client.html'">Voir mes commandes</button>`;
-    document.getElementById('blocPaiement').style.display='none';
-    return;
+    document.getElementById('resume').innerHTML = `<b>${esc(data.titre)}</b><p>Cette commande est déjà : <b>${esc(data.status)}</b>. Pas besoin de payer 2 fois.</p><button class="btn btn-dark" onclick="location.href='dashboard-client.html'">Voir mes commandes</button>`;
+    document.getElementById('blocPaiement').style.display='none'; return;
   }
   const supplement = data.univers === 'manger' ? 500 : 0;
   const total = Number(data.montant_total) + supplement;
   document.getElementById('resume').innerHTML = `
-    <h3>${data.titre}</h3>
-    <div class="row"><span>📍 Lieu</span><b>${data.localite || ''} - ${data.ville || ''}</b></div>
+    <h3>${esc(data.titre)}</h3>
+    <div class="row"><span>📍 Lieu</span><b>${esc(data.localite)} - ${esc(data.ville)}</b></div>
     <div class="row"><span>Montant convenu</span><b>${Number(data.montant_total).toLocaleString()} FCFA</b></div>
     ${supplement ? `<div class="row"><span>Supplément espèces livraison</span><b>+ 500 FCFA</b></div>` : ''}
-    <div class="row"><span>${texteCommission(data)} (prélevée à la libération)</span><b>${Number(data.commission).toLocaleString()} FCFA</b></div>
+    <div class="row"><span>${esc(texteCommission(data))} (prélevée à la libération)</span><b>${Number(data.commission).toLocaleString()} FCFA</b></div>
     <div class="row"><span>Prestataire recevra</span><b>${Number(data.montant_prestataire).toLocaleString()} FCFA</b></div>
-    ${data.univers==='immobilier' ? `<p style="margin-top:8px">${detailImmobilier(data)}</p>` : ''}
+    ${data.univers==='immobilier' ? `<p style="margin-top:8px">${esc(detailImmobilier(data))}</p>` : ''}
     <div class="row total"><span>Tu paies maintenant</span><b>${total.toLocaleString()} FCFA</b></div>
   `;
   if(data.univers === 'manger') document.getElementById('zoneEspeces').style.display = 'block';
 }
 async function confirmerPaiement(mode){
   if(!commande) return;
-  const {data: frais} = await supabase.from('commandes').select('status').eq('id', commande.id).single();
+  const {data: frais} = await sb.from('commandes').select('status').eq('id', commande.id).single();
   if(!frais || frais.status !== 'en_attente'){ showMsg('Cette commande a déjà été payée.', false); setTimeout(()=>location.href='dashboard-client.html', 1000); return; }
-  const {error} = await supabase.from('commandes').update({status: 'paye', mode_paiement: mode, paye_le: new Date().toISOString()}).eq('id', commande.id).eq('client_id', uid).eq('status', 'en_attente');
+  const {error} = await sb.from('commandes').update({status: 'paye', mode_paiement: mode, paye_le: new Date().toISOString()}).eq('id', commande.id).eq('client_id', uid).eq('status', 'en_attente');
   if(error){ showMsg('Erreur : ' + error.message, false); return; }
   if(commande.conversation_id){
-    await supabase.from('messages').insert([{conversation_id: commande.conversation_id, sender_id: uid, contenu: `💳 Paiement reçu (${mode}) - ${Number(commande.montant_total).toLocaleString()} FCFA bloqué en escrow. Tu peux commencer le service.`, type: 'texte'}]);
+    await sb.from('messages').insert([{conversation_id: commande.conversation_id, sender_id: uid, contenu: `💳 Paiement reçu (${mode}) - ${Number(commande.montant_total).toLocaleString()} FCFA bloqué en escrow. Tu peux commencer le service.`, type: 'texte'}]);
+  }
+  // 🔔 VRAIE NOTIF au prestataire
+  if(commande.prestataire_id){
+    await sb.rpc('creer_notification', { p_user_id: commande.prestataire_id, p_titre: '💰 Paiement reçu', p_message: `Commande "${commande.titre}" payée : ${Number(commande.montant_total).toLocaleString()} FCFA bloqué en escrow. Tu peux commencer.`, p_type: 'paiement', p_lien: 'dashboard-prestataire.html' });
   }
   showMsg('✅ Paiement confirmé ! Argent bloqué en escrow. Redirection...', true);
   setTimeout(()=> location.href='dashboard-client.html', 1200);
@@ -157,7 +161,7 @@ async function payerTest(){
   if(!confirm('Simuler un paiement Mobile Money pour TESTER ? En vrai, ici ce sera Fedapay.')) return;
   await confirmerPaiement('test_mobile_money');
 }
-charger();
+init();
 if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 </script>
 </body>
