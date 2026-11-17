@@ -40,6 +40,7 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
 .pwdWrap input{padding-right:46px}
 .eyeBtn{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:none;background:transparent;cursor:pointer;font-size:19px;line-height:1;border-radius:8px}
 .eyeBtn:active{background:#f1f5f9}
+.badgeQuartier{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px;font-size:12px;color:#92400e;line-height:1.5}
 </style></head>
 <body><div class="top">
 <div class="back" onclick="location.href='index.html'">← <span data-i18n="accueil">Accueil</span></div>
@@ -73,7 +74,10 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
 <div id="errVille" class="errTxt" data-i18n="villeErreur">❌ Cette ville n'existe pas dans ce pays. Choisis une ville dans la liste.</div>
 </div>
 </div>
-<div><label data-i18n="localite">LOCALITÉ / QUARTIER *</label><input id="localite" data-i18n-ph="localitePh" placeholder="Ex: Godomey" oninput="clearErr(this)"></div>
+<div><label data-i18n="localite">LOCALITÉ / QUARTIER *</label><input id="localite" data-i18n-ph="localitePh" placeholder="Ex: Godomey" list="listeQuartiers" oninput="clearErr(this)" autocomplete="off">
+<datalist id="listeQuartiers"></datalist>
+<div class="badgeQuartier" id="aideQuartier">📍 <b>Vérification par quartier :</b> Mets ton vrai quartier (Ex: Godomey). Après inscription, va sur <b>Vérification</b> pour obtenir le badge <b>✅ Vérifié à Godomey</b>. Les clients font plus confiance aux prestataires de leur quartier.</div>
+</div>
 <div id="blocPrestataire">
 <div>
   <label>VOUS ÊTES ? *</label>
@@ -261,14 +265,21 @@ const VILLES_PAR_PAYS = {
   'Brésil': ["São Paulo","Rio de Janeiro","Salvador","Brasilia","Fortaleza","Belo Horizonte"],
   'Mexique': ["Mexico","Guadalajara","Monterrey","Puebla","Cancún","Tijuana"]
 };
-function majListeVilles(){
-  const pays = document.getElementById('pays').value;
-  const dl = document.getElementById('listeVilles');
-  const villes = VILLES_PAR_PAYS[pays] || [];
-  dl.innerHTML = villes.map(v => `<option value="${v}">`).join('');
-  const villeInput = document.getElementById('ville');
-  if(villeInput.value && villes.length>0 && !villes.some(v => normaliseVille(v) === normaliseVille(villeInput.value.trim()))){ villeInput.value = ''; }
-  verifVille(villeInput);
+// NOUVEAU : Quartiers pour la vérification par quartier
+const QUARTIERS_PAR_VILLE = {
+  'Abomey-Calavi': ["Godomey","Calavi Centre","Ouèdo","Akassato","Hêvié","Togba","Zinvié","Kpanroun","Glo-Djigbé"],
+  'Cotonou': ["Fidjrossè","Godomey","Agla","Akpakpa","Fidjrossè","Ganhi","Gbégamey","Godomey","Jéricho","Kindonou","Mènontin","Sainte-Cécile","St Michel","Vodjè","Wologuèdè","Zongo"],
+  'Porto-Novo': ["Avakpa","Dowa","Houinmè","Oganla","Ouando","Tokpota"],
+  'Ouidah': ["Centre","Djègbadji","Pahou","Savi"],
+  'Parakou': ["Centre","Albarika","Banikanni","Titirou"],
+  'Bohicon': ["Centre","Sodohomè","Passagon"]
+};
+function majListeQuartiers(){
+  const ville = document.getElementById('ville').value.trim();
+  const dl = document.getElementById('listeQuartiers');
+  if(!dl) return;
+  const quartiers = QUARTIERS_PAR_VILLE[ville] || [];
+  dl.innerHTML = quartiers.map(q => `<option value="${q}">`).join('');
 }
 function normaliseVille(s){ return s.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/-/g,' ').replace(/\s+/g,' ').trim(); }
 function verifVille(el){
@@ -280,6 +291,7 @@ function verifVille(el){
   const ok = villes.some(v => normaliseVille(v) === normaliseVille(val));
   document.getElementById('errVille').classList.toggle('show', !ok);
   el.classList.toggle('err', !ok);
+  majListeQuartiers();
   return ok;
 }
 function majIndicatif(){
@@ -440,6 +452,9 @@ async function inscrire(){
       rccm: (typeFinal==='prestataire' && typeFournisseur==='entreprise') ? (rccm || null) : null,
       taille_entreprise: (typeFinal==='prestataire' && typeFournisseur==='entreprise') ? (tailleEntreprise || null) : null,
       pays, country: pays, ville, city: ville, localite,
+      quartier: localite,
+      verification_quartier: 'en_attente',
+      quartier_verifie: false,
       description:description||null, description_profil:description||null,
       photo_url:photoBase64||null, avatar_url:photoBase64||null,
       categorie:typeFinal==='prestataire'?categorie:null,
@@ -457,7 +472,7 @@ async function inscrire(){
     if(error){ showMsg('Erreur profil : '+error.message, false); btn.disabled=false; btn.textContent='Créer mon compte →'; return; }
     localStorage.setItem('rocy_user_id', userId); localStorage.setItem('rocy_user_nom', nomFinal); localStorage.setItem('rocy_user_type', typeFinal); localStorage.setItem('rocy_role', typeFinal); localStorage.setItem('rocy_user_email', emailFinal); localStorage.setItem('rocy_email', emailFinal); localStorage.setItem('rocy_user_whatsapp', whatsapp); localStorage.setItem('rocy_user_pays', pays); localStorage.setItem('rocy_user_ville', ville); localStorage.setItem('rocy_user_localite', localite);
     showMsg('✅ Compte créé ! Redirection...', true);
-    setTimeout(()=>{ if(typeFinal==='prestataire') location.href='creer-annonce.html'; else if(typeFinal==='livreur') location.href='dashboard-prestataire.html'; else location.href='index.html'; },1200);
+    setTimeout(()=>{ if(typeFinal==='prestataire') location.href='verification.html'; else if(typeFinal==='livreur') location.href='dashboard-prestataire.html'; else location.href='index.html'; },1200);
   }catch(e){ showMsg('Erreur : '+e.message, false); btn.disabled=false; btn.textContent='Créer mon compte →'; }
 }
 document.addEventListener('DOMContentLoaded', ()=>{
@@ -481,7 +496,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
   const t = params.get('type');
   if(t==='prestataire' || t==='livreur' || t==='client') setType(t);
   if(sb) sb.auth.getUser().then(({data:{user}})=>{ if(user) redirigerSiDejaConnecte(); });
-  majListeVilles(); majAideTel();
+  majListeVilles(); majAideTel(); majListeQuartiers();
   if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 });
 </script>
