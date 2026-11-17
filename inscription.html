@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title data-i18n="inscriptionTitre">Inscription - Rocyinter</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="rocy-layout.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
@@ -118,12 +118,11 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
 </div></div>
 <script>
 const ADMIN_EMAIL = 'rocyinter@gmail.com';
-// ✅ CORRIGÉ : ne plante plus si Supabase n'est pas encore chargé
-let supabase = window.supabaseClient || null;
-if(!supabase && window.supabase && window.supabase.createClient){
+let sb = window.supabaseClient || null;
+if(!sb && window.supabase && window.supabase.createClient){
   try{
-    supabase = window.supabase.createClient("https://gdwgjsloivrpxxvggxyz.supabase.co", "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF");
-    window.supabaseClient = supabase;
+    sb = window.supabase.createClient("https://gdwgjsloivrpxxvggxyz.supabase.co", "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF");
+    window.supabaseClient = sb;
   }catch(e){ console.log('Supabase pas encore chargé', e); }
 }
 let typeCompte='client'; let photoBase64='';
@@ -158,10 +157,10 @@ function universPourCategorie(cat){
 }
 async function redirigerSiDejaConnecte(){
   try{
-    if(!supabase) return;
-    const {data:{user}} = await supabase.auth.getUser();
+    if(!sb) return;
+    const {data:{user}} = await sb.auth.getUser();
     if(!user) return;
-    const {data: prof} = await supabase.from('profiles').select('type,type_compte,role').eq('id', user.id).single();
+    const {data: prof} = await sb.from('profiles').select('type,type_compte,role').eq('id', user.id).single();
     const type = prof ? (prof.type || prof.type_compte || prof.role || 'client') : 'client';
     if(type==='admin') location.href='admin.html';
     else if(type==='prestataire' || type==='livreur') location.href='dashboard-prestataire.html';
@@ -394,15 +393,15 @@ async function inscrire(){
   }
   btn.disabled=true; btn.textContent='Création...';
   try{
-    if(!supabase){ showMsg('Connexion en cours, réessaie dans 2 secondes...', false); btn.disabled=false; btn.textContent='Créer mon compte →'; return; }
+    if(!sb){ showMsg('Connexion en cours, réessaie dans 2 secondes...', false); btn.disabled=false; btn.textContent='Créer mon compte →'; return; }
     const chiffres = whatsapp.replace(/[^0-9]/g,'');
     const emailFinal=(emailRaw||(chiffres+'@rocyinter.com')).toLowerCase();
     try{
-      const {data: emailExistant} = await supabase.rpc('get_email_by_whatsapp', { p_whatsapp: chiffres });
+      const {data: emailExistant} = await sb.rpc('get_email_by_whatsapp', { p_whatsapp: chiffres });
       if(emailExistant){
-        const {data: login, error: errLogin} = await supabase.auth.signInWithPassword({email: String(emailExistant).toLowerCase(), password});
+        const {data: login, error: errLogin} = await sb.auth.signInWithPassword({email: String(emailExistant).toLowerCase(), password});
         if(!errLogin && login?.user){
-          const {data: prof} = await supabase.from('profiles').select('id,nom,full_name,type,type_compte,role,pays,ville,localite').eq('id', login.user.id).single();
+          const {data: prof} = await sb.from('profiles').select('id,nom,full_name,type,type_compte,role,pays,ville,localite').eq('id', login.user.id).single();
           const typeExiste = prof ? (prof.type||prof.type_compte||prof.role||typeFinal) : typeFinal;
           localStorage.setItem('rocy_user_id', login.user.id); localStorage.setItem('rocy_user_nom', prof?.nom||prof?.full_name||nom); localStorage.setItem('rocy_user_type', typeExiste); localStorage.setItem('rocy_role', typeExiste); localStorage.setItem('rocy_user_email', String(emailExistant).toLowerCase()); localStorage.setItem('rocy_email', String(emailExistant).toLowerCase()); localStorage.setItem('rocy_user_whatsapp', whatsapp); localStorage.setItem('rocy_user_pays', prof?.pays||pays); localStorage.setItem('rocy_user_ville', prof?.ville||ville); localStorage.setItem('rocy_user_localite', prof?.localite||localite);
           showMsg('✅ Ce compte existe déjà, on te connecte...', true);
@@ -412,7 +411,7 @@ async function inscrire(){
         }
       }
     }catch(e){}
-    const {data: authData, error: authErr} = await supabase.auth.signUp({email: emailFinal, password});
+    const {data: authData, error: authErr} = await sb.auth.signUp({email: emailFinal, password});
     if(authErr){
       if(authErr.message.toLowerCase().includes('already') || authErr.message.toLowerCase().includes('exists')){
         showMsg('Ce email existe déjà, connecte-toi.', false);
@@ -427,7 +426,7 @@ async function inscrire(){
       btn.disabled=false; btn.textContent='Créer mon compte →'; return;
     }
     if(!authData.session){
-      const {data: login2} = await supabase.auth.signInWithPassword({email: emailFinal, password});
+      const {data: login2} = await sb.auth.signInWithPassword({email: emailFinal, password});
       if(login2?.user) userId = login2.user.id;
     }
     const univers = typeFinal==='prestataire' ? universPourCategorie(categorie) : null;
@@ -449,10 +448,10 @@ async function inscrire(){
       statut_validation:(typeFinal==='prestataire'?'en_attente':'valide'),
       status_prestataire:typeFinal==='prestataire'?'en_attente':'valide'
     };
-    let {data,error}=await supabase.from('profiles').insert([payload]).select().single();
+    let {data,error}=await sb.from('profiles').insert([payload]).select().single();
     if(error && (error.message.includes("Could not find the") || error.message.includes("column"))){
       const minimal = { id:userId, nom: nomFinal, whatsapp, phone: whatsapp, email:emailFinal, type:typeFinal, type_compte:typeFinal, pays, ville, localite, description_profil:description||null, categorie_prestataire:typeFinal==='prestataire'?categorie:null, statut_validation:(typeFinal==='prestataire'?'en_attente':'valide'), status_prestataire:typeFinal==='prestataire'?'en_attente':'valide' };
-      const retry = await supabase.from('profiles').insert([minimal]).select().single();
+      const retry = await sb.from('profiles').insert([minimal]).select().single();
       data = retry.data; error = retry.error;
     }
     if(error){ showMsg('Erreur profil : '+error.message, false); btn.disabled=false; btn.textContent='Créer mon compte →'; return; }
@@ -481,7 +480,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
   const params = new URLSearchParams(location.search);
   const t = params.get('type');
   if(t==='prestataire' || t==='livreur' || t==='client') setType(t);
-  if(supabase) supabase.auth.getUser().then(({data:{user}})=>{ if(user) redirigerSiDejaConnecte(); });
+  if(sb) sb.auth.getUser().then(({data:{user}})=>{ if(user) redirigerSiDejaConnecte(); });
   majListeVilles(); majAideTel();
   if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 });
