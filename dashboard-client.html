@@ -54,19 +54,18 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px;line-height:1.5}
 <script>
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+window.supabaseClient = sb;
 let uid = null;
-
-// SÉCURISÉ : échappe tout texte venant de la base avant innerHTML
 function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmt(n){ return Number(n || 0).toLocaleString('fr-FR'); }
 async function getUtilisateurSecurise(){
-  const {data:{user}, error} = await supabase.auth.getUser();
+  const {data:{user}, error} = await sb.auth.getUser();
   if(error || !user) return null;
   return user;
 }
 async function deconnecter(){
-  await supabase.auth.signOut();
+  await sb.auth.signOut();
   const langue = localStorage.getItem('rocy_langue');
   localStorage.clear();
   if(langue) localStorage.setItem('rocy_langue', langue);
@@ -105,22 +104,16 @@ async function charger(){
   const user = await getUtilisateurSecurise();
   if(!user){ location.href='connexion.html'; return; }
   uid = user.id;
-
-  // Profil depuis la BASE, jamais localStorage. Colonnes utiles seulement.
-  const {data: profil} = await supabase.from('profiles')
+  const {data: profil} = await sb.from('profiles')
     .select('id, nom, nom_entreprise, type_fournisseur, type_compte, role')
     .eq('id', uid).maybeSingle();
   if(!profil){ location.href='connexion.html'; return; }
   const roleReel = String(profil.type_compte || profil.role || profil.type_fournisseur || '').toLowerCase();
-  // Un fournisseur qui arrive ici va sur son dashboard fournisseur
   if(['prestataire','livreur','fournisseur','professionnel','entreprise','pro'].includes(roleReel)){ location.href='dashboard-prestataire.html'; return; }
   if(roleReel === 'admin'){ location.href='admin.html'; return; }
   if(roleReel !== 'client'){ location.href='connexion.html'; return; }
-
   document.getElementById('nomUser').textContent = profil.nom || 'Client';
-
-  // Commandes : seulement les miennes, colonnes utiles
-  const {data: cmds} = await supabase.from('commandes')
+  const {data: cmds} = await sb.from('commandes')
     .select('id, titre, prestataire_id, conversation_id, annonce_id, status, univers, commission, montant_total, montant_prestataire, localite, ville, created_at')
     .eq('client_id', uid).order('created_at',{ascending:false});
   const box = document.getElementById('listeCommandes');
@@ -144,7 +137,7 @@ async function charger(){
       <button class="btn btn-dark" onclick="voirConversation('${esc(c.conversation_id)}','${esc(c.annonce_id)}')">Ouvrir le chat</button>
     </div>`).join('');
   }
-  const {data: convsBrutes} = await supabase.from('conversations')
+  const {data: convsBrutes} = await sb.from('conversations')
     .select('id, client_id, prestataire_id, annonce_id, created_at, annonces(titre)')
     .eq('client_id', uid).order('created_at',{ascending:false});
   const convs = (convsBrutes||[]).filter(cv => String(cv.client_id)!==String(cv.prestataire_id));
@@ -157,14 +150,12 @@ async function charger(){
   if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 }
 function payer(id){
-  // SÉCURISÉ : on passe par l'URL, paiement.html doit re-vérifier avec auth.getUser() que c'est bien MA commande
-  // Avant : localStorage.setItem('paiement_commande_id', id) -> on pouvait payer / voir la commande d'un autre
   location.href = 'paiement.html?commande=' + encodeURIComponent(id);
 }
 async function demarrer(id){
   const user = await getUtilisateurSecurise();
   if(!user) return;
-  const {error} = await supabase.from('commandes').update({status:'en_cours'}).eq('id', id).eq('client_id', user.id).eq('status','paye');
+  const {error} = await sb.from('commandes').update({status:'en_cours'}).eq('id', id).eq('client_id', user.id).eq('status','paye');
   if(error) alert('Erreur : ' + error.message);
   charger();
 }
@@ -172,7 +163,7 @@ async function valider(id){
   if(!confirm('Le service est bien terminé ? Après validation, l’argent sera libéré au prestataire.')) return;
   const user = await getUtilisateurSecurise();
   if(!user) return;
-  const {error} = await supabase.from('commandes').update({status:'valide'}).eq('id', id).eq('client_id', user.id).eq('status','en_cours');
+  const {error} = await sb.from('commandes').update({status:'valide'}).eq('id', id).eq('client_id', user.id).eq('status','en_cours');
   if(error){ alert('Erreur : ' + error.message); return; }
   alert('✅ Service validé ! Le prestataire sera payé. Tu peux le noter.');
   charger();
@@ -183,7 +174,7 @@ async function signalerLitige(id){
   if(raison.trim().length > 500){ alert('Raison trop longue, max 500 caractères.'); return; }
   const user = await getUtilisateurSecurise();
   if(!user) return;
-  const {error} = await supabase.from('commandes').update({status:'litige', litige_raison: raison.trim()}).eq('id', id).eq('client_id', user.id).in('status',['paye','en_cours']);
+  const {error} = await sb.from('commandes').update({status:'litige', litige_raison: raison.trim()}).eq('id', id).eq('client_id', user.id).in('status',['paye','en_cours']);
   if(error){ alert('Erreur : ' + error.message); return; }
   alert('⚠️ Litige signalé. Argent bloqué. L’Admin va trancher dans la Page Litiges.');
   charger();
@@ -196,12 +187,11 @@ async function noter(cmdId, prestaId){
   if(!note || note<1 || note>5){ alert('Note invalide. Mets un chiffre entre 1 et 5.'); return; }
   const com = prompt('Ton commentaire :', 'Très bon service, merci !') || '';
   if(com.length > 500){ alert('Commentaire trop long, max 500 caractères.'); return; }
-  // On vérifie que la commande est bien à moi ET validée avant de noter
-  const {data: cmd} = await supabase.from('commandes').select('id, status').eq('id', cmdId).eq('client_id', user.id).single();
+  const {data: cmd} = await sb.from('commandes').select('id, status').eq('id', cmdId).eq('client_id', user.id).single();
   if(!cmd || cmd.status !== 'valide'){ alert('Tu ne peux noter que les commandes validées.'); return; }
-  const {data: exist} = await supabase.from('avis').select('id').eq('commande_id', cmdId).eq('client_id', user.id).maybeSingle();
+  const {data: exist} = await sb.from('avis').select('id').eq('commande_id', cmdId).eq('client_id', user.id).maybeSingle();
   if(exist){ alert('Tu as déjà noté cette commande.'); return; }
-  const {error} = await supabase.from('avis').insert([{commande_id: cmdId, client_id: user.id, prestataire_id: prestaId, note, commentaire: com}]);
+  const {error} = await sb.from('avis').insert([{commande_id: cmdId, client_id: user.id, prestataire_id: prestaId, note, commentaire: com}]);
   if(error){ alert('Erreur : ' + error.message); return; }
   alert('⭐ Merci pour ton avis !');
   charger();
@@ -210,10 +200,9 @@ async function voirConversation(convId, annonceId){
   if(!convId || convId==='null' || convId==='undefined'){ alert('Conversation introuvable.'); return; }
   const user = await getUtilisateurSecurise();
   if(!user) return;
-  const {data} = await supabase.from('conversations').select('id, client_id, prestataire_id').eq('id', convId).eq('client_id', user.id).single();
+  const {data} = await sb.from('conversations').select('id, client_id, prestataire_id').eq('id', convId).eq('client_id', user.id).single();
   if(!data){ alert('Conversation introuvable.'); return; }
   if(String(data.client_id)===String(data.prestataire_id)){ alert('Conversation invalide.'); return; }
-  // SÉCURISÉ : on passe par l'URL, pas localStorage. chat.html doit re-vérifier avec auth.getUser()
   location.href = 'chat.html?conversation=' + encodeURIComponent(convId) + '&annonce=' + encodeURIComponent(annonceId || '');
 }
 charger();
