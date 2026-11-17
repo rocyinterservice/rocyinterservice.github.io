@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title data-i18n="paiementTitre">Paiement sécurisé - Rocyinter</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="pays.js"></script>
@@ -74,6 +73,9 @@ const WHATSAPP_ROCY = '2290191478460';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const commandeId = localStorage.getItem('paiement_commande_id');
 let commande = null; let uid=''; let monRole='';
+async function notifier(destinataire, titre, message, type, lien){
+  try{ if(!destinataire) return; await sb.rpc('creer_notification', { p_user_id: destinataire, p_titre: titre, p_message: String(message||'').slice(0,120), p_type: type||'info', p_lien: lien||'notifications.html' }); }catch(e){ console.log('Notif échouée (pas grave):', e); }
+}
 async function init(){
   const {data:{user}} = await sb.auth.getUser();
   if(!user){ location.href='connexion.html'; return; }
@@ -85,10 +87,7 @@ async function init(){
   if(!commandeId){ document.getElementById('resume').innerHTML = 'Aucune commande à payer. Va dans Mes commandes.'; document.getElementById('blocPaiement').style.display='none'; return; }
   charger();
 }
-function showMsg(txt, ok){
-  const m = document.getElementById('msg');
-  m.textContent = txt; m.className = 'msg ' + (ok ? 'ok' : 'err');
-}
+function showMsg(txt, ok){ const m = document.getElementById('msg'); m.textContent = txt; m.className = 'msg ' + (ok ? 'ok' : 'err'); }
 function texteCommission(c){
   if(c.univers==='domicile') return 'Commission 8%';
   if(c.univers==='pro') return 'Commission 5 000 FCFA fixe';
@@ -101,7 +100,7 @@ function texteCommission(c){
 function detailImmobilier(c){
   const t = String(c.titre||'').toLowerCase();
   if(t.includes('parcelle') || t.includes('vente') || t.includes('terrain')) return '📜 Parcelle : Réservation 10 000 FCFA + 2% plafonné 200 000 FCFA. Reste devant notaire, pas en escrow.';
-  return '🏠 Location : 50% d\'un mois en escrow pour bloquer. Libération après visite et signature.';
+  return "🏠 Location : 50% d'un mois en escrow pour bloquer. Libération après visite et signature.";
 }
 async function charger(){
   if(!commandeId) return;
@@ -139,10 +138,9 @@ async function confirmerPaiement(mode){
   if(commande.conversation_id){
     await sb.from('messages').insert([{conversation_id: commande.conversation_id, sender_id: uid, contenu: `💳 Paiement reçu (${mode}) - ${Number(commande.montant_total).toLocaleString()} FCFA bloqué en escrow. Tu peux commencer le service.`, type: 'texte'}]);
   }
-  // 🔔 VRAIE NOTIF au prestataire
-  if(commande.prestataire_id){
-    await sb.rpc('creer_notification', { p_user_id: commande.prestataire_id, p_titre: '💰 Paiement reçu', p_message: `Commande "${commande.titre}" payée : ${Number(commande.montant_total).toLocaleString()} FCFA bloqué en escrow. Tu peux commencer.`, p_type: 'paiement', p_lien: 'dashboard-prestataire.html' });
-  }
+  // 🔔 Notif prestataire + client
+  await notifier(commande.prestataire_id, '💰 Paiement reçu', `Commande "${commande.titre}" payée : ${Number(commande.montant_total).toLocaleString()} FCFA bloqué en escrow. Tu peux commencer.`, 'paiement', 'dashboard-prestataire.html');
+  await notifier(uid, '✅ Paiement confirmé', `Ton paiement pour "${commande.titre}" est sécurisé en escrow.`, 'validation', 'dashboard-client.html');
   showMsg('✅ Paiement confirmé ! Argent bloqué en escrow. Redirection...', true);
   setTimeout(()=> location.href='dashboard-client.html', 1200);
 }
