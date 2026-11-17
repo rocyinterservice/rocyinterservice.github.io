@@ -16,7 +16,7 @@ header b{font-size:16px} header small{display:block;opacity:.7;font-size:11px;fo
 .annonce-bar b{display:block}
 .annonce-bar small{color:#92400e}
 #messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
-.msg{max-width:80%;padding:10px 12px;border-radius:16px;font-size:14px;line-height:1.4}
+.msg{max-width:80%;padding:10px 12px;border-radius:16px;font-size:14px;line-height:1.4;overflow-wrap:break-word}
 .msg.moi{background:#0f172a;color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
 .msg.autre{background:#fff;align-self:flex-start;border-bottom-left-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
 .msg small{display:block;font-size:10px;opacity:.6;margin-top:4px}
@@ -81,18 +81,18 @@ const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 window.supabaseClient = sb;
-const moiId = localStorage.getItem('rocy_user_id');
-const moiType = localStorage.getItem('rocy_user_type') || localStorage.getItem('rocy_role') || '';
+let moiId = ''; let monRole = '';
 const prestataireId = localStorage.getItem('chat_prestataire');
 const annonceId = localStorage.getItem('chat_annonce');
-let conversationId = null;
-let annonceData = null;
-let clientIdFinal = null;
+let conversationId = null; let annonceData = null; let clientIdFinal = null;
 
-if(!moiId){ location.href='connexion.html'; }
-if(moiType==='admin'){ alert('Admin : tu ne peux pas chatter, tu gères dans Admin.'); location.href='admin.html'; }
-if(!prestataireId){ location.href='index.html'; }
-
+// 🔔 Helper notif : ne bloque jamais le chat si la notif échoue
+async function notifier(destinataire, titre, message, type, lien){
+  try{
+    if(!destinataire || String(destinataire)===String(moiId)) return;
+    await sb.rpc('creer_notification', { p_user_id: destinataire, p_titre: titre, p_message: String(message||'').slice(0,120), p_type: type||'info', p_lien: lien||'chat.html' });
+  }catch(e){ console.log('Notif échouée (pas grave):', e); }
+}
 function estValideAnnonce(a){
   const s = String(a.status || a.statut || '').toLowerCase().trim();
   if(!s) return true;
@@ -104,9 +104,7 @@ function calculerCommission(univers, montant, annonce){
   if(univers==='manger' || univers==='sejour') return Math.round(montant * 0.12);
   if(univers==='immobilier'){
     const cat = String(annonce?.categorie||'').toLowerCase();
-    if(cat.includes('parcelle') || cat.includes('vente') || cat.includes('terrain')){
-      return Math.min(200000, 10000 + Math.round(montant * 0.02));
-    }
+    if(cat.includes('parcelle') || cat.includes('vente') || cat.includes('terrain')) return Math.min(200000, 10000 + Math.round(montant * 0.02));
     return Math.round(montant * 0.50);
   }
   if(univers==='livreur') return Math.round(montant * 0.20);
@@ -121,68 +119,65 @@ function texteCommission(univers, annonce){
   if(univers==='immobilier'){
     const cat = String(annonce?.categorie||'').toLowerCase();
     if(cat.includes('parcelle') || cat.includes('vente')) return 'Parcelle : Réservation 10 000 FCFA + 2% plafonné 200 000 FCFA. Reste devant notaire.';
-    return 'Location : 50% d\'un mois en escrow pour bloquer. Payé par le propriétaire, une fois.';
+    return "Location : 50% d'un mois en escrow pour bloquer. Payé par le propriétaire, une fois.";
   }
   return 'Commission Rocyinter prélevée à la libération.';
 }
+function bloquerChat(msg){
+  document.getElementById('messages').innerHTML = '';
+  const d = document.createElement('div'); d.className='msg sys'; d.textContent = msg;
+  document.getElementById('messages').appendChild(d);
+  document.getElementById('inputMsg').disabled = true;
+  document.getElementById('btnEnvoyer').disabled = true;
+}
 async function init(){
-  const {data: ann} = await sb.from('annonces').select('*').eq('id', annonceId).maybeSingle();
-  if(!ann){
-    document.getElementById('annonceBar').innerHTML = 'Annonce introuvable.';
-    document.getElementById('inputMsg').disabled = true;
-    return;
-  }
+  const {data:{user}} = await sb.auth.getUser();
+  if(!user){ location.href='connexion.html'; return; }
+  moiId = user.id;
+  const {data:profMoi} = await sb.from('profiles').select('type_compte, role').eq('id', moiId).maybeSingle();
+  monRole = String(profMoi?.type_compte || profMoi?.role || '').toLowerCase();
+  if(monRole==='admin'){ alert('Admin : tu ne peux pas chatter, tu gères dans Admin.'); location.href='admin.html'; return; }
+  if(!prestataireId || !annonceId){ location.href='index.html'; return; }
+  const {data: ann} = await sb.from('annonces').select('id, titre, categorie, univers, prix_fixe, prix_indicatif, prix, localite, ville, pays, status, statut, prestataire_id, user_id').eq('id', annonceId).maybeSingle();
+  if(!ann){ document.getElementById('annonceBar').textContent = 'Annonce introuvable.'; document.getElementById('inputMsg').disabled = true; return; }
+  const vraiPresta = ann.prestataire_id || ann.user_id || '';
+  if(String(vraiPresta) !== String(prestataireId)){ document.getElementById('annonceBar').textContent = 'Annonce / prestataire incohérent.'; document.getElementById('inputMsg').disabled = true; return; }
   if(!estValideAnnonce(ann)){
-    document.getElementById('annonceBar').innerHTML = `<b>${ann.titre}</b><br><small>Annonce en cours de vérification. Chat bloqué.</small>`;
-    document.getElementById('messages').innerHTML = `<div class="msg sys">⏳ Cette annonce n'est pas encore validée. Tu ne peux pas chatter dessus.</div>`;
-    document.getElementById('inputMsg').disabled = true;
-    document.getElementById('btnEnvoyer').disabled = true;
+    document.getElementById('annonceBar').textContent = ann.titre + ' - Annonce en cours de vérification. Chat bloqué.';
+    bloquerChat("⏳ Cette annonce n'est pas encore validée. Tu ne peux pas chatter dessus.");
     return;
   }
   annonceData = ann;
   let nomPresta = 'Prestataire';
-  const {data: prof} = await sb.from('profiles').select('nom,ville,localite').eq('id', prestataireId).maybeSingle();
+  const {data: prof} = await sb.from('profiles').select('nom').eq('id', prestataireId).maybeSingle();
   if(prof) nomPresta = prof.nom || nomPresta;
-  document.getElementById('annonceBar').innerHTML = `<b>${ann.titre}</b><small>📍 ${ann.localite} - ${ann.ville} • 👤 ${nomPresta} • ${ann.prix_fixe ? Number(ann.prix_indicatif||ann.prix||0).toLocaleString()+' FCFA' : 'Prix à discuter'}<br>${texteCommission(ann.univers, ann)}</small>`;
+  const bar = document.getElementById('annonceBar'); bar.innerHTML='';
+  const b = document.createElement('b'); b.textContent = ann.titre; bar.appendChild(b);
+  const s = document.createElement('small'); s.textContent = `📍 ${ann.localite||''} - ${ann.ville||''} • 👤 ${nomPresta} • ${ann.prix_fixe ? Number(ann.prix_indicatif||ann.prix||0).toLocaleString()+' FCFA' : 'Prix à discuter'} - ${texteCommission(ann.univers, ann)}`; bar.appendChild(s);
   document.getElementById('nomAutre').textContent = nomPresta;
-  document.getElementById('infoAutre').textContent = `${ann.categorie} • ${ann.ville} - ${ann.localite}`;
+  document.getElementById('infoAutre').textContent = `${ann.categorie||''} • ${ann.ville||''} - ${ann.localite||''}`;
   document.getElementById('cmdTitre').value = ann.titre;
   document.getElementById('cmdMontant').value = ann.prix_indicatif || ann.prix || '';
   document.getElementById('texteCommission').textContent = texteCommission(ann.univers, ann);
-
   const jeSuisPresta = (String(moiId)===String(prestataireId));
   if(jeSuisPresta) document.getElementById('btnProp').style.display = 'block';
   else document.getElementById('btnCmd').style.display = 'block';
-
   const {data: convs} = await sb.from('conversations').select('*').eq('annonce_id', annonceId).or(`client_id.eq.${moiId},prestataire_id.eq.${moiId}`);
   if(convs && convs.length>0){
     const bonne = convs.find(c=>c.client_id && c.prestataire_id && String(c.client_id)!==String(c.prestataire_id)) || null;
-    if(bonne){
-      conversationId = bonne.id;
-      clientIdFinal = bonne.client_id;
-    } else if(!jeSuisPresta){
+    if(bonne){ conversationId = bonne.id; clientIdFinal = bonne.client_id; }
+    else if(!jeSuisPresta){
       clientIdFinal = moiId;
-      const {data: nv} = await sb.from('conversations').insert([{client_id: moiId, prestataire_id: prestataireId, annonce_id: annonceId}]).select().single();
+      const {data: nv, error} = await sb.from('conversations').insert([{client_id: moiId, prestataire_id: prestataireId, annonce_id: annonceId}]).select().single();
+      if(error){ alert('Erreur conversation : '+error.message); return; }
       if(nv) conversationId = nv.id;
-    } else {
-      document.getElementById('messages').innerHTML = `<div class="msg sys">⏳ En attente qu'un client te parle sur cette annonce. Tu ne peux pas encore créer de conversation tout seul.</div>`;
-      document.getElementById('inputMsg').disabled = true;
-      document.getElementById('btnEnvoyer').disabled = true;
-      document.getElementById('btnProp').style.display = 'none';
-      return;
-    }
+    } else { bloquerChat("⏳ En attente qu'un client te parle sur cette annonce."); document.getElementById('btnProp').style.display='none'; return; }
   } else {
-    if(jeSuisPresta){
-      document.getElementById('messages').innerHTML = `<div class="msg sys">⏳ En attente qu'un client te parle sur cette annonce. Tu ne peux pas encore créer de conversation tout seul.</div>`;
-      document.getElementById('inputMsg').disabled = true;
-      document.getElementById('btnEnvoyer').disabled = true;
-      document.getElementById('btnProp').style.display = 'none';
-      return;
-    } else {
-      clientIdFinal = moiId;
-      const {data: nv} = await sb.from('conversations').insert([{client_id: moiId, prestataire_id: prestataireId, annonce_id: annonceId}]).select().single();
-      if(nv) conversationId = nv.id;
-    }
+    if(jeSuisPresta){ bloquerChat("⏳ En attente qu'un client te parle sur cette annonce."); document.getElementById('btnProp').style.display='none'; return; }
+    clientIdFinal = moiId;
+    const {data: nv, error} = await sb.from('conversations').insert([{client_id: moiId, prestataire_id: prestataireId, annonce_id: annonceId}]).select().single();
+    if(error){ alert('Erreur conversation : '+error.message); return; }
+    if(nv) conversationId = nv.id;
   }
   if(!jeSuisPresta) clientIdFinal = moiId;
   chargerMessages();
@@ -191,62 +186,64 @@ async function init(){
 async function chargerMessages(){
   if(!conversationId) return;
   const {data} = await sb.from('messages').select('*').eq('conversation_id', conversationId).order('created_at',{ascending:true});
-  const box = document.getElementById('messages');
+  const box = document.getElementById('messages'); box.innerHTML='';
   if(!data || data.length===0){
-    box.innerHTML = `<div class="msg sys">👋 Dis bonjour ! Demande le prix, la date, le lieu. Ne paie jamais en dehors de Rocyinter.</div>`;
-    return;
+    const d=document.createElement('div'); d.className='msg sys'; d.textContent='👋 Dis bonjour ! Demande le prix, la date, le lieu. Ne paie jamais en dehors de Rocyinter.'; box.appendChild(d); return;
   }
-  box.innerHTML = data.map(m=>{
+  data.forEach(m=>{
     const isMoi = String(m.sender_id)===String(moiId);
     const heure = new Date(m.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
     if(m.type === 'proposition'){
       const statut = m.proposition_statut || 'en_attente';
-      let boutons = '';
+      const div = document.createElement('div'); div.className='msg prop';
+      const titre = document.createElement('b'); titre.textContent = `💰 Proposition de prix : ${Number(m.proposition_prix||0).toLocaleString()} FCFA`; div.appendChild(titre);
+      const c = document.createElement('div'); c.textContent = m.contenu||''; div.appendChild(c);
+      const sm = document.createElement('small'); sm.textContent = heure; div.appendChild(sm);
       const jeSuisClient = (String(moiId)!==String(prestataireId));
       if(statut==='en_attente' && jeSuisClient){
-        boutons = `<br><button style="background:#16a34a;color:#fff" onclick="repondreProposition('${m.id}', 'accepte')">✅ Accepter</button><button style="background:#fee2e2" onclick="repondreProposition('${m.id}', 'refuse')">❌ Refuser</button>`;
-      } else if(statut==='accepte'){
-        boutons = `<br><b style="color:#16a34a">✅ Proposition acceptée - Tu peux créer la commande</b>`;
-      } else if(statut==='refuse'){
-        boutons = `<br><b style="color:#E53935">❌ Proposition refusée</b>`;
-      }
-      return `<div class="msg prop">💰 <b>Proposition de prix : ${Number(m.proposition_prix).toLocaleString()} FCFA</b><br>${m.contenu}<br><small>${heure}</small>${boutons}</div>`;
+        const ok=document.createElement('button'); ok.style.cssText='background:#16a34a;color:#fff'; ok.textContent='✅ Accepter'; ok.onclick=()=>repondreProposition(m.id,'accepte'); div.appendChild(ok);
+        const no=document.createElement('button'); no.style.cssText='background:#fee2e2'; no.textContent='❌ Refuser'; no.onclick=()=>repondreProposition(m.id,'refuse'); div.appendChild(no);
+      } else if(statut==='accepte'){ const bb=document.createElement('b'); bb.style.color='#16a34a'; bb.textContent='✅ Proposition acceptée - Tu peux créer la commande'; div.appendChild(document.createElement('br')); div.appendChild(bb); }
+      else if(statut==='refuse'){ const bb=document.createElement('b'); bb.style.color='#E53935'; bb.textContent='❌ Proposition refusée'; div.appendChild(document.createElement('br')); div.appendChild(bb); }
+      box.appendChild(div); return;
     }
-    return `<div class="msg ${isMoi?'moi':'autre'}">${m.contenu}<small>${isMoi?'Vous':'Autre'} • ${heure}</small></div>`;
-  }).join('');
+    const div=document.createElement('div'); div.className='msg '+(isMoi?'moi':'autre');
+    const txt=document.createElement('div'); txt.textContent=m.contenu||''; div.appendChild(txt);
+    const sm=document.createElement('small'); sm.textContent=(isMoi?'Vous':'Autre')+' • '+heure; div.appendChild(sm);
+    box.appendChild(div);
+  });
   box.scrollTop = box.scrollHeight;
 }
 async function envoyer(){
-  const inp = document.getElementById('inputMsg');
-  const txt = inp.value.trim();
+  const inp = document.getElementById('inputMsg'); const txt = inp.value.trim();
   if(!txt || !conversationId) return;
+  if(txt.length>2000){ alert('Message trop long (max 2000).'); return; }
   inp.value = '';
-  await sb.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: txt, type: 'texte'}]);
+  const {error} = await sb.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: txt, type: 'texte'}]);
+  if(error){ alert('Erreur : '+error.message); return; }
+  const autreId = String(moiId)===String(prestataireId) ? clientIdFinal : prestataireId;
+  await notifier(autreId, 'Nouveau message', txt, 'message', 'chat.html');
   chargerMessages();
 }
-function ouvrirProposition(){
-  if(String(moiId)!==String(prestataireId)){ alert('Seul le prestataire propose un prix.'); return; }
-  document.getElementById('modalProp').classList.add('show');
-}
+function ouvrirProposition(){ if(String(moiId)!==String(prestataireId)){ alert('Seul le prestataire propose un prix.'); return; } document.getElementById('modalProp').classList.add('show'); }
 function fermerProposition(){ document.getElementById('modalProp').classList.remove('show'); }
-function ouvrirCommande(){
-  if(String(moiId)===String(prestataireId)){ alert('Seul le client crée la commande.'); return; }
-  document.getElementById('modalCmd').classList.add('show');
-}
+function ouvrirCommande(){ if(String(moiId)===String(prestataireId)){ alert('Seul le client crée la commande.'); return; } document.getElementById('modalCmd').classList.add('show'); }
 function fermerCommande(){ document.getElementById('modalCmd').classList.remove('show'); }
 async function envoyerProposition(){
   if(String(moiId)!==String(prestataireId)){ alert('Seul le prestataire propose un prix.'); return; }
   const montant = Number(document.getElementById('propMontant').value);
   const detail = document.getElementById('propDetail').value.trim();
   if(!montant || montant<=0){ alert('Mets un montant > 0'); return; }
-  await sb.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: detail || 'Proposition de prix pour ce service.', type: 'proposition', proposition_prix: montant, proposition_statut: 'en_attente'}]);
-  fermerProposition();
-  document.getElementById('propMontant').value = '';
-  chargerMessages();
+  const {error} = await sb.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: detail || 'Proposition de prix pour ce service.', type: 'proposition', proposition_prix: montant, proposition_statut: 'en_attente'}]);
+  if(error){ alert('Erreur : '+error.message); return; }
+  await notifier(clientIdFinal, 'Nouvelle proposition de prix', `Proposition : ${montant.toLocaleString()} FCFA - ${detail}`, 'paiement', 'chat.html');
+  fermerProposition(); document.getElementById('propMontant').value = ''; chargerMessages();
 }
 async function repondreProposition(msgId, rep){
   if(String(moiId)===String(prestataireId)){ alert('Seul le client accepte / refuse.'); return; }
-  await sb.from('messages').update({proposition_statut: rep}).eq('id', msgId);
+  const {error} = await sb.from('messages').update({proposition_statut: rep}).eq('id', msgId).eq('conversation_id', conversationId);
+  if(error){ alert('Erreur : '+error.message); return; }
+  await notifier(prestataireId, rep==='accepte' ? 'Proposition acceptée ✅' : 'Proposition refusée ❌', rep==='accepte' ? 'Le client a accepté ta proposition. Il peut créer la commande.' : 'Le client a refusé ta proposition.', rep==='accepte' ? 'validation' : 'info', 'chat.html');
   if(rep==='accepte'){
     const {data: msg} = await sb.from('messages').select('*').eq('id', msgId).single();
     if(msg){
@@ -270,10 +267,9 @@ async function creerCommande(){
   if(montantPresta < 0){ alert('Erreur commission > montant.'); return; }
   const {error} = await sb.from('commandes').insert([{client_id: clientIdFinal, prestataire_id: prestataireId, annonce_id: annonceId, conversation_id: conversationId, univers: univers, titre, montant_total: montant, commission, montant_prestataire: montantPresta, status: 'en_attente', pays: annonceData?.pays, ville: annonceData?.ville, localite: annonceData?.localite}]).select().single();
   if(error){ alert('Erreur : ' + error.message); return; }
+  await notifier(prestataireId, 'Nouvelle commande 🛒', `${titre} - ${montant.toLocaleString()} FCFA. En attente de paiement.`, 'commande', 'dashboard-prestataire.html');
   await sb.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: `✅ COMMANDE CRÉÉE : ${titre} - ${montant.toLocaleString()} FCFA (Commission ${commission.toLocaleString()} FCFA). En attente de paiement sécurisé en escrow.`, type: 'texte'}]);
-  fermerCommande();
-  alert('✅ Commande créée ! Elle est dans ton dashboard. Va payer dans Paiement.');
-  chargerMessages();
+  fermerCommande(); alert('✅ Commande créée ! Elle est dans ton dashboard. Va payer dans Paiement.'); chargerMessages();
 }
 init();
 if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
