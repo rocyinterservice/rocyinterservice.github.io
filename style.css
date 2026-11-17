@@ -24,7 +24,9 @@
 body{font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;background:var(--fond);color:var(--bleu);line-height:1.6}
 a{text-decoration:none;color:inherit}
 button{cursor:pointer;font-family:inherit;border:0}
+button:disabled{opacity:.55;cursor:not-allowed}
 img{max-width:100%}
+:focus-visible{outline:3px solid var(--jaune);outline-offset:2px}
 
 /* --- EN-TETE --- */
 .site-header{background:var(--bleu);color:#fff;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(0,0,0,.2)}
@@ -90,6 +92,7 @@ img{max-width:100%}
 .form-box{background:#fff;border:1px solid var(--bordure);border-radius:var(--radius);padding:20px;max-width:860px;margin:16px auto;box-shadow:var(--ombre)}
 .form-box label{display:block;font-weight:700;font-size:14px;margin:12px 0 6px;color:var(--bleu)}
 .form-box input,.form-box textarea,.form-box select{width:100%;padding:12px;border:1px solid var(--bordure);border-radius:10px;font-size:15px;font-family:inherit}
+.form-box input:focus,.form-box textarea:focus,.form-box select:focus{border-color:var(--jaune);outline:none}
 .form-box textarea{min-height:90px;resize:vertical}
 
 /* --- BADGES --- */
