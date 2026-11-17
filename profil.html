@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mon Profil - Rocyinter</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="pays.js"></script>
+<script src="rocy-layout.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
+body{background:#0f172a;color:#fff;padding:16px}
+.top{max-width:520px;margin:0 auto}
+header{display:flex;justify-content:space-between;align-items:center}
+header b{font-size:22px} header b span{color:#f59e0b}
+header button{background:#fff;color:#000;border:none;padding:8px 12px;border-radius:999px;cursor:pointer;font-size:12px}
+.card{background:#fff;color:#111;border-radius:16px;padding:16px;margin-top:14px}
+.card h3{font-size:15px}
+.card p{font-size:13px;color:#64748b;margin:6px 0;line-height:1.5}
+label{display:block;margin-top:12px;font-size:12px;font-weight:700;color:#334155}
+input,select,textarea{width:100%;padding:12px;margin-top:5px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;background:#f8fafc}
+input:disabled,select:disabled,textarea:disabled{background:#f1f5f9;color:#334155;opacity:1}
+textarea{height:80px;resize:none}
+.btn{width:100%;padding:13px;margin-top:14px;border:none;border-radius:10px;font-weight:800;cursor:pointer;font-size:14px}
+.btn-orange{background:#f59e0b;color:#000}
+.btn-dark{background:#0f172a;color:#fff}
+.btn-grey{background:#f1f5f9;color:#111}
+.badge{display:inline-block;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:700;margin-top:8px}
+.badge.ok{background:#dcfce7;color:#166534}
+.badge.wait{background:#fef3c7;color:#92400e}
+.badge.no{background:#fee2e2;color:#991b1b}
+.photo-wrap{text-align:center}
+.photo-wrap img{width:110px;height:110px;border-radius:50%;object-fit:cover;border:3px solid #f59e0b;background:#eee}
+.photos{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.photos img{width:100%;height:130px;object-fit:cover;border-radius:10px;border:1px solid #e2e8f0}
+.photos small{display:block;text-align:center;color:#64748b;font-size:11px;margin-top:4px}
+#msg{text-align:center;margin-top:10px;font-size:13px;font-weight:700}
+.row{display:flex;gap:8px}
+.row .btn{flex:1}
+</style>
+</head>
+<body>
+<div class="top">
+<header>
+  <b>Rocy<span>inter</span></b>
+  <button onclick="window.location.href='index.html'">Voir le site</button>
+</header>
+
+<!-- VUE PROFIL -->
+<div class="card" style="text-align:center">
+  <div class="photo-wrap"><img id="photoPreview" src="https://via.placeholder.com/110?text=Photo"></div>
+  <h3 id="nomAffiche" style="margin-top:10px;font-size:19px">Chargement...</h3>
+  <p id="catAffiche">...</p>
+  <p id="lieuAffiche">...</p>
+  <div id="badgeZone"></div>
+  <p id="verifTexte"></p>
+</div>
+
+<!-- PROFIL - DÉJÀ REMPLI DEPUIS INSCRIPTION -->
+<div class="card">
+  <h3>👤 Mon profil</h3>
+  <p>Informations déjà remplies à l'inscription. Clique sur Modifier seulement si tu t'es trompé.</p>
+  <div id="msg"></div>
+
+  <label>Nom de la personne OU Nom Hôtel / Restaurant / Entreprise</label>
+  <input id="nom" disabled>
+
+  <label>Type de compte</label>
+  <select id="type_compte" disabled>
+    <option value="prestataire">Prestataire / Entreprise</option>
+    <option value="client">Client</option>
+  </select>
+
+  <label>Catégorie / Métier</label>
+  <select id="categorie_prestataire" disabled>
+    <option value="">-- Choisir --</option>
+    <option>Hôtel</option>
+    <option>Restaurant</option>
+    <option>Entreprise de nettoyage</option>
+    <option>Plombier</option>
+    <option>Électricien</option>
+    <option>Maçon</option>
+    <option>Menuisier</option>
+    <option>Peintre</option>
+    <option>Climatisation</option>
+    <option>Coiffeur / Beauté</option>
+    <option>Couturier</option>
+    <option>Mécanicien</option>
+    <option>Photographe</option>
+    <option>Livreur</option>
+    <option>Immobilier</option>
+    <option>Autre</option>
+  </select>
+
+  <label>WhatsApp</label>
+  <input id="whatsapp" disabled>
+
+  <label>Quartier</label>
+  <select id="quartier" disabled>
+    <option value="">-- Choisir --</option>
+    <option>Godomey</option>
+    <option>Calavi</option>
+    <option>Fidjrossè</option>
+    <option>Cotonou Centre</option>
+    <option>Abomey-Calavi</option>
+    <option>Akassato</option>
+    <option>Ouèdo</option>
+    <option>Togba</option>
+    <option>Hêvié</option>
+    <option>Autre</option>
+  </select>
+
+  <label>Localité</label>
+  <input id="localite" disabled>
+  <label>Ville</label>
+  <input id="ville" disabled>
+  <label>Pays</label>
+  <input id="pays" disabled>
+
+  <label>Photo de profil / Logo entreprise (lien)</label>
+  <input id="photo_profil_url" disabled>
+
+  <label>Description de ton activité</label>
+  <textarea id="description_profil" disabled></textarea>
+
+  <button id="btnModifier" class="btn btn-dark" onclick="activerModification()">✏️ Modifier mon profil</button>
+  <button id="btnEnregistrer" class="btn btn-orange" onclick="sauvegarder()" style="display:none">💾 Enregistrer mes modifications</button>
+  <button id="btnAnnuler" class="btn btn-grey" onclick="chargerProfil()" style="display:none">Annuler</button>
+</div>
+
+<!-- VÉRIFICATION -->
+<div class="card">
+  <h3>📍 Ma vérification quartier</h3>
+  <p id="verifDetail">Chargement...</p>
+  <div class="photos">
+    <div><img id="imgPiece" src="https://via.placeholder.com/300x130?text=Pas+de+piece"><small>🪪 Pièce d'identité</small></div>
+    <div><img id="imgAtelier" src="https://via.placeholder.com/300x130?text=Pas+de+photo"><small>🏪 Photo Hôtel / Restaurant / Atelier</small></div>
+  </div>
+  <p style="font-size:12px;margin-top:8px">Pour changer ces 2 photos, va sur la page Vérification. L'admin les voit dans l'onglet 📍 Quartiers.</p>
+  <button class="btn btn-dark" onclick="window.location.href='verification.html'">Aller à la vérification →</button>
+</div>
+
+<div class="row">
+  <button class="btn btn-grey" onclick="window.location.href='index.html'">← Accueil</button>
+  <button class="btn btn-grey" onclick="deconnexion()">Déconnexion</button>
+</div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
+const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let userId = null;
+
+function esc(v){ return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function setDisabled(dis){
+  ['nom','type_compte','categorie_prestataire','whatsapp','quartier','localite','ville','pays','photo_profil_url','description_profil'].forEach(id=>{
+    document.getElementById(id).disabled = dis;
+  });
+}
+function activerModification(){
+  setDisabled(false);
+  document.getElementById('btnModifier').style.display='none';
+  document.getElementById('btnEnregistrer').style.display='block';
+  document.getElementById('btnAnnuler').style.display='block';
+  document.getElementById('msg').textContent = "Tu peux modifier maintenant. Change seulement ce qui est faux.";
+  document.getElementById('msg').style.color = "#f59e0b";
+}
+
+async function chargerProfil(){
+  setDisabled(true);
+  document.getElementById('btnModifier').style.display='block';
+  document.getElementById('btnEnregistrer').style.display='none';
+  document.getElementById('btnAnnuler').style.display='none';
+  document.getElementById('msg').textContent = "";
+  const {data:{user}} = await sb.auth.getUser();
+  if(!user){ window.location.href='connexion.html'; return; }
+  userId = user.id;
+  const {data: p} = await sb.from('profiles').select('*').eq('id', userId).single();
+  if(!p) return;
+
+  // Remplit avec ce qui est déjà dans l'inscription
+  document.getElementById('nom').value = p.nom || "";
+  document.getElementById('type_compte').value = p.type_compte || "prestataire";
+  document.getElementById('categorie_prestataire').value = p.categorie_prestataire || "";
+  document.getElementById('whatsapp').value = p.whatsapp || "";
+  document.getElementById('quartier').value = p.quartier || p.localite || "";
+  document.getElementById('localite').value = p.localite || "";
+  document.getElementById('ville').value = p.ville || "";
+  document.getElementById('pays').value = p.pays || "Bénin";
+  document.getElementById('photo_profil_url').value = p.photo_profil_url || p.avatar_url || "";
+  document.getElementById('description_profil').value = p.description_profil || "";
+
+  document.getElementById('nomAffiche').textContent = p.nom || "Sans nom";
+  document.getElementById('catAffiche').textContent = p.categorie_prestataire || "";
+  document.getElementById('lieuAffiche').textContent = "📍 " + (p.quartier || p.localite || "") + " - " + (p.ville || "") + " - " + (p.pays || "");
+  if(p.photo_profil_url || p.avatar_url) document.getElementById('photoPreview').src = p.photo_profil_url || p.avatar_url;
+  if(p.photo_piece_url) document.getElementById('imgPiece').src = p.photo_piece_url;
+  if(p.photo_atelier_url) document.getElementById('imgAtelier').src = p.photo_atelier_url;
+
+  const badgeZone = document.getElementById('badgeZone');
+  const verifTexte = document.getElementById('verifTexte');
+  const verifDetail = document.getElementById('verifDetail');
+  if(p.quartier_verifie){
+    badgeZone.innerHTML = '<span class="badge ok">✅ Vérifié à ' + esc(p.quartier || p.localite || '') + '</span>';
+    verifTexte.textContent = "Ton badge s'affiche pour les clients.";
+    verifDetail.textContent = "✅ Vérifié. Ton badge est actif.";
+  } else if(p.verification_quartier === 'demande_envoyee'){
+    badgeZone.innerHTML = '<span class="badge wait">⏳ En attente</span>';
+    verifTexte.textContent = "En attente de validation par l'admin.";
+    verifDetail.textContent = "⏳ Demande envoyée. L'admin vérifie tes photos.";
+  } else if(p.verification_quartier === 'refuse'){
+    badgeZone.innerHTML = '<span class="badge no">❌ Refusé</span>';
+    verifTexte.textContent = "Refusé. Renvoie de meilleures photos.";
+    verifDetail.textContent = "❌ Refusé. Va sur Vérification pour renvoyer pièce + photo du lieu.";
+  } else {
+    badgeZone.innerHTML = '<span class="badge no">❌ Non vérifié</span>';
+    verifTexte.textContent = "Tu n'as pas encore envoyé ta vérification.";
+    verifDetail.textContent = "Envoie ta pièce + photo de ton lieu pour avoir le badge ✅";
+  }
+}
+
+async function sauvegarder(){
+  const msg = document.getElementById('msg');
+  msg.textContent = "Enregistrement..."; msg.style.color = "#f59e0b";
+  const updates = {
+    id: userId,
+    nom: document.getElementById('nom').value,
+    type_compte: document.getElementById('type_compte').value,
+    categorie_prestataire: document.getElementById('categorie_prestataire').value,
+    whatsapp: document.getElementById('whatsapp').value,
+    quartier: document.getElementById('quartier').value,
+    localite: document.getElementById('localite').value,
+    ville: document.getElementById('ville').value,
+    pays: document.getElementById('pays').value,
+    photo_profil_url: document.getElementById('photo_profil_url').value,
+    avatar_url: document.getElementById('photo_profil_url').value,
+    description_profil: document.getElementById('description_profil').value,
+  };
+  const {error} = await sb.from('profiles').upsert(updates);
+  if(error){ msg.textContent = "❌ " + error.message; msg.style.color="red"; }
+  else{
+    msg.textContent = "✅ Profil enregistré !"; msg.style.color="green";
+    chargerProfil();
+  }
+}
+
+async function deconnexion(){
+  await sb.auth.signOut();
+  window.location.href='index.html';
+}
+chargerProfil();
+</script>
+</body>
+</html>
