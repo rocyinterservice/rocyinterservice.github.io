@@ -55,8 +55,6 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px}
 <h1><span data-i18n="bonjour">Bonjour</span> <span id="nomUser">Prestataire</span> 👋</h1>
 <div id="badgeType"></div>
 <p class="sub" id="infoUser">Chargement...</p>
-
-<!-- PROFIL + QUARTIER -->
 <div class="profilBox" id="profilBox">
   <img id="photoProfil" src="" alt="" onerror="this.style.display='none'">
   <div class="info">
@@ -68,7 +66,6 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px}
 <button class="btn btn-dark" onclick="location.href='profil.html'">👤 Mon Profil</button>
 <button class="btn btn-green" id="btnVerif" onclick="location.href='verification.html'" style="display:none">📍 Faire vérifier mon quartier → Obtenir le badge ✅</button>
 <button class="btn" style="background:#eff6ff;color:#1e40af" id="btnVerifAttente" onclick="location.href='verification.html'" style="display:none">⏳ Vérification en attente - Voir le statut</button>
-
 <div id="bannerStatut"></div>
 <div id="bandeauAbo"></div>
 <div class="stats">
@@ -88,15 +85,22 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px}
 <script>
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// ✅ CORRIGÉ : on réutilise le même client que rocy-layout.js, pas un 2ème
+const sb = window.supabaseClient || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 window.supabaseClient = sb;
 let uid = null;
 function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmt(n){ return Number(n || 0).toLocaleString('fr-FR'); }
 async function getUtilisateurSecurise(){
-  const {data:{user}, error} = await sb.auth.getUser();
-  if(error || !user) return null;
-  return user;
+  // On attend un peu que la session se charge, sinon on croit à tort qu'on est déconnecté
+  for(let i=0;i<5;i++){
+    const {data:{user}, error} = await sb.auth.getUser();
+    if(user) return user;
+    if(error) await new Promise(r=>setTimeout(r,300));
+    else await new Promise(r=>setTimeout(r,300));
+  }
+  const {data:{user}} = await sb.auth.getUser();
+  return user || null;
 }
 async function deconnecter(){
   await sb.auth.signOut();
@@ -143,7 +147,7 @@ function badgeAnnonce(a){
 }
 function nomAffiche(profil){ return profil.nom_entreprise || profil.nom || 'Prestataire'; }
 function badgeTypeFournisseur(profil){
-  const type = String(profil.type_fournisseur || profil.type_compte || profil.role || '').toLowerCase();
+  const type = String(profil.type_fournisseur || profil.type_compte || profil.role || profil.type || '').toLowerCase();
   const nomEnt = profil.nom_entreprise;
   if(nomEnt || type === 'entreprise') return '<span class="badge-type entreprise">🏢 Entreprise</span>';
   if(type === 'livreur') return '<span class="badge-type livreur">🛵 Livreur</span>';
@@ -155,20 +159,31 @@ async function charger(){
   uid = user.id;
   let profil = null;
   let res1 = await sb.from('profiles')
-    .select('id, nom, full_name, nom_entreprise, type_fournisseur, type_compte, role, localite, quartier, ville, pays, quartier_verifie, verification_quartier, photo_url, avatar_url, photo_profil_url, statut_validation, status_prestataire, statut, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert')
+    .select('id, nom, full_name, nom_entreprise, type_fournisseur, type_compte, role, type, localite, quartier, ville, pays, quartier_verifie, verification_quartier, photo_url, avatar_url, photo_profil_url, statut_validation, status_prestataire, statut, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert')
     .eq('id', uid).maybeSingle();
   if(res1.error){
     let res2 = await sb.from('profiles')
-      .select('id, nom, type_compte, role, localite, quartier, ville, pays, quartier_verifie, verification_quartier, statut_validation, status_prestataire, statut, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert')
+      .select('id, nom, type_compte, role, type, localite, quartier, ville, pays, quartier_verifie, verification_quartier, statut_validation, status_prestataire, statut, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert')
       .eq('id', uid).maybeSingle();
     profil = res2.data;
   } else { profil = res1.data; }
-  if(!profil){ location.href='connexion.html'; return; }
-  const roleReel = String(profil.type_compte || profil.role || profil.type_fournisseur || '').toLowerCase();
+  // ✅ CORRIGÉ : on ne renvoie plus en boucle, on affiche le vrai problème
+  if(!profil){
+    document.getElementById('infoUser').textContent = 'Aucun profil trouvé pour ce compte. Va dans ton profil pour le compléter, ou contacte le support.';
+    document.getElementById('bannerStatut').innerHTML = '<div class="banner attente">⚠️ Ton compte existe mais ton profil est introuvable dans la table profiles. ID : '+uid+'</div>';
+    return;
+  }
+  // ✅ CORRIGÉ : on regarde tous les champs de rôle + nom_entreprise
+  let roleReel = String(profil.type_compte || profil.role || profil.type || profil.type_fournisseur || '').toLowerCase().trim();
+  if(!roleReel && profil.nom_entreprise) roleReel = 'entreprise';
   const ROLES_FOURNISSEUR = ['prestataire','livreur','fournisseur','professionnel','entreprise','pro'];
   if(roleReel === 'client'){ location.href='dashboard-client.html'; return; }
   if(roleReel === 'admin'){ location.href='admin.html'; return; }
-  if(!ROLES_FOURNISSEUR.includes(roleReel)){ location.href='connexion.html'; return; }
+  if(!ROLES_FOURNISSEUR.includes(roleReel)){
+    document.getElementById('infoUser').textContent = 'Rôle inconnu : ' + (roleReel || 'vide') + ' - Contacte le support.';
+    document.getElementById('bannerStatut').innerHTML = '<div class="banner attente">⚠️ Ton rôle est "'+esc(roleReel || 'vide')+'". Il doit être prestataire, entreprise ou livreur pour voir ce dashboard.</div>';
+    return;
+  }
   document.getElementById('nomUser').textContent = nomAffiche(profil);
   document.getElementById('badgeType').innerHTML = badgeTypeFournisseur(profil);
   if(profil.nom_entreprise && profil.nom){
@@ -176,7 +191,6 @@ async function charger(){
   } else {
     document.getElementById('infoUser').textContent = `${profil.localite || profil.quartier || ''} - ${profil.ville || ''} • ${profil.pays || ''}`;
   }
-  // --- PROFIL / QUARTIER ---
   const quartier = profil.quartier || profil.localite || '';
   const photo = profil.photo_profil_url || profil.photo_url || profil.avatar_url || '';
   document.getElementById('profilNom').textContent = nomAffiche(profil);
