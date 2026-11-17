@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title data-i18n="dashboardPrestaTitre">Mon Dashboard - Rocyinter</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="pays.js"></script>
 <script src="rocy-layout.js"></script>
 <style>
@@ -69,17 +69,18 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px}
 <script>
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+window.supabaseClient = sb;
 let uid = null;
 function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmt(n){ return Number(n || 0).toLocaleString('fr-FR'); }
 async function getUtilisateurSecurise(){
-  const {data:{user}, error} = await supabase.auth.getUser();
+  const {data:{user}, error} = await sb.auth.getUser();
   if(error || !user) return null;
   return user;
 }
 async function deconnecter(){
-  await supabase.auth.signOut();
+  await sb.auth.signOut();
   const langue = localStorage.getItem('rocy_langue');
   localStorage.clear();
   if(langue) localStorage.setItem('rocy_langue', langue);
@@ -121,16 +122,12 @@ function badgeAnnonce(a){
   if(s==='rejete' || s==='refuse' || s==='refusé' || s==='rejeté') return '<span class="badge rejete">❌ Rejetée</span>';
   return '<span class="badge attente">⏳ En attente</span>';
 }
-// CORRIGÉ PRO / ENTREPRISE : nom affiché + badge type
 function nomAffiche(profil){
-  // Entreprise : nom_entreprise d'abord, sinon nom
-  // Professionnel : nom de la personne
   return profil.nom_entreprise || profil.nom || 'Prestataire';
 }
 function badgeTypeFournisseur(profil){
   const type = String(profil.type_fournisseur || profil.type_compte || profil.role || '').toLowerCase();
   const nomEnt = profil.nom_entreprise;
-  // Si on a nom_entreprise, c'est une entreprise même si type_compte = prestataire
   if(nomEnt || type === 'entreprise') return '<span class="badge-type entreprise">🏢 Entreprise</span>';
   if(type === 'livreur') return '<span class="badge-type livreur">🛵 Livreur</span>';
   return '<span class="badge-type pro">👨‍🔧 Professionnel</span>';
@@ -139,14 +136,12 @@ async function charger(){
   const user = await getUtilisateurSecurise();
   if(!user){ location.href='connexion.html'; return; }
   uid = user.id;
-
-  // On essaie d'abord avec les nouveaux champs Pro/Entreprise, si Supabase ne les a pas encore, on retombe sur l'ancien select
   let profil = null;
-  let res1 = await supabase.from('profiles')
+  let res1 = await sb.from('profiles')
     .select('id, nom, nom_entreprise, type_fournisseur, type_compte, role, localite, ville, pays, statut_validation, status_prestataire, statut, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert')
     .eq('id', uid).maybeSingle();
   if(res1.error){
-    let res2 = await supabase.from('profiles')
+    let res2 = await sb.from('profiles')
       .select('id, nom, type_compte, role, localite, ville, pays, statut_validation, status_prestataire, statut, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert')
       .eq('id', uid).maybeSingle();
     profil = res2.data;
@@ -154,23 +149,18 @@ async function charger(){
     profil = res1.data;
   }
   if(!profil){ location.href='connexion.html'; return; }
-
-  // Rôle depuis la BASE, jamais localStorage. On accepte tous les types fournisseur.
   const roleReel = String(profil.type_compte || profil.role || profil.type_fournisseur || '').toLowerCase();
   const ROLES_FOURNISSEUR = ['prestataire','livreur','fournisseur','professionnel','entreprise','pro'];
   if(roleReel === 'client'){ location.href='dashboard-client.html'; return; }
   if(roleReel === 'admin'){ location.href='admin.html'; return; }
   if(!ROLES_FOURNISSEUR.includes(roleReel)){ location.href='connexion.html'; return; }
-
   document.getElementById('nomUser').textContent = nomAffiche(profil);
   document.getElementById('badgeType').innerHTML = badgeTypeFournisseur(profil);
-  // Si entreprise, on montre aussi le nom du contact en petit
   if(profil.nom_entreprise && profil.nom){
     document.getElementById('infoUser').textContent = `Contact : ${profil.nom} • ${profil.localite || ''} - ${profil.ville || ''} • ${profil.pays || ''}`;
   } else {
     document.getElementById('infoUser').textContent = `${profil.localite || ''} - ${profil.ville || ''} • ${profil.pays || ''}`;
   }
-
   const statut = String(profil?.statut_validation || profil?.status_prestataire || profil?.statut || 'en_attente').toLowerCase();
   const banner = document.getElementById('bannerStatut');
   const t = window.rocyT || (k=>k);
@@ -194,7 +184,7 @@ async function charger(){
     boxAbo.innerHTML = `<div class="bandeau-abo abo-expire">⛔ Abonnement expiré. Tu ne peux pas publier de nouvelle annonce tant que tu ne renouvelles pas.<br><button class="btn btn-dark" onclick="location.href='abonnement.html'">Renouveler maintenant →</button></div>`;
     btnCreer.disabled=true; btnCreer.textContent='⛔ Publier bloqué - Abonnement expiré';
   }
-  const {data: annonces} = await supabase.from('annonces')
+  const {data: annonces} = await sb.from('annonces')
     .select('id, titre, categorie, localite, ville, prix_fixe, prix_indicatif, prix, status, statut, created_at')
     .eq('prestataire_id', uid).order('created_at',{ascending:false});
   const boxA = document.getElementById('listeAnnonces');
@@ -206,7 +196,7 @@ async function charger(){
       return `<div class="card">${badgeAnnonce(a)}<h3 style="margin-top:8px">${esc(a.titre)}</h3><p>${esc(a.categorie)} • ${esc(a.localite)} - ${esc(a.ville)}<br>${a.prix_fixe ? fmt(a.prix_indicatif||a.prix||0)+' FCFA - Prix fixe' : 'Prix à discuter'}</p><button class="btn btn-dark" onclick="location.href='creer-annonce.html'">✏️ Modifier / Voir</button></div>`;
     }).join('');
   }
-  const {data: cmds} = await supabase.from('commandes')
+  const {data: cmds} = await sb.from('commandes')
     .select('id, titre, client_id, conversation_id, annonce_id, status, univers, commission, montant_total, montant_prestataire, localite, ville, litige_raison, created_at')
     .eq('prestataire_id', uid).order('created_at',{ascending:false});
   const boxC = document.getElementById('listeCommandes');
@@ -220,7 +210,7 @@ async function charger(){
     const clientIds = [...new Set(cmds.map(c=>c.client_id).filter(Boolean))];
     let nomsClients = {};
     if(clientIds.length){
-      const {data: profs} = await supabase.from('profiles').select('id,nom').in('id', clientIds);
+      const {data: profs} = await sb.from('profiles').select('id,nom').in('id', clientIds);
       (profs||[]).forEach(p=> nomsClients[p.id]=p.nom);
     }
     boxC.innerHTML = cmds.map(c=>{
@@ -233,7 +223,7 @@ async function charger(){
       return `<div class="card">${badgeCommande(c.status)}<h3 style="margin-top:8px">${esc(c.titre)}</h3><p>Client : ${esc(nomsClients[c.client_id] || 'Client')}<br>Total : ${fmt(c.montant_total)} FCFA • ${esc(texteCommission(c))} • Tu reçois : <b>${fmt(c.montant_prestataire)} FCFA</b><br>📍 ${esc(c.localite||'')} - ${esc(c.ville||'')}<br><span style="color:#16a34a">🔒 Escrow : argent bloqué chez Rocyinter jusqu'à validation client</span></p>${action}<button class="btn btn-dark" onclick="voirConversation('${esc(c.conversation_id)}','${esc(c.annonce_id)}')">Ouvrir le chat</button></div>`;
     }).join('');
   }
-  const {data: convsBrutes} = await supabase.from('conversations')
+  const {data: convsBrutes} = await sb.from('conversations')
     .select('id, client_id, prestataire_id, annonce_id, created_at, annonces(titre)')
     .eq('prestataire_id', uid).order('created_at',{ascending:false});
   const convs = (convsBrutes||[]).filter(cv => String(cv.client_id)!==String(cv.prestataire_id));
@@ -249,13 +239,13 @@ async function changerStatut(id, action){
   const user = await getUtilisateurSecurise();
   if(!user) return;
   if(action==='en_cours'){
-    const {error} = await supabase.from('commandes').update({status:'en_cours'}).eq('id', id).eq('prestataire_id', user.id).eq('status','paye');
+    const {error} = await sb.from('commandes').update({status:'en_cours'}).eq('id', id).eq('prestataire_id', user.id).eq('status','paye');
     if(error) alert('Erreur : ' + error.message);
   } else if(action==='en_cours_termine'){
-    const {data: cmd} = await supabase.from('commandes').select('id, titre, conversation_id').eq('id', id).eq('prestataire_id', user.id).single();
+    const {data: cmd} = await sb.from('commandes').select('id, titre, conversation_id').eq('id', id).eq('prestataire_id', user.id).single();
     if(!cmd){ alert('Commande introuvable.'); return; }
     if(cmd?.conversation_id){
-      await supabase.from('messages').insert([{conversation_id: cmd.conversation_id, sender_id: user.id, contenu: `✅ J'ai terminé le service "${cmd.titre}". Peux-tu valider pour que l'argent soit libéré ?`, type: 'texte'}]);
+      await sb.from('messages').insert([{conversation_id: cmd.conversation_id, sender_id: user.id, contenu: `✅ J'ai terminé le service "${cmd.titre}". Peux-tu valider pour que l'argent soit libéré ?`, type: 'texte'}]);
     }
     alert('✅ Client prévenu dans le chat. Il doit valider pour libérer l’argent.');
   }
@@ -265,7 +255,7 @@ async function voirConversation(convId, annonceId){
   if(!convId || convId==='null' || convId==='undefined'){ alert('Conversation introuvable.'); return; }
   const user = await getUtilisateurSecurise();
   if(!user) return;
-  const {data} = await supabase.from('conversations').select('id, client_id, prestataire_id').eq('id', convId).eq('prestataire_id', user.id).single();
+  const {data} = await sb.from('conversations').select('id, client_id, prestataire_id').eq('id', convId).eq('prestataire_id', user.id).single();
   if(!data){ alert('Conversation introuvable.'); return; }
   if(String(data.client_id)===String(data.prestataire_id)){ alert('Conversation invalide.'); return; }
   location.href = 'chat.html?conversation=' + encodeURIComponent(convId) + '&annonce=' + encodeURIComponent(annonceId || '');
