@@ -203,7 +203,13 @@ async function chargerProfil(){
   const {data:{user}} = await sb.auth.getUser();
   if(!user){ window.location.href='connexion.html'; return; }
   userId = user.id;
-  const {data: p} = await sb.from('profiles').select('id, nom, nom_entreprise, type_compte, type_fournisseur, categorie_prestataire, whatsapp, quartier, ville, pays, description_profil, photo_profil_url, photo_piece_url, photo_atelier_url, quartier_verifie, verification_quartier, statut_validation').eq('id', userId).single();
+  const {data: p, error: errP} = await sb.from('profiles').select('id, nom, nom_entreprise, type_compte, type_fournisseur, categorie_prestataire, whatsapp, quartier, ville, pays, description_profil, photo_profil_url, photo_piece_url, photo_atelier_url, quartier_verifie, verification_quartier, statut_validation').eq('id', userId).single();
+  if(errP){
+    document.getElementById('nomAffiche').textContent = 'Erreur : ' + errP.message;
+    document.getElementById('msg').textContent = '❌ ' + errP.message;
+    document.getElementById('msg').style.color = 'red';
+    return;
+  }
   if(!p) return;
   monRole = String(p.type_compte || p.type_fournisseur || '').toLowerCase();
   const btnDash = document.getElementById('btnDashboard');
@@ -258,19 +264,21 @@ async function chargerProfil(){
 async function sauvegarder(){
   const msg = document.getElementById('msg');
   msg.textContent = "Enregistrement..."; msg.style.color = "#f59e0b";
+  const nomVal = document.getElementById('nom').value.trim();
+  if(!nomVal){ msg.textContent = "❌ Mets ton nom"; msg.style.color="red"; return; }
   const updates = {
-    id: userId,
-    nom: document.getElementById('nom').value,
+    nom: nomVal,
+    nom_entreprise: nomVal,
     type_compte: document.getElementById('type_compte').value,
-    categorie_prestataire: document.getElementById('categorie_prestataire').value,
-    whatsapp: document.getElementById('whatsapp').value,
+    categorie_prestataire: document.getElementById('categorie_prestataire').value || null,
+    whatsapp: document.getElementById('whatsapp').value.trim(),
     quartier: document.getElementById('quartier').value,
-    ville: document.getElementById('ville').value,
-    pays: document.getElementById('pays').value,
-    photo_profil_url: document.getElementById('photo_profil_url').value,
-    description_profil: document.getElementById('description_profil').value,
+    ville: document.getElementById('ville').value.trim(),
+    pays: document.getElementById('pays').value.trim() || 'Bénin',
+    photo_profil_url: document.getElementById('photo_profil_url').value.trim() || null,
+    description_profil: document.getElementById('description_profil').value.trim() || null,
   };
-  const {error} = await sb.from('profiles').upsert(updates);
+  const {error} = await sb.from('profiles').update(updates).eq('id', userId);
   if(error){ msg.textContent = "❌ " + error.message; msg.style.color="red"; }
   else{
     msg.textContent = "✅ Profil enregistré !"; msg.style.color="green";
