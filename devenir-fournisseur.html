@@ -110,10 +110,8 @@ async function init(){
   if(!user){ location.href = 'connexion.html'; return; }
   userActuel = user;
   document.getElementById('emailUser').textContent = user.email;
-
-  // Si déjà fournisseur / prestataire, on l'envoie directement au bon dashboard
-  const { data: profil } = await sb.from('profiles').select('role, type, type_compte').eq('id', user.id).maybeSingle();
-  const r = String(profil?.type_compte || profil?.role || profil?.type || '').toLowerCase().trim();
+  const { data: profil } = await sb.from('profiles').select('type_compte, type_fournisseur').eq('id', user.id).maybeSingle();
+  const r = String(profil?.type_compte || profil?.type_fournisseur || '').toLowerCase().trim();
   if(['fournisseur','prestataire','livreur','professionnel','entreprise','pro'].includes(r)){
     location.href = 'dashboard-prestataire.html';
     return;
@@ -129,27 +127,30 @@ async function valider(){
   btn.disabled = true;
   btn.textContent = 'Transformation en cours...';
   msg.textContent = '';
+  const description = document.getElementById('description').value.trim();
 
   let update = {};
   if(choix === 'fournisseur'){
     const nom = document.getElementById('nomEntreprise').value.trim();
     if(!nom){ msg.textContent = 'Mets le nom de ton entreprise.'; btn.disabled = false; btn.textContent = '✅ Valider et transformer mon compte →'; return; }
     update = {
-      role: 'fournisseur',
-      type: 'fournisseur',
       type_compte: 'fournisseur',
       type_fournisseur: document.getElementById('typeFournisseur').value,
       nom_entreprise: nom,
+      description_profil: description,
+      statut_validation: 'en_attente'
     };
   } else {
     const nom = document.getElementById('nomPresta').value.trim();
     if(!nom){ msg.textContent = 'Mets ton nom / nom d’activité.'; btn.disabled = false; btn.textContent = '✅ Valider et transformer mon compte →'; return; }
     update = {
-      role: 'prestataire',
-      type: 'prestataire',
       type_compte: 'prestataire',
       type_fournisseur: 'prestataire',
+      nom: nom,
       nom_entreprise: nom,
+      categorie_prestataire: document.getElementById('categoriePresta').value,
+      description_profil: description,
+      statut_validation: 'en_attente'
     };
   }
 
