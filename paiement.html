@@ -104,7 +104,7 @@ function detailImmobilier(c){
 }
 async function charger(){
   if(!commandeId) return;
-  const {data, error} = await sb.from('commandes').select('id, client_id, prestataire_id, univers, titre, montant, devise, status, conversation_id, annonce_id, commission, montant_total, montant_prestataire, localite, ville, created_at').eq('id', commandeId).maybeSingle();
+  const {data, error} = await sb.from('commandes').select('id, client_id, prestataire_id, univers, titre, montant, devise, status, conversation_id, annonce_id, commission, montant_total, montant_prestataire, localite, ville, mode_paiement, created_at').eq('id', commandeId).maybeSingle();
   if(error || !data){ document.getElementById('resume').innerHTML = 'Commande introuvable.'; document.getElementById('blocPaiement').style.display='none'; return; }
   if(String(data.client_id)!==String(uid)){
     document.getElementById('resume').innerHTML = `<b>⛔ Accès refusé.</b><p>Cette commande ne t'appartient pas.</p><button class="btn btn-dark" onclick="location.href='dashboard-client.html'">Voir mes commandes</button>`;
@@ -137,7 +137,7 @@ async function confirmerPaiement(mode){
   if(!commande) return;
   const {data: frais} = await sb.from('commandes').select('status').eq('id', commande.id).single();
   if(!frais || frais.status !== 'en_attente'){ showMsg('Cette commande a déjà été payée.', false); setTimeout(()=>location.href='dashboard-client.html', 1000); return; }
-  const {error} = await sb.from('commandes').update({status: 'paye'}).eq('id', commande.id).eq('client_id', uid).eq('status', 'en_attente');
+  const {error} = await sb.from('commandes').update({status: 'paye', mode_paiement: mode}).eq('id', commande.id).eq('client_id', uid).eq('status', 'en_attente');
   if(error){ showMsg('Erreur : ' + error.message, false); return; }
   if(commande.conversation_id){
     await sb.from('messages').insert([{conversation_id: commande.conversation_id, sender_id: uid, contenu: `💳 Paiement reçu (${mode}) - ${Number(commande.montant_total).toLocaleString()} FCFA bloqué en escrow. Tu peux commencer le service.`, type: 'texte'}]);
