@@ -468,14 +468,15 @@ async function inscrire(){
       if(login2?.user) userId = login2.user.id;
     }
     const nomFinal = (typeFinal==='prestataire' && typeFournisseur==='entreprise') ? (nom || nomContact || nomEntreprise) : nom;
-    const univers = typeFinal==='prestataire' ? universPourCategorie(categorie) : null;
+    const univers = typeFinal==='prestataire' ? universPourCategorie(categorie) : (typeFinal==='livreur' ? 'livreur' : null);
+    const typeFournisseurFinal = typeFinal==='prestataire' ? typeFournisseur : typeFinal;
     const payload = {
       id: userId,
       nom: nomFinal,
       whatsapp: whatsapp,
       email: emailFinal,
       type_compte: typeFinal,
-      type_fournisseur: typeFinal==='prestataire' ? typeFournisseur : null,
+      type_fournisseur: typeFournisseurFinal,
       nom_entreprise: (typeFinal==='prestataire' && typeFournisseur==='entreprise') ? nomEntreprise : null,
       rccm: (typeFinal==='prestataire' && typeFournisseur==='entreprise') ? (rccm || null) : null,
       taille_entreprise: (typeFinal==='prestataire' && typeFournisseur==='entreprise') ? (tailleEntreprise || null) : null,
@@ -486,9 +487,9 @@ async function inscrire(){
       quartier_verifie: false,
       description_profil: description||null,
       photo_profil_url: photoBase64||null,
-      categorie_prestataire: typeFinal==='prestataire'?categorie:null,
+      categorie_prestataire: typeFinal==='prestataire'?categorie:(typeFinal==='livreur'?'Livreur':null),
       univers: univers,
-      statut_validation: (typeFinal==='prestataire'?'en_attente':'valide')
+      statut_validation: (typeFinal==='prestataire'||typeFinal==='livreur'?'en_attente':'valide')
     };
     let {data,error}=await sb.from('profiles').upsert([payload], {onConflict:'id'}).select().single();
     if(error){ showMsg('Erreur profil : '+error.message, false); btn.disabled=false; btn.textContent='Créer mon compte →'; return; }
