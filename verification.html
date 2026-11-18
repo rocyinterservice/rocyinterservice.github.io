@@ -101,9 +101,10 @@ async function chargerProfil(){
     return;
   }
   try{
-    const {data:prof} = await sb.from('profiles').select('localite,quartier,verification_quartier,quartier_verifie,ville').eq('id', uid).single();
+    const {data:prof, error} = await sb.from('profiles').select('quartier,verification_quartier,quartier_verifie,ville').eq('id', uid).single();
+    if(error){ document.getElementById('statutBox').innerHTML = 'Erreur : '+error.message; return; }
     if(prof){
-      const q = prof.quartier || prof.localite || localQuartier;
+      const q = prof.quartier || localQuartier;
       if(q) document.getElementById('quartier').value = q;
       const st = prof.verification_quartier || 'non_envoye';
       if(prof.quartier_verifie === true || st === 'valide' || st === 'verifie'){
@@ -129,13 +130,8 @@ async function envoyerVerification(){
   try{
     const uid = await getUserId();
     if(!sb || !uid){ showMsg('Connecte-toi d\'abord sur Connexion', false); btn.disabled=false; btn.textContent='Envoyer pour vérification →'; return; }
-    const payload = { quartier: quartier, localite: quartier, verification_quartier: 'en_attente', quartier_verifie: false, photo_piece_url: photoPiece, photo_atelier_url: photoAtelier };
-    let {error} = await sb.from('profiles').update(payload).eq('id', uid);
-    if(error && error.message.includes('column')){
-      const payload2 = { quartier: quartier, localite: quartier, verification_quartier: 'en_attente', quartier_verifie: false };
-      const r2 = await sb.from('profiles').update(payload2).eq('id', uid);
-      error = r2.error;
-    }
+    const payload = { quartier: quartier, verification_quartier: 'en_attente', quartier_verifie: false, photo_piece_url: photoPiece, photo_atelier_url: photoAtelier };
+    const {error} = await sb.from('profiles').update(payload).eq('id', uid);
     if(error){ showMsg('Erreur : '+error.message, false); btn.disabled=false; btn.textContent='Envoyer pour vérification →'; return; }
     localStorage.setItem('rocy_user_localite', quartier);
     document.getElementById('statutBox').className='badgeBox bleu';
