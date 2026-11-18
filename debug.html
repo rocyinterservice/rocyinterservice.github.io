@@ -1,20 +1,22 @@
-<!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Debug</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-</head><body style="font-family:sans-serif;padding:16px">
-<h2>DEBUG ROCYINTER</h2>
-<div id="out" style="white-space:pre-wrap;background:#f1f5f9;padding:12px;border-radius:10px">Chargement...</div>
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script></head>
+<body style="font-family:sans-serif;padding:16px">
+<h3>DEBUG CONNEXION</h3>
+<input id="em" type="email" value="rocyinter@gmail.com" style="width:100%;padding:12px;margin-bottom:8px">
+<input id="pw" type="password" placeholder="Mot de passe" style="width:100%;padding:12px;margin-bottom:8px">
+<button onclick="test()" style="width:100%;padding:14px;background:#f59e0b;border:none;font-weight:800">TESTER</button>
+<pre id="res" style="white-space:pre-wrap;background:#f1f5f9;padding:12px;margin-top:12px;border-radius:10px"></pre>
 <script>
-const sb = window.supabase.createClient("https://gdwgjsloivrpxxvggxyz.supabase.co", "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF");
-async function run(){
-  let out = document.getElementById('out');
-  let r1 = await sb.auth.getUser();
-  out.textContent = "USER:\n" + JSON.stringify(r1.data.user, null, 2) + "\n\nERREUR USER: " + JSON.stringify(r1.error);
-  if(!r1.data.user){ out.textContent += "\n\n=> TU N'ES PAS CONNECTÉ. La session ne reste pas."; return; }
-  let r2 = await sb.from('profiles').select('*').eq('id', r1.data.user.id).maybeSingle();
-  out.textContent += "\n\nPROFIL:\n" + JSON.stringify(r2.data, null, 2) + "\n\nERREUR PROFIL: " + JSON.stringify(r2.error);
-  if(!r2.data){ out.textContent += "\n\n=> PAS DE PROFIL TROUVÉ. C'est ça qui te renvoie à connexion."; }
-  else { out.textContent += "\n\nROLE = " + (r2.data.type_compte || r2.data.role || r2.data.type_fournisseur || "VIDE"); }
+const sb = window.supabase.createClient("https://gdwgjsloivrpxxvggxyz.supabase.co","sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF");
+async function test(){
+  const res=document.getElementById('res');
+  res.textContent='Test en cours...';
+  const email=document.getElementById('em').value.trim().toLowerCase();
+  const password=document.getElementById('pw').value;
+  const {data:login,error:errLogin}=await sb.auth.signInWithPassword({email,password});
+  if(errLogin||!login?.user){ res.textContent='LOGIN ERREUR:\n'+JSON.stringify(errLogin,null,2); return; }
+  res.textContent='LOGIN OK, id='+login.user.id+'\nTest profil...';
+  const {data:prof,error:perr}=await sb.from('profiles').select('id,nom,email,whatsapp,phone,type_compte,type_fournisseur,pays,ville,quartier').eq('id',login.user.id).single();
+  res.textContent='LOGIN OK id='+login.user.id+'\n\nPROF:\n'+JSON.stringify(prof,null,2)+'\n\nERREUR PROF:\n'+JSON.stringify(perr,null,2);
 }
-run();
 </script></body></html>
