@@ -141,9 +141,9 @@ function badgeAnnonce(a){
   if(s==='rejete' || s==='refuse') return '<span class="badge rejete">❌ Rejetée</span>';
   return '<span class="badge attente">⏳ En attente</span>';
 }
-function nomAffiche(profil){ return profil.nom_entreprise || profil.nom || profil.full_name || 'Prestataire'; }
+function nomAffiche(profil){ return profil.nom_entreprise || profil.nom || 'Prestataire'; }
 function badgeTypeFournisseur(profil){
-  const type = String(profil.type_compte || '').toLowerCase();
+  const type = String(profil.type_compte || profil.type_fournisseur || '').toLowerCase();
   const nomEnt = profil.nom_entreprise;
   if(nomEnt || type === 'entreprise') return '<span class="badge-type entreprise">🏢 Entreprise</span>';
   if(type === 'livreur') return '<span class="badge-type livreur">🛵 Livreur</span>';
@@ -154,7 +154,7 @@ async function charger(){
   if(!user){ location.href='connexion.html'; return; }
   uid = user.id;
   const {data: profil, error: errProfil} = await sb.from('profiles')
-    .select('id, nom, full_name, nom_entreprise, type_compte, quartier, ville, pays, quartier_verifie, verification_quartier, photo_profil_url, statut_validation, status_prestataire, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert')
+    .select('id, nom, nom_entreprise, type_compte, type_fournisseur, quartier, ville, pays, quartier_verifie, verification_quartier, photo_profil_url, statut_validation, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert')
     .eq('id', uid).maybeSingle();
   if(errProfil){
     document.getElementById('infoUser').textContent = 'Erreur chargement profil : ' + errProfil.message;
@@ -166,7 +166,7 @@ async function charger(){
     document.getElementById('bannerStatut').innerHTML = '<div class="banner attente">⚠️ Ton compte existe mais ton profil est introuvable dans la table profiles. ID : '+uid+'</div>';
     return;
   }
-  let roleReel = String(profil.type_compte || '').toLowerCase().trim();
+  let roleReel = String(profil.type_compte || profil.type_fournisseur || '').toLowerCase().trim();
   if(!roleReel && profil.nom_entreprise) roleReel = 'entreprise';
   const ROLES_FOURNISSEUR = ['prestataire','livreur','fournisseur','professionnel','entreprise','pro'];
   if(roleReel === 'client'){ location.href='dashboard-client.html'; return; }
@@ -209,7 +209,7 @@ async function charger(){
     btnVerif.style.display='block'; btnAttente.style.display='none';
   }
   if(photo){ const img=document.getElementById('photoProfil'); img.src=photo; img.style.display='block'; }
-  const statut = String(profil?.statut_validation || profil?.status_prestataire || 'en_attente').toLowerCase();
+  const statut = String(profil?.statut_validation || 'en_attente').toLowerCase();
   const banner = document.getElementById('bannerStatut');
   const t = window.rocyT || (k=>k);
   if(statut==='valide'){
