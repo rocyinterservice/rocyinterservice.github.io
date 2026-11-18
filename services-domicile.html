@@ -57,13 +57,13 @@ const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 let sb = null;
 try{ sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); window.supabaseClient = sb; }catch(e){}
-let catActuelle = ''; let toutesAnnonces = []; let moiId=''; let monRole='';
+let catActuelle = ''; let toutesAnnonces = []; let moiId=''; let monRole=''; let nomsPresta = {};
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function remplirPays(){ const sel=document.getElementById('filtrePays'); if(window.ROCY_PAYS&&window.ROCY_PAYS.length){ sel.innerHTML='<option value="">🌍 Tous les pays</option>'+window.ROCY_PAYS.map(p=>`<option value="${esc(p.nom)}">${esc(p.drapeau)} ${esc(p.nom)}</option>`).join(''); } }
 async function afficherBandeauRole(){
   const box = document.getElementById('bandeauRole'); if(!box) return;
   const {data:{user}} = await sb.auth.getUser(); moiId = user?.id || '';
-  if(user){ const {data:p}=await sb.from('profiles').select('type_compte, role').eq('id',user.id).maybeSingle(); monRole=String(p?.type_compte||p?.role||'').toLowerCase(); }
+  if(user){ const {data:p}=await sb.from('profiles').select('type_compte, type_fournisseur').eq('id',user.id).maybeSingle(); monRole=String(p?.type_compte||p?.type_fournisseur||'').toLowerCase(); }
   const t = window.rocyT || (k=>k);
   if(!moiId) box.innerHTML = `<div class="bandeau-role bandeau-visiteur">👁️ ${esc(t('bandeauVisiteur'))}</div>`;
   else if(monRole==='prestataire' || monRole==='livreur') box.innerHTML = `<div class="bandeau-role bandeau-presta">🛠️ ${esc(t('bandeauPresta'))}</div>`;
@@ -79,13 +79,13 @@ function construireFiltres(){
   if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 }
 function prixTexte(a){
-  const prixVal = a.prix_indicatif || a.prix || a.montant || 0; const t = window.rocyT || (k=>k);
-  if(a.prix_fixe) return (window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal+' FCFA') + ' - ' + t('prixFixe');
-  if(prixVal>0) return t('aPartir') + ' ' + (window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal+' FCFA');
+  const prixVal = Number(a.prix_indicatif || 0); const t = window.rocyT || (k=>k);
+  if(a.prix_fixe) return (window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal+' '+(a.devise||'FCFA')) + ' - ' + t('prixFixe');
+  if(prixVal>0) return t('aPartir') + ' ' + (window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal+' '+(a.devise||'FCFA'));
   return t('prixDiscuter');
 }
 function estValide(a){
-  const s = String(a.status || a.statut || '').toLowerCase().trim();
+  const s = String(a.status || '').toLowerCase().trim();
   if(!s) return true;
   return s==='valide' || s==='valid' || s==='publie' || s==='publié' || s==='publiee' || s==='actif' || s==='active';
 }
@@ -96,15 +96,16 @@ function afficher(){
   const box = document.getElementById('liste'); const t = window.rocyT || (k=>k);
   let list = toutesAnnonces.filter(a => (a.univers||'domicile') === 'domicile' && estValide(a));
   if(pays) list = list.filter(a => (a.pays||'') === pays);
-  if(loc) list = list.filter(a => (a.localite||'').toLowerCase().includes(loc) || (a.ville||'').toLowerCase().includes(loc));
+  if(loc) list = list.filter(a => (a.localite||'').toLowerCase().includes(loc) || (a.quartier||'').toLowerCase().includes(loc) || (a.ville||'').toLowerCase().includes(loc));
   if(catActuelle) list = list.filter(a=> a.categorie === catActuelle);
-  if(q) list = list.filter(a=>((a.titre||'')+' '+(a.ville||'')+' '+(a.localite||'')+' '+(a.categorie||'')+' '+(a.profiles?.nom||'')+' '+(a.description||'')).toLowerCase().includes(q));
+  if(q) list = list.filter(a=>((a.titre||'')+' '+(a.ville||'')+' '+(a.localite||'')+' '+(a.quartier||'')+' '+(a.categorie||'')+' '+((nomsPresta[a.prestataire_id]?.nom)||'')+' '+(a.description||'')).toLowerCase().includes(q));
   if(!list.length){ box.innerHTML = `<div class="empty"><b>${esc(t('aucuneTitre'))}</b><br>${esc(t('aucuneSous'))}<br><br><button class="btn" onclick="rocyProposerService()">${esc(t('proposerTitre'))}</button></div>`; return; }
   box.innerHTML = list.map(a=>{
-    const img = a.photo_url || a.image_url || a.photo || 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&q=80';
-    const nom = a.profiles?.nom || 'Prestataire';
-    const lieu = [a.localite, a.ville, a.pays].filter(Boolean).join(' - ');
-    const prestaId = a.prestataire_id || a.user_id || '';
+    const img = a.photo_url || 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&q=80';
+    const pr = nomsPresta[a.prestataire_id] || {};
+    const nom = pr.nom_entreprise || pr.nom || 'Prestataire';
+    const lieu = [a.localite || a.quartier, a.ville, a.pays].filter(Boolean).join(' - ');
+    const prestaId = a.prestataire_id || '';
     const cestMoi = prestaId && moiId && String(prestaId)===String(moiId);
     const btnChat = cestMoi ? `<button class="btn btn-mine" disabled>C'est ton annonce</button>` : `<button class="btn btn-dark" onclick="discuter('${esc(prestaId)}','${esc(a.id)}')">💬 ${esc(t('discuter'))}</button>`;
     return `<div class="card"><img src="${esc(img)}" onclick="voirPresta('${esc(prestaId)}')" style="cursor:pointer" onerror="this.src='https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&q=80'"><span class="badge">${esc(a.categorie)}</span><h3 style="margin-top:8px">${esc(a.titre)}</h3><p>👤 ${esc(nom)}<br>📍 ${esc(lieu)}</p><p>${esc((a.description||'').slice(0,110))}...</p><div class="price">${esc(prixTexte(a))}</div><button class="btn btn-gris" onclick="voirPresta('${esc(prestaId)}')">${esc(t('voirPresta'))}</button>${btnChat}</div>`;
@@ -115,9 +116,15 @@ async function charger(){
   const box = document.getElementById('liste'); const t = window.rocyT || (k=>k);
   if(!sb){ box.innerHTML = `<div class="empty"><b>${esc(t('pasConnexion'))}</b><br><button class="btn" onclick="charger()">${esc(t('reessayer'))}</button></div>`; return; }
   try{
-    const {data, error} = await sb.from('annonces').select('id, titre, categorie, univers, description, prix_fixe, prix_indicatif, prix, montant, photo_url, image_url, photo, localite, ville, pays, status, statut, prestataire_id, user_id, profiles(nom)').eq('univers','domicile').order('created_at',{ascending:false});
+    const {data, error} = await sb.from('annonces').select('id, titre, categorie, univers, description, prix_fixe, prix_indicatif, photo_url, localite, quartier, ville, pays, status, prestataire_id, devise, created_at').eq('univers','domicile').order('created_at',{ascending:false});
     if(error) throw error;
-    toutesAnnonces = (data || []).filter(estValide); construireFiltres(); afficher();
+    toutesAnnonces = (data || []).filter(estValide);
+    const ids = [...new Set(toutesAnnonces.map(a=>a.prestataire_id).filter(Boolean))];
+    if(ids.length){
+      const {data: profs} = await sb.from('profiles').select('id,nom,nom_entreprise,whatsapp,quartier_verifie,quartier').in('id', ids);
+      (profs||[]).forEach(p=> nomsPresta[p.id]=p);
+    }
+    construireFiltres(); afficher();
   }catch(e){ console.log('ROCY domicile erreur:', e); box.innerHTML = `<div class="empty"><b>${esc(t('erreurConnexion'))}</b><br><button class="btn" onclick="charger()">${esc(t('reessayer'))}</button></div>`; }
 }
 function voirPresta(id){ if(!id) return; localStorage.setItem('fiche_prestataire_id', id); location.href='fiche-prestataire.html'; }
