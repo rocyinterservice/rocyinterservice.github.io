@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Devenir Fournisseur - Rocyinter</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="rocy-layout.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
+body{background:#f6f7f9;color:#111}
+.top{max-width:560px;margin:0 auto;padding:16px}
+h1{font-size:22px;margin:16px 0 4px}
+p.sub{color:#64748b;font-size:13px;margin-bottom:14px;line-height:1.5}
+.card{background:#fff;border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.choix{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+.choix button{padding:16px 10px;border-radius:14px;border:2px solid #e2e8f0;background:#fff;cursor:pointer;text-align:center}
+.choix button.actif{border-color:#f59e0b;background:#fffbeb}
+.choix b{font-size:15px;display:block}
+.choix span{font-size:12px;color:#64748b;display:block;margin-top:4px;line-height:1.4}
+label{font-size:13px;font-weight:700;display:block;margin:12px 0 6px}
+input,select,textarea{width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;background:#fff}
+textarea{min-height:80px}
+.btn{width:100%;background:#f59e0b;border:none;padding:13px;border-radius:10px;font-weight:800;cursor:pointer;margin-top:14px}
+.btn-gris{background:#f1f5f9}
+.msg{font-size:13px;text-align:center;margin-top:10px;color:#991b1b}
+.msg.ok{color:#166534}
+</style>
+</head>
+<body>
+<div class="top">
+<h1>💼 Devenir Fournisseur</h1>
+<p class="sub">Tu es déjà connecté en <b id="emailUser">...</b>. Choisis comment tu veux vendre sur Rocyinter. Ton compte client Gédéon va être <b>transformé</b>, pas recréé.</p>
+
+<div class="card">
+<h3>1. Tu veux devenir quoi ?</h3>
+<div class="choix">
+  <button type="button" id="btnFournisseur" onclick="choisir('fournisseur')">
+    <b>💼 Fournisseur</b>
+    <span>Entreprise / Boutique<br>Tu vends des produits ou services avec un nom d'entreprise</span>
+  </button>
+  <button type="button" id="btnPrestataire" onclick="choisir('prestataire')">
+    <b>👷 Prestataire</b>
+    <span>Individuel / Artisan<br>Tu proposes tes services toi-même</span>
+  </button>
+</div>
+</div>
+
+<div class="card" id="blocForm" style="display:none">
+<h3 id="titreForm">2. Tes infos</h3>
+
+<div id="champEntreprise">
+<label>Nom de ton entreprise *</label>
+<input id="nomEntreprise" placeholder="Ex : Gédéon Services">
+<label>Type de fournisseur</label>
+<select id="typeFournisseur">
+  <option value="entreprise">Entreprise</option>
+  <option value="boutique">Boutique</option>
+  <option value="agence">Agence</option>
+  <option value="autre">Autre</option>
+</select>
+</div>
+
+<div id="champPrestataire" style="display:none">
+<label>Dans quel domaine ? *</label>
+<select id="categoriePresta">
+  <option value="services-domicile">Services à domicile</option>
+  <option value="services-pro">Services Pro</option>
+  <option value="livraison">Livraison</option>
+  <option value="manger">Manger / Restauration</option>
+  <option value="sejour">Séjour / Hôtel</option>
+  <option value="immobilier">Immobilier</option>
+  <option value="autre">Autre</option>
+</select>
+<label>Ton nom / nom d'activité *</label>
+<input id="nomPresta" placeholder="Ex : Gédéon GNONHOSSOU">
+</div>
+
+<label>Décris ce que tu proposes (optionnel)</label>
+<textarea id="description" placeholder="Ex : Je fais le ménage, la plomberie, la livraison à Calavi..."></textarea>
+
+<button class="btn" id="btnValider" onclick="valider()">✅ Valider et transformer mon compte →</button>
+<p class="msg" id="msg"></p>
+</div>
+
+<button class="btn btn-gris" onclick="location.href='dashboard-client.html'">← Retour à mon dashboard client</button>
+</div>
+
+<script>
+const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
+const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
+const sb = window.supabaseClient || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+window.supabaseClient = sb;
+
+let choix = null;
+let userActuel = null;
+
+function choisir(c){
+  choix = c;
+  document.getElementById('btnFournisseur').classList.toggle('actif', c === 'fournisseur');
+  document.getElementById('btnPrestataire').classList.toggle('actif', c === 'prestataire');
+  document.getElementById('blocForm').style.display = 'block';
+  document.getElementById('champEntreprise').style.display = c === 'fournisseur' ? 'block' : 'none';
+  document.getElementById('champPrestataire').style.display = c === 'prestataire' ? 'block' : 'none';
+  document.getElementById('titreForm').textContent = c === 'fournisseur' ? '2. Infos de ton entreprise' : '2. Infos de prestataire';
+}
+
+async function init(){
+  const { data: { user } } = await sb.auth.getUser();
+  if(!user){ location.href = 'connexion.html'; return; }
+  userActuel = user;
+  document.getElementById('emailUser').textContent = user.email;
+
+  // Si déjà fournisseur / prestataire, on l'envoie directement au bon dashboard
+  const { data: profil } = await sb.from('profiles').select('role, type, type_compte').eq('id', user.id).maybeSingle();
+  const r = String(profil?.type_compte || profil?.role || profil?.type || '').toLowerCase().trim();
+  if(['fournisseur','prestataire','livreur','professionnel','entreprise','pro'].includes(r)){
+    location.href = 'dashboard-prestataire.html';
+    return;
+  }
+}
+
+async function valider(){
+  const msg = document.getElementById('msg');
+  if(!choix){ msg.textContent = 'Choisis d’abord Fournisseur ou Prestataire en haut.'; return; }
+  if(!userActuel){ msg.textContent = 'Reconnecte-toi.'; return; }
+
+  const btn = document.getElementById('btnValider');
+  btn.disabled = true;
+  btn.textContent = 'Transformation en cours...';
+  msg.textContent = '';
+
+  let update = {};
+  if(choix === 'fournisseur'){
+    const nom = document.getElementById('nomEntreprise').value.trim();
+    if(!nom){ msg.textContent = 'Mets le nom de ton entreprise.'; btn.disabled = false; btn.textContent = '✅ Valider et transformer mon compte →'; return; }
+    update = {
+      role: 'fournisseur',
+      type: 'fournisseur',
+      type_compte: 'fournisseur',
+      type_fournisseur: document.getElementById('typeFournisseur').value,
+      nom_entreprise: nom,
+    };
+  } else {
+    const nom = document.getElementById('nomPresta').value.trim();
+    if(!nom){ msg.textContent = 'Mets ton nom / nom d’activité.'; btn.disabled = false; btn.textContent = '✅ Valider et transformer mon compte →'; return; }
+    update = {
+      role: 'prestataire',
+      type: 'prestataire',
+      type_compte: 'prestataire',
+      type_fournisseur: 'prestataire',
+      nom_entreprise: nom,
+    };
+  }
+
+  const { error } = await sb.from('profiles').update(update).eq('id', userActuel.id);
+  if(error){
+    msg.textContent = 'Erreur : ' + error.message;
+    btn.disabled = false;
+    btn.textContent = '✅ Valider et transformer mon compte →';
+    return;
+  }
+
+  msg.className = 'msg ok';
+  msg.textContent = '✅ Bravo ! Ton compte est devenu ' + choix + '. Redirection...';
+  setTimeout(() => { location.href = 'dashboard-prestataire.html'; }, 1000);
+}
+
+init();
+</script>
+</body>
+</html>
