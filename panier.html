@@ -32,16 +32,31 @@ async function charger(){
   const {data:{user}} = await sb.auth.getUser();
   if(!user){ location.href='connexion.html'; return; }
   uid = user.id;
-  const {data, error} = await sb.from('commandes').select('id, titre, montant_total, commission, montant_prestataire, univers, localite, ville, prestataire_id, conversation_id, profiles:prestataire_id(nom)').eq('client_id', uid).eq('status','en_attente').order('created_at',{ascending:false});
+  const {data, error} = await sb.from('commandes').select('id, titre, montant_total, commission, montant_prestataire, univers, localite, ville, prestataire_id, conversation_id, annonce_id, status').eq('client_id', uid).eq('status','en_attente').order('created_at',{ascending:false});
   if(error){ document.getElementById('liste').innerHTML = `<p style="text-align:center;color:#991b1b;padding:20px;background:#fff;border-radius:16px">Erreur : ${esc(error.message)}</p>`; return; }
   panier = data || [];
   if(!panier.length){
     document.getElementById('liste').innerHTML = '<p style="text-align:center;color:#64748b;padding:20px;background:#fff;border-radius:16px">Panier vide.<br>Discute avec un prestataire, accepte sa proposition, elle apparaîtra ici.</p>';
     return;
   }
+  const ids = [...new Set(panier.map(p=>p.prestataire_id).filter(Boolean))];
+  let noms = {};
+  if(ids.length){
+    const {data: prestas} = await sb.from('prestataires').select('id, business_name, user_id').in('id', ids);
+    (prestas||[]).forEach(pr => { if(pr.business_name) noms[pr.id] = pr.business_name; });
+    const sansNom = (prestas||[]).filter(pr => !pr.business_name && pr.user_id);
+    if(sansNom.length){
+      const userIds = [...new Set(sansNom.map(p=>p.user_id))];
+      const {data: profs} = await sb.from('profiles').select('id, nom').in('id', userIds);
+      const mapNom = {};
+      (profs||[]).forEach(p => mapNom[p.id] = p.nom);
+      sansNom.forEach(pr => { if(mapNom[pr.user_id]) noms[pr.id] = mapNom[pr.user_id]; });
+    }
+  }
+  panier.forEach(p => { p.nom_presta = noms[p.prestataire_id] || 'Prestataire'; });
   document.getElementById('liste').innerHTML = panier.map((p,i)=>`<div class="card">
     <h3>${esc(p.titre)}</h3>
-    <p>Montant : <b>${Number(p.montant_total||0).toLocaleString()} FCFA</b><br>Prestataire : ${esc(p.profiles?.nom || 'Prestataire')}<br>${esc(p.localite||'')} - ${esc(p.ville||'')}</p>
+    <p>Montant : <b>${Number(p.montant_total||0).toLocaleString()} FCFA</b><br>Prestataire : ${esc(p.nom_presta)}<br>${esc(p.localite||'')} - ${esc(p.ville||'')}</p>
     <button class="btn" onclick="payer(${i})">Payer en Escrow</button>
     <button class="btn btn-gris" onclick="voirChat(${i})">Voir la discussion</button>
     <button class="btn btn-dark" onclick="retirer(${i})">Annuler</button>
@@ -63,7 +78,6 @@ async function retirer(i){
   if(!confirm('Annuler cette commande ? Le prestataire sera prévenu.')) return;
   const {error} = await sb.from('commandes').update({status:'annule'}).eq('id', p.id).eq('client_id', uid).eq('status','en_attente');
   if(error){ alert('Erreur : '+error.message); return; }
-  // 🔔 Notif au prestataire
   if(p.prestataire_id){
     await sb.rpc('creer_notification', { p_user_id: p.prestataire_id, p_titre: '❌ Commande annulée', p_message: `Le client a annulé la commande "${p.titre}".`, p_type: 'commande', p_lien: 'dashboard-prestataire.html' });
   }
