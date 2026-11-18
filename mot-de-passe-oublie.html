@@ -27,21 +27,21 @@ input.code{letter-spacing:8px;text-align:center;font-size:22px;font-weight:800}
 </style></head>
 <body><div class="top"><div class="card">
 <h1>🔑 Mot de passe oublié</h1>
-<p id="sousTitre">Entre ton WhatsApp ou ton Email. Si tu as un mail, on t'envoie un <b>code à 6 chiffres</b>. Si tu n'as pas de mail, tu pourras écrire à l'Admin.</p>
+<p id="sousTitre">Entre ton WhatsApp ou ton Email. Si tu as un mail, on t'envoie un <b>code à 6 chiffres par mail</b>. Si tu n'as pas de mail, tu pourras écrire à Rocyinter sur WhatsApp.</p>
 <div id="etape1" class="etape show">
   <div><label>TON WHATSAPP OU EMAIL *</label><input id="identifiant" placeholder="Ex : 01 97 00 00 00 ou jean@gmail.com"></div>
   <div id="msg1" class="msg"></div>
   <button class="btn" id="btnEnvoi" onclick="envoyerCode()">Envoyer le code à 6 chiffres →</button>
   <div id="boxWa" class="box-wa">
     <p style="color:#166534;font-weight:700">⚠️ Ton compte n'a pas de vrai Email.</p>
-    <p style="color:#166534">Tu ne peux pas recevoir le code par mail. Clique ici, ton message est déjà prêt, l'Admin va t'aider à récupérer ton compte.</p>
-    <a id="lienWaAdmin" class="btn-wa" href="#" target="_blank">💬 Écrire à l'Admin sur WhatsApp →</a>
-    <p style="font-size:12px;text-align:center">N'envoie jamais ton ancien mot de passe. L'Admin ne te le demandera jamais.</p>
+    <p style="color:#166534">Tu ne peux pas recevoir le code par mail. Clique ici, ton message est déjà prêt, Rocyinter va t'aider à récupérer ton compte.</p>
+    <a id="lienWaRocy" class="btn-wa" href="#" target="_blank">💬 Écrire à Rocyinter sur WhatsApp →</a>
+    <p style="font-size:12px;text-align:center">N'envoie jamais ton ancien mot de passe. Rocyinter ne te le demandera jamais.</p>
   </div>
 </div>
 <div id="etape2" class="etape">
   <div><label>CODE À 6 CHIFFRES *</label><input id="code" class="code" placeholder="••••••" inputmode="numeric" maxlength="6"></div>
-  <p style="font-size:12px">Code envoyé à <b id="emailMasque"></b>. Vérifie tes spams. Il expire en 1 heure.</p>
+  <p style="font-size:12px">Code envoyé par mail à <b id="emailMasque"></b>. Vérifie tes spams. Il expire en 1 heure.</p>
   <div id="msg2" class="msg"></div>
   <button class="btn" id="btnVerif" onclick="verifierCode()">Vérifier le code →</button>
   <button class="btn-sec" id="btnRenvoyer" onclick="envoyerCode(true)">Renvoyer le code</button>
@@ -58,7 +58,7 @@ input.code{letter-spacing:8px;text-align:center;font-size:22px;font-weight:800}
 <script>
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
-const ADMIN_WHATSAPP = "2290191478460";
+const ROCY_WHATSAPP = "2290191478460";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 window.supabaseClient = sb;
 let emailFinal = '';
@@ -78,6 +78,12 @@ function masquerEmail(email){
   if(parts.length !== 2) return '***';
   return parts[0].slice(0,2) + '***@' + parts[1];
 }
+function normaliserWhats(chiffres){
+  let n = String(chiffres||'').replace(/[^0-9]/g,'');
+  if(n.startsWith('0')) n = '229' + n.slice(1);
+  else if(n.length === 8) n = '229' + n;
+  return n;
+}
 function allerEtape(n){
   ['etape1','etape2','etape3'].forEach(id => document.getElementById(id).classList.remove('show'));
   document.getElementById('etape'+n).classList.add('show');
@@ -86,47 +92,47 @@ function retourEtape1(){
   document.getElementById('boxWa').classList.remove('show');
   allerEtape(1);
 }
-function afficherAideAdmin(){
-  const texte = 'Bonjour Admin Rocyinter, j\'ai oublié mon mot de passe. Mon WhatsApp est ' + (whatsappFinal || document.getElementById('identifiant').value.trim()) + '. Je n\'ai pas de Email pour recevoir le code. Aidez-moi à récupérer mon compte, merci.';
-  const lien = document.getElementById('lienWaAdmin');
-  lien.href = 'https://wa.me/' + ADMIN_WHATSAPP + '?text=' + encodeURIComponent(texte);
+function afficherAideRocy(){
+  const texte = 'Bonjour Rocyinter, j\'ai oublié mon mot de passe. Mon WhatsApp est ' + (whatsappFinal || document.getElementById('identifiant').value.trim()) + '. Je n\'ai pas de Email pour recevoir le code. Aidez-moi à récupérer mon compte, merci.';
+  const lien = document.getElementById('lienWaRocy');
+  lien.href = 'https://wa.me/' + ROCY_WHATSAPP + '?text=' + encodeURIComponent(texte);
   document.getElementById('boxWa').classList.add('show');
 }
 async function envoyerCode(renvoi){
   const brut = document.getElementById('identifiant').value.trim();
   if(!brut){ showMsg('msg1','Entre ton WhatsApp ou ton Email', false); return; }
   document.getElementById('boxWa').classList.remove('show');
-  const btn = document.getElementById('btnEnvoi');
-  btn.disabled = true; btn.textContent = 'Envoi...';
+  const btn = renvoi ? document.getElementById('btnRenvoyer') : document.getElementById('btnEnvoi');
+  if(btn){ btn.disabled = true; btn.textContent = 'Envoi...'; }
   try{
     if(brut.includes('@')){
       emailFinal = brut.toLowerCase(); whatsappFinal = '';
     } else {
       const chiffres = brut.replace(/[^0-9]/g,'');
-      whatsappFinal = chiffres;
-      const {data: emailViaWhats, error: errRpc} = await sb.rpc('get_email_by_whatsapp', { p_whatsapp: chiffres });
-      if(errRpc || !emailViaWhats){ emailFinal = chiffres + '@rocyinter.com'; }
+      whatsappFinal = normaliserWhats(chiffres);
+      const {data: emailViaWhats, error: errRpc} = await sb.rpc('get_email_by_whatsapp', { p_whatsapp: whatsappFinal });
+      if(errRpc || !emailViaWhats){ emailFinal = whatsappFinal + '@rocyinter.com'; }
       else { emailFinal = String(emailViaWhats).toLowerCase().trim(); }
-      if(emailFinal.endsWith('@rocyinter.com')){
+      if(!emailFinal || emailFinal.endsWith('@rocyinter.com') || emailFinal.endsWith('@rocyinter.local')){
         showMsg('msg1','⚠️ Ton compte n\'a pas de vrai Email, on ne peut pas t\'envoyer le code par mail.', false);
-        afficherAideAdmin();
-        btn.disabled = false; btn.textContent = 'Envoyer le code à 6 chiffres →';
+        afficherAideRocy();
+        if(btn){ btn.disabled = false; btn.textContent = renvoi ? 'Renvoyer le code' : 'Envoyer le code à 6 chiffres →'; }
         return;
       }
     }
     const {error} = await sb.auth.signInWithOtp({ email: emailFinal, options: { shouldCreateUser: false } });
     if(error){
-      showMsg('msg1','Si ce compte existe, un code a été envoyé. Vérifie ta boîte mail.', true);
-      btn.disabled = false; btn.textContent = 'Envoyer le code à 6 chiffres →';
+      showMsg('msg1','Si ce compte existe, un code a été envoyé par mail. Vérifie ta boîte mail.', true);
+      if(btn){ btn.disabled = false; btn.textContent = renvoi ? 'Renvoyer le code' : 'Envoyer le code à 6 chiffres →'; }
       return;
     }
     document.getElementById('emailMasque').textContent = masquerEmail(emailFinal);
-    document.getElementById('sousTitre').textContent = 'On t\'a envoyé un code à 6 chiffres par Email. Tape-le ici.';
+    document.getElementById('sousTitre').textContent = 'On t\'a envoyé un code à 6 chiffres par mail. Tape-le ici.';
     allerEtape(2);
   }catch(e){
     showMsg('msg1','Erreur : ' + e.message, false);
   }
-  btn.disabled = false; btn.textContent = 'Envoyer le code à 6 chiffres →';
+  if(btn){ btn.disabled = false; btn.textContent = renvoi ? 'Renvoyer le code' : 'Envoyer le code à 6 chiffres →'; }
 }
 async function verifierCode(){
   const code = document.getElementById('code').value.trim();
