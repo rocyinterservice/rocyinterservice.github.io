@@ -27,36 +27,44 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 window.supabaseClient = sb;
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ICONES = { message:'💬', paiement:'💰', commande:'🛒', validation:'✅', litige:'⚠️', info:'🔔', avis:'⭐' };
+let uid = '';
+let notifs = [];
 async function charger(){
   const {data:{user}} = await sb.auth.getUser();
   if(!user){ location.href='connexion.html'; return; }
-  const {data, error} = await sb.from('notifications').select('*').eq('user_id', user.id).order('created_at',{ascending:false}).limit(50);
+  uid = user.id;
+  const {data, error} = await sb.from('notifications').select('id, user_id, titre, message, type, lien, lu, created_at').eq('user_id', uid).order('created_at',{ascending:false}).limit(50);
   if(error){ document.getElementById('liste').innerHTML = `<div class="card"><p>Erreur : ${esc(error.message)}</p></div>`; return; }
-  if(!data || !data.length){
+  notifs = data || [];
+  if(!notifs.length){
     document.getElementById('liste').innerHTML = `<div class="card"><p><b>👋 Bienvenue sur Rocyinter</b><br>Tu recevras ici : nouveau message, proposition de prix, paiement reçu, validation, litige.</p></div>`;
     return;
   }
-  document.getElementById('liste').innerHTML = data.map(n=>{
+  document.getElementById('liste').innerHTML = notifs.map((n,i)=>{
     const date = new Date(n.created_at).toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
-    return `<div class="card ${n.lu?'':'non-lu'}" onclick="ouvrirNotif('${esc(n.id)}','${esc(n.lien||'')}')">
+    return `<div class="card ${n.lu?'':'non-lu'}" onclick="ouvrirNotif(${i})">
       <b>${ICONES[n.type]||'🔔'} ${esc(n.titre)}</b>
       <p>${esc(n.message)}</p>
       <small>${esc(date)} ${n.lu?'• Lu':'• Non lu'}</small>
     </div>`;
   }).join('') + `<button class="btn-sec" onclick="toutLire()">Tout marquer comme lu</button>`;
 }
-async function ouvrirNotif(id, lien){
-  await sb.from('notifications').update({lu:true}).eq('id', id);
-  if(lien && lien !== 'null' && lien !== '') location.href = lien;
+async function ouvrirNotif(i){
+  const n = notifs[i]; if(!n) return;
+  await sb.from('notifications').update({lu:true}).eq('id', n.id).eq('user_id', uid);
+  if(n.lien && n.lien !== '' && n.lien !== 'null') location.href = n.lien;
   else charger();
 }
 async function toutLire(){
-  const {data:{user}} = await sb.auth.getUser();
-  if(!user) return;
-  await sb.from('notifications').update({lu:true}).eq('user_id', user.id).eq('lu', false);
+  if(!uid) return;
+  await sb.from('notifications').update({lu:true}).eq('user_id', uid).eq('lu', false);
   charger();
 }
-// Temps réel : quand une nouvelle notif arrive, on recharge
-sb.channel('notifs').on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications'},()=>charger()).subscribe();
+async function initTempsReel(){
+  const {data:{user}} = await sb.auth.getUser();
+  if(!user) return;
+  sb.channel('notifs-' + user.id).on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications',filter:'user_id=eq.'+user.id},()=>charger()).subscribe();
+}
+initTempsReel();
 charger();
 </script></body></html>
