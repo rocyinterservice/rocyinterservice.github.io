@@ -94,7 +94,7 @@ async function notifier(destinataire, titre, message, type, lien){
   }catch(e){ console.log('Notif échouée (pas grave):', e); }
 }
 function estValideAnnonce(a){
-  const s = String(a.status || a.statut || '').toLowerCase().trim();
+  const s = String(a.status || '').toLowerCase().trim();
   if(!s) return true;
   return s==='valide' || s==='valid' || s==='publie' || s==='publié' || s==='publiee' || s==='actif' || s==='active';
 }
@@ -134,18 +134,15 @@ async function init(){
   const {data:{user}} = await sb.auth.getUser();
   if(!user){ location.href='connexion.html'; return; }
   moiId = user.id;
-  const {data:profMoi} = await sb.from('profiles').select('type_compte, role, type_fournisseur').eq('id', moiId).maybeSingle();
-  monRole = String(profMoi?.type_compte || profMoi?.role || profMoi?.type_fournisseur || '').toLowerCase();
+  const {data:profMoi} = await sb.from('profiles').select('type_compte, type_fournisseur').eq('id', moiId).maybeSingle();
+  monRole = String(profMoi?.type_compte || profMoi?.type_fournisseur || '').toLowerCase();
   if(monRole==='admin'){ alert('Admin : tu ne peux pas chatter, tu gères dans Admin.'); location.href='admin.html'; return; }
-  // Si on vient avec un ID de conversation direct (depuis dashboard), on l'utilise
   if(conversationId){
     const {data: conv} = await sb.from('conversations').select('*').eq('id', conversationId).maybeSingle();
     if(conv){
       clientIdFinal = conv.client_id;
-      const autreId = String(conv.client_id)===String(moiId) ? conv.prestataire_id : conv.client_id;
-      const {data: ann2} = await sb.from('annonces').select('id, titre, categorie, univers, prix_fixe, prix_indicatif, prix, localite, ville, pays, status, statut, prestataire_id, user_id').eq('id', conv.annonce_id).maybeSingle();
+      const {data: ann2} = await sb.from('annonces').select('id, titre, categorie, univers, prix_fixe, prix_indicatif, devise, localite, ville, pays, status, prestataire_id').eq('id', conv.annonce_id).maybeSingle();
       if(ann2){ annonceData = ann2; }
-      // On remplit prestataireId / annonceId depuis la conversation
       localStorage.setItem('chat_prestataire', conv.prestataire_id);
       if(conv.annonce_id) localStorage.setItem('chat_annonce', conv.annonce_id);
       return await initAvecAnnonce(conv.annonce_id, conv.prestataire_id, conv);
@@ -155,9 +152,9 @@ async function init(){
   return await initAvecAnnonce(annonceId, prestataireId, null);
 }
 async function initAvecAnnonce(annId, prestaId, convExistante){
-  const {data: ann} = await sb.from('annonces').select('id, titre, categorie, univers, prix_fixe, prix_indicatif, prix, localite, ville, pays, status, statut, prestataire_id, user_id').eq('id', annId).maybeSingle();
+  const {data: ann} = await sb.from('annonces').select('id, titre, categorie, univers, prix_fixe, prix_indicatif, devise, localite, ville, pays, status, prestataire_id').eq('id', annId).maybeSingle();
   if(!ann){ document.getElementById('annonceBar').textContent = 'Annonce introuvable.'; document.getElementById('inputMsg').disabled = true; return; }
-  const vraiPresta = ann.prestataire_id || ann.user_id || '';
+  const vraiPresta = ann.prestataire_id || '';
   if(String(vraiPresta) !== String(prestaId)){ document.getElementById('annonceBar').textContent = 'Annonce / prestataire incohérent.'; document.getElementById('inputMsg').disabled = true; return; }
   if(!estValideAnnonce(ann)){
     document.getElementById('annonceBar').textContent = ann.titre + ' - Annonce en cours de vérification. Chat bloqué.';
@@ -165,38 +162,29 @@ async function initAvecAnnonce(annId, prestaId, convExistante){
     return;
   }
   annonceData = ann;
-  // CORRIGÉ : nom entreprise + badge quartier
-  const {data: prof} = await sb.from('profiles').select('nom, nom_entreprise, quartier, localite, verification_quartier, quartier_verifie').eq('id', prestaId).maybeSingle();
+  const {data: prof} = await sb.from('profiles').select('nom, nom_entreprise, quartier').eq('id', prestaId).maybeSingle();
   let nomPresta = prof?.nom_entreprise || prof?.nom || 'Prestataire';
-  let badgeQ = '';
-  if(prof?.quartier_verifie === true || String(prof?.verification_quartier||'').toLowerCase()==='valide'){
-    badgeQ = ` ✅ Vérifié à ${prof.quartier || prof.localite || ''}`;
-  }
+  let badgeQ = prof?.quartier ? ` 📍 ${prof.quartier}` : '';
   const bar = document.getElementById('annonceBar'); bar.innerHTML='';
   const b = document.createElement('b'); b.textContent = ann.titre; bar.appendChild(b);
-  const s = document.createElement('small'); s.textContent = `📍 ${ann.localite||''} - ${ann.ville||''} • 👤 ${nomPresta}${badgeQ} • ${ann.prix_fixe ? Number(ann.prix_indicatif||ann.prix||0).toLocaleString()+' FCFA' : 'Prix à discuter'} - ${texteCommission(ann.univers, ann)}`; bar.appendChild(s);
+  const s = document.createElement('small'); s.textContent = `📍 ${ann.localite||''} - ${ann.ville||''} • 👤 ${nomPresta}${badgeQ} • ${ann.prix_fixe ? Number(ann.prix_indicatif||0).toLocaleString()+' '+(ann.devise||'FCFA') : 'Prix à discuter'} - ${texteCommission(ann.univers, ann)}`; bar.appendChild(s);
   document.getElementById('nomAutre').textContent = nomPresta + badgeQ;
   document.getElementById('infoAutre').textContent = `${ann.categorie||''} • ${ann.ville||''} - ${ann.localite||''}`;
   document.getElementById('cmdTitre').value = ann.titre;
-  document.getElementById('cmdMontant').value = ann.prix_indicatif || ann.prix || '';
+  document.getElementById('cmdMontant').value = ann.prix_indicatif || '';
   document.getElementById('texteCommission').textContent = texteCommission(ann.univers, ann);
   const jeSuisPresta = (String(moiId)===String(prestaId));
   if(jeSuisPresta) document.getElementById('btnProp').style.display = 'block';
   else document.getElementById('btnCmd').style.display = 'block';
-
-  // CORRIGÉ : on cherche LA bonne conversation entre ces 2 personnes sur cette annonce
   if(convExistante){ conversationId = convExistante.id; clientIdFinal = convExistante.client_id; }
   else {
     const {data: convs} = await sb.from('conversations').select('*').eq('annonce_id', annId);
-    const bonne = (convs||[]).find(c => (String(c.client_id)===String(moiId) && String(c.prestataire_id)===String(prestaId)) || (String(c.prestataire_id)===String(moiId) && String(c.client_id)===String(prestaId)) || (jeSuisPresta && String(c.prestataire_id)===String(prestaId) && c.client_id && String(c.client_id)!==String(c.prestataire_id) && String(c.client_id)===String(clientIdFinal||c.client_id)));
-    // Si prestataire et plusieurs convs, on prend la première qui correspond, sinon on attend
+    const bonne = (convs||[]).find(c => (String(c.client_id)===String(moiId) && String(c.prestataire_id)===String(prestaId)) || (String(c.prestataire_id)===String(moiId) && String(c.client_id)===String(prestaId)));
     let cible = bonne;
     if(!cible && jeSuisPresta){
-      // Prestataire : si 1 seule conv, on la prend. Si plusieurs, on prend la plus récente
       const mesConvs = (convs||[]).filter(c => String(c.prestataire_id)===String(moiId) && c.client_id && String(c.client_id)!==String(c.prestataire_id));
       if(mesConvs.length===1) cible = mesConvs[0];
       else if(mesConvs.length>1){
-        // On ne peut pas savoir laquelle sans chat_conversation_id, on prend la plus récente
         cible = mesConvs.sort((a,b)=> new Date(b.created_at)-new Date(a.created_at))[0];
       }
     }
@@ -228,7 +216,7 @@ async function chargerMessages(){
       const titre = document.createElement('b'); titre.textContent = `💰 Proposition de prix : ${Number(m.proposition_prix||0).toLocaleString()} FCFA`; div.appendChild(titre);
       const c = document.createElement('div'); c.textContent = m.contenu||''; div.appendChild(c);
       const sm = document.createElement('small'); sm.textContent = heure; div.appendChild(sm);
-      const jeSuisClient = (String(moiId)!==String(prestataireId || annonceData?.prestataire_id || annonceData?.user_id));
+      const jeSuisClient = (String(moiId)!==String(prestataireId || annonceData?.prestataire_id));
       if(statut==='en_attente' && jeSuisClient){
         const ok=document.createElement('button'); ok.style.cssText='background:#16a34a;color:#fff'; ok.textContent='✅ Accepter'; ok.onclick=()=>repondreProposition(m.id,'accepte'); div.appendChild(ok);
         const no=document.createElement('button'); no.style.cssText='background:#fee2e2'; no.textContent='❌ Refuser'; no.onclick=()=>repondreProposition(m.id,'refuse'); div.appendChild(no);
@@ -298,7 +286,7 @@ async function creerCommande(){
   const commission = calculerCommission(univers, montant, annonceData);
   const montantPresta = montant - commission;
   if(montantPresta < 0){ alert('Erreur commission > montant.'); return; }
-  const {error} = await sb.from('commandes').insert([{client_id: clientIdFinal, prestataire_id: prestaActuel, annonce_id: annonceId || annonceData?.id, conversation_id: conversationId, univers: univers, titre, montant_total: montant, commission, montant_prestataire: montantPresta, status: 'en_attente', pays: annonceData?.pays, ville: annonceData?.ville, localite: annonceData?.localite}]).select().single();
+  const {error} = await sb.from('commandes').insert([{client_id: clientIdFinal, prestataire_id: prestaActuel, annonce_id: annonceId || annonceData?.id, conversation_id: conversationId, univers: univers, titre, montant: montant, devise: 'FCFA', montant_total: montant, commission, montant_prestataire: montantPresta, status: 'en_attente', ville: annonceData?.ville, localite: annonceData?.localite}]).select().single();
   if(error){ alert('Erreur : ' + error.message); return; }
   await notifier(prestaActuel, 'Nouvelle commande 🛒', `${titre} - ${montant.toLocaleString()} FCFA. En attente de paiement.`, 'commande', 'dashboard-prestataire.html');
   await sb.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: `✅ COMMANDE CRÉÉE : ${titre} - ${montant.toLocaleString()} FCFA (Commission ${commission.toLocaleString()} FCFA). En attente de paiement sécurisé en escrow.`, type: 'texte'}]);
