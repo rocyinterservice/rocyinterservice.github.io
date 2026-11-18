@@ -40,18 +40,13 @@ async function charger(){
   MON_UID = user.id;
   const {data: profil} = await sb.from('profiles').select('type_compte, type_fournisseur').eq('id', MON_UID).maybeSingle();
   MON_ROLE = String(profil?.type_compte || profil?.type_fournisseur || 'client').toLowerCase();
-
-  // FIX: récupérer l'id prestataire (table prestataires) lié à cet user
   const {data: prest} = await sb.from('prestataires').select('id').eq('user_id', MON_UID).maybeSingle();
   MON_PRESTATAIRE_ID = prest?.id || null;
-
-  // Admin voit tout (client + prestataire)
   let query = sb.from('commandes').select('id, titre, univers, montant, montant_total, commission, montant_prestataire, devise, status, created_at, client_id, prestataire_id').order('created_at',{ascending:false});
   if(MON_ROLE==='admin'){
-    // pas de filtre, on voit tout
   } else if(MON_ROLE==='prestataire'||MON_ROLE==='livreur'){
     if(MON_PRESTATAIRE_ID) query = query.eq('prestataire_id', MON_PRESTATAIRE_ID);
-    else query = query.eq('prestataire_id', '00000000-0000-0000-0000-000000000000'); // aucun
+    else query = query.eq('prestataire_id', '00000000-0000-0000-0000-000000000000');
   } else {
     query = query.eq('client_id', MON_UID);
   }
@@ -82,10 +77,15 @@ async function charger(){
 }
 async function liberer(id, montant){
   if(!confirm('Tu confirmes avoir bien reçu le service ?\n\n'+montant.toLocaleString()+' FCFA seront libérés pour le prestataire.\nCette action est définitive.')) return;
-  const {error} = await sb.from('commandes')
+  let q = sb.from('commandes')
     .update({ status: 'libere' })
     .eq('id', id)
     .in('status', ['bloque','en_escrow','pending','paye','en_cours','accepte']);
+  // CORRIGÉ : seul le vrai client de la commande ou l'admin peut libérer
+  if(MON_ROLE !== 'admin'){
+    q = q.eq('client_id', MON_UID);
+  }
+  const {error} = await q;
   if(error){ alert('Erreur : '+error.message); return; }
   alert('✅ Argent libéré ! Merci pour ta validation.');
   charger();
