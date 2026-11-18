@@ -136,14 +136,14 @@ function texteCommission(c){
   return `Commission : ${fmt(c.commission)} FCFA`;
 }
 function badgeAnnonce(a){
-  const s = String(a.status || a.statut || '').toLowerCase();
-  if(s==='valide' || s==='valid' || s==='publie' || s==='publié' || s==='actif') return '<span class="badge valide">✅ Validée - Visible</span>';
-  if(s==='rejete' || s==='refuse' || s==='refusé' || s==='rejeté') return '<span class="badge rejete">❌ Rejetée</span>';
+  const s = String(a.status || '').toLowerCase();
+  if(s==='valide') return '<span class="badge valide">✅ Validée - Visible</span>';
+  if(s==='rejete' || s==='refuse') return '<span class="badge rejete">❌ Rejetée</span>';
   return '<span class="badge attente">⏳ En attente</span>';
 }
 function nomAffiche(profil){ return profil.nom_entreprise || profil.nom || profil.full_name || 'Prestataire'; }
 function badgeTypeFournisseur(profil){
-  const type = String(profil.type_fournisseur || profil.type_compte || profil.role || profil.type || '').toLowerCase();
+  const type = String(profil.type_compte || '').toLowerCase();
   const nomEnt = profil.nom_entreprise;
   if(nomEnt || type === 'entreprise') return '<span class="badge-type entreprise">🏢 Entreprise</span>';
   if(type === 'livreur') return '<span class="badge-type livreur">🛵 Livreur</span>';
@@ -153,10 +153,8 @@ async function charger(){
   const user = await getUtilisateurSecurise();
   if(!user){ location.href='connexion.html'; return; }
   uid = user.id;
-  // ✅ CORRIGÉ : on ne demande QUE les colonnes qui existent vraiment dans profiles
-  // On a enlevé 'statut' qui n'existe pas et qui faisait planter res1 et res2
   const {data: profil, error: errProfil} = await sb.from('profiles')
-    .select('id, nom, full_name, nom_entreprise, type_fournisseur, type_compte, role, type, localite, quartier, ville, pays, quartier_verifie, verification_quartier, photo_url, avatar_url, photo_profil_url, statut_validation, status_prestataire, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert')
+    .select('id, nom, full_name, nom_entreprise, type_compte, quartier, ville, pays, quartier_verifie, verification_quartier, photo_profil_url, statut_validation, status_prestataire, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert')
     .eq('id', uid).maybeSingle();
   if(errProfil){
     document.getElementById('infoUser').textContent = 'Erreur chargement profil : ' + errProfil.message;
@@ -168,7 +166,7 @@ async function charger(){
     document.getElementById('bannerStatut').innerHTML = '<div class="banner attente">⚠️ Ton compte existe mais ton profil est introuvable dans la table profiles. ID : '+uid+'</div>';
     return;
   }
-  let roleReel = String(profil.type_compte || profil.role || profil.type || profil.type_fournisseur || '').toLowerCase().trim();
+  let roleReel = String(profil.type_compte || '').toLowerCase().trim();
   if(!roleReel && profil.nom_entreprise) roleReel = 'entreprise';
   const ROLES_FOURNISSEUR = ['prestataire','livreur','fournisseur','professionnel','entreprise','pro'];
   if(roleReel === 'client'){ location.href='dashboard-client.html'; return; }
@@ -181,12 +179,12 @@ async function charger(){
   document.getElementById('nomUser').textContent = nomAffiche(profil);
   document.getElementById('badgeType').innerHTML = badgeTypeFournisseur(profil);
   if(profil.nom_entreprise && profil.nom){
-    document.getElementById('infoUser').textContent = `Contact : ${profil.nom} • ${profil.localite || profil.quartier || ''} - ${profil.ville || ''} • ${profil.pays || ''}`;
+    document.getElementById('infoUser').textContent = `Contact : ${profil.nom} • ${profil.quartier || ''} - ${profil.ville || ''} • ${profil.pays || ''}`;
   } else {
-    document.getElementById('infoUser').textContent = `${profil.localite || profil.quartier || ''} - ${profil.ville || ''} • ${profil.pays || ''}`;
+    document.getElementById('infoUser').textContent = `${profil.quartier || ''} - ${profil.ville || ''} • ${profil.pays || ''}`;
   }
-  const quartier = profil.quartier || profil.localite || '';
-  const photo = profil.photo_profil_url || profil.photo_url || profil.avatar_url || '';
+  const quartier = profil.quartier || '';
+  const photo = profil.photo_profil_url || '';
   document.getElementById('profilNom').textContent = nomAffiche(profil);
   document.getElementById('profilQuartier').textContent = '📍 Quartier : ' + (quartier || 'Non rempli');
   const badgeEl = document.getElementById('profilBadge');
@@ -211,13 +209,12 @@ async function charger(){
     btnVerif.style.display='block'; btnAttente.style.display='none';
   }
   if(photo){ const img=document.getElementById('photoProfil'); img.src=photo; img.style.display='block'; }
-  // ✅ CORRIGÉ : on utilise seulement statut_validation ou status_prestataire, pas 'statut'
   const statut = String(profil?.statut_validation || profil?.status_prestataire || 'en_attente').toLowerCase();
   const banner = document.getElementById('bannerStatut');
   const t = window.rocyT || (k=>k);
-  if(statut==='valide' || statut==='valid'){
+  if(statut==='valide'){
     banner.innerHTML = `<div class="banner valide">✅ <b>${esc(t('compteValide'))}</b> - ${esc(t('compteValideSous'))}</div>`;
-  } else if(statut==='rejete' || statut==='refuse' || statut==='refusé'){
+  } else if(statut==='rejete' || statut==='refuse'){
     banner.innerHTML = `<div class="banner rejete">❌ <b>${esc(t('compteRefuse'))}</b> - ${esc(t('compteRefuseSous'))}</div>`;
   } else {
     banner.innerHTML = `<div class="banner attente">⏳ <b>${esc(t('compteAttente'))}</b> - ${esc(t('compteAttenteSous'))}</div>`;
@@ -236,7 +233,7 @@ async function charger(){
     btnCreer.disabled=true; btnCreer.textContent='⛔ Publier bloqué - Abonnement expiré';
   }
   const {data: annonces} = await sb.from('annonces')
-    .select('id, titre, categorie, localite, ville, prix_fixe, prix_indicatif, prix, status, statut, created_at')
+    .select('id, titre, categorie, univers, quartier, localite, ville, prix_indicatif, prix_fixe, photo_url, status, created_at')
     .eq('prestataire_id', uid).order('created_at',{ascending:false});
   const boxA = document.getElementById('listeAnnonces');
   document.getElementById('nbAnnonces').textContent = annonces?.length || 0;
@@ -244,7 +241,9 @@ async function charger(){
     boxA.innerHTML = `<div class="empty">Aucune annonce. Crée ta première annonce pour commencer à gagner.</div>`;
   } else {
     boxA.innerHTML = annonces.map(a=>{
-      return `<div class="card">${badgeAnnonce(a)}<h3 style="margin-top:8px">${esc(a.titre)}</h3><p>${esc(a.categorie)} • ${esc(a.localite)} - ${esc(a.ville)}<br>${a.prix_fixe ? fmt(a.prix_indicatif||a.prix||0)+' FCFA - Prix fixe' : 'Prix à discuter'}</p><button class="btn btn-dark" onclick="location.href='creer-annonce.html'">✏️ Modifier / Voir</button></div>`;
+      const lieu = a.quartier || a.localite || '';
+      const prixTxt = a.prix_fixe ? fmt(a.prix_indicatif||0)+' FCFA - Prix fixe' : 'Prix à discuter';
+      return `<div class="card">${badgeAnnonce(a)}<h3 style="margin-top:8px">${esc(a.titre)}</h3><p>${esc(a.categorie)} • ${esc(lieu)} - ${esc(a.ville)}<br>${prixTxt}</p><button class="btn btn-dark" onclick="location.href='creer-annonce.html'">✏️ Modifier / Voir</button></div>`;
     }).join('');
   }
   const {data: cmds} = await sb.from('commandes')
