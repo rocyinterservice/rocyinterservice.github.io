@@ -1,4 +1,5 @@
-// rocy-layout.js - ROCYINTER SERVICE - HEADER FIXE + TRADUCTION + MONNAIE + ROLES + CLOCHE NOTIFS
+// rocy-layout.js - ROCYINTER - VERSION FINALE - CAHIER DE CHARGES V2
+// Pages modifiées une par une + Cache 5 min + EUR fixe 655,957 + Taux figé au paiement + Gratuit
 (function(){
   if (window.supabase && !window.supabaseClient) {
     try { window.supabaseClient = window.supabase.createClient("https://gdwgjsloivrpxxvggxyz.supabase.co", "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF"); } catch(e) {}
@@ -38,7 +39,7 @@
     {code:'hi', court:'HI', long:'हिन्दी', flag:'🇮🇳'}
   ];
   let langue = localStorage.getItem('rocy_langue') || 'fr';
-  const CODE_API = { fr:'fr', en:'en', yo:'yo', ig:'ig', ha:'ha', fon:'fr', wo:'wo', bm:'bm', ee:'ee', tw:'tw', ln:'ln', sw:'sw', am:'am', so:'so', es:'es', pt:'pt', ar:'ar', de:'de', it:'it', nl:'nl', ru:'ru', tr:'tr', zh:'zh-CN', ja:'ja', ko:'ko', hi:'hi' };
+  const CODE_API = { fr:'fr', en:'en', yo:'yo', ig:'ig', ha:'ha', fon:'fon', wo:'wo', bm:'bm', ee:'ee', tw:'tw', ln:'ln', sw:'sw', am:'am', so:'so', es:'es', pt:'pt', ar:'ar', de:'de', it:'it', nl:'nl', ru:'ru', tr:'tr', zh:'zh-CN', ja:'ja', ko:'ko', hi:'hi' };
   const BASE_FR = {
     accueil:'Accueil', connexion:'Connexion', devenir:'Devenir Prestataire', espace:'Mon espace', bonjour:'Bonjour', visiteur:'Bienvenue, visiteur', compte:'MON COMPTE', seConnecter:'🔑 Se connecter', creerCompte:'📝 Créer un compte', favoris:'❤️ Mes Favoris', panier:'🛒 Mon Panier', notif:'🔔 Notifications', deconnexion:'🚪 Déconnexion', services:'SERVICES', immobilier:'🏘️ Immobilier', livreurs:'🛵 Livreurs', escrow:'🔒 Mon Escrow', abonnement:'⭐ Abonnement Prestataire', aide:'AIDE', comment:'❓ Comment ça marche ?', faq:'💬 Aide / FAQ', contact:'📞 Contact', tarifs:'💰 Tarifs', cgu:'📄 CGU', conf:'🔐 Confidentialité', fermer:'✕ Fermer', proposer:'➕ Créer une annonce',
     heroTitre1:'Trouvez un vrai service', heroTitre2:'près de chez vous',
@@ -51,20 +52,31 @@
     pays:'PAYS', ville:'VILLE / LOCALITÉ', rechercher:'RECHERCHER UN SERVICE', villePh:'Ex: Calavi, Cotonou, Godomey...', searchPh:'Ex: Plombier, Traiteur, Nettoyage...',
     tous:'Tous', manger:'Se nourrir', domicile:'Domicile', pro:'Services professionnels', sejour:'Séjour', immo:'Immobilier', livreursTitre:'Livreurs',
     proposerTitre:'Proposer un service', annoncesTitre:'Annonces réelles près de vous', aucuneTitre:'Aucune annonce pour le moment', aucuneSous:'Sois le premier à proposer un service dans ta localité.', discuter:'Discuter', voirProfil:'Voir profil', voirEntreprise:"Voir l'entreprise", prixFixe:'Prix fixe', aPartir:'À partir de', prixDiscuter:'Prix à discuter dans le chat', connectePourCommander:'Connecte-toi pour discuter et commander',
-    mangerTitre:'Se nourrir', domicileTitre:'Domicile', proTitre:'Services professionnels', sejourTitre:'Séjour', immoTitre:'Immobilier', mesAnnonces:'Mes Annonces', mesRevenus:'Mes Revenus', monAgenda:'Mon Agenda', mesActivites:'Mes Activités', creerAnnonce:'Créer une annonce', mesCommandes:'Mes Commandes', mesFavoris:'Mes Favoris', monPanier:'Mon Panier', monEscrow:'Mon Escrow', valider:'Valider', refuser:'Refuser', envoyer:'Envoyer', rechercherBtn:'Rechercher', commander:'Commander', payer:'Payer', retourAccueil:"Retour à l'accueil"
+    mangerTitre:'Se nourrir', domicileTitre:'Domicile', proTitre:'Services professionnels', sejourTitre:'Séjour', immoTitre:'Immobilier', mesAnnonces:'Mes Annonces', mesRevenus:'Mes Revenus', monAgenda:'Mon Agenda', mesActivites:'Mes Activités', creerAnnonce:'Créer une annonce', mesCommandes:'Mes Commandes', mesFavoris:'Mes Favoris', monPanier:'Mon Panier', monEscrow:'Mon Escrow', valider:'Valider', refuser:'Refuser', envoyer:'Envoyer', rechercherBtn:'Rechercher', commander:'Commander', payer:'Payer', retourAccueil:"Retour à l'accueil",
+    panierTitre:'Mon Panier', panierVide:'Panier vide', panierInfo:"Ton panier, c'est tes propositions acceptées en attente de paiement en Escrow. Tu paies à Rocyinter, pas au prestataire.", payerEscrow:'Payer en Escrow', voirDiscussion:'Voir la discussion', annuler:'Annuler', montant:'Montant', prestataire:'Prestataire', chargement:'Chargement...'
   };
+
   window.rocyT = function(key){ if(langue==='fr') return BASE_FR[key] || key; const cache = localStorage.getItem('rocy_trad_' + langue + '_' + key); if(cache) return cache; return BASE_FR[key] || key; };
   window.rocySetLangue = function(l){ localStorage.setItem('rocy_langue', l); location.reload(); };
   window.rocyToggleLangue = function(e){ if(e) e.stopPropagation(); const m = document.getElementById('rocyLangueMenu'); if(m) m.classList.toggle('show'); };
   document.addEventListener('click', function(e){ if(e.target.closest('.rocy-langue-wrap')) return; const m = document.getElementById('rocyLangueMenu'); if(m) m.classList.remove('show'); });
+
   async function traduireAuto(texte, langueCible){
     if(!texte || langueCible==='fr') return texte;
     const code = CODE_API[langueCible] || langueCible;
-    try{ const url = 'https://api.mymemory.translated.net/get?q=' + encodeURIComponent(texte) + '&langpair=fr|' + code; const res = await fetch(url); const j = await res.json(); if(j && j.responseData && j.responseData.translatedText) return j.responseData.translatedText; }catch(e){}
+    const cacheKey = 'rocy_trad_txt_' + langueCible + '_' + texte;
+    const cached = localStorage.getItem(cacheKey);
+    if(cached) return cached;
+    try{ const url = 'https://api.mymemory.translated.net/get?q=' + encodeURIComponent(texte) + '&langpair=fr|' + code; const res = await fetch(url); const j = await res.json(); if(j && j.responseData && j.responseData.translatedText){ const t = j.responseData.translatedText; try{ localStorage.setItem(cacheKey, t); }catch(e){} return t; } }catch(e){}
     return texte;
   }
+
   async function traduirePageEntiere(){
-    if(langue==='fr'){ document.querySelectorAll('[data-i18n]').forEach(el=>{ const k=el.getAttribute('data-i18n'); if(BASE_FR[k]) el.textContent = BASE_FR[k]; }); document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ const k=el.getAttribute('data-i18n-ph'); if(BASE_FR[k]) el.placeholder = BASE_FR[k]; }); return; }
+    if(langue==='fr'){
+      document.querySelectorAll('[data-i18n]').forEach(el=>{ const k=el.getAttribute('data-i18n'); if(BASE_FR[k]) el.textContent = BASE_FR[k]; });
+      document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ const k=el.getAttribute('data-i18n-ph'); if(BASE_FR[k]) el.placeholder = BASE_FR[k]; });
+      return;
+    }
     const els = Array.from(document.querySelectorAll('[data-i18n]'));
     for(const el of els){
       const k = el.getAttribute('data-i18n'); let base = BASE_FR[k];
@@ -80,30 +92,77 @@
       if(!trad){ trad = await traduireAuto(base, langue); localStorage.setItem(cacheKey, trad); }
       el.placeholder = trad;
     }
+    const autoEls = Array.from(document.querySelectorAll('.rocy-header [data-traduire], .rocy-drawer [data-traduire], .rocy-footer [data-traduire]'));
+    for(const el of autoEls){ const base = el.getAttribute('data-traduire'); if(!base) continue; const trad = await traduireAuto(base, langue); el.textContent = trad; }
   }
   window.rocyAppliquerTraduction = traduirePageEntiere;
+  window.rocyTraduireTexte = traduireAuto;
+
   function observerNouveauContenu(){
     if(!window.MutationObserver) return;
-    const obs = new MutationObserver(()=>{ const nouveaux = document.querySelectorAll('[data-i18n]:not([data-traduit="1"])'); if(nouveaux.length>0 && langue!=='fr'){ nouveaux.forEach(el=>el.setAttribute('data-traduit','1')); traduirePageEntiere(); } });
+    let enCours = false;
+    const obs = new MutationObserver(()=>{ if(enCours) return; enCours = true; setTimeout(()=>{ enCours = false; traduirePageEntiere(); appliquerDevises(); }, 400); });
     obs.observe(document.body, {childList:true, subtree:true});
   }
+
+  // ===== DEVISES - CAHIER DE CHARGES FINAL : GRATUIT, CACHE 5 MIN, EUR FIXE 655,957 =====
   const DEVISES = [{code:'FCFA', label:'FCFA'}, {code:'EUR', label:'€ EUR'}, {code:'USD', label:'$ USD'}, {code:'NGN', label:'₦ NGN'}, {code:'GHS', label:'₵ GHS'}, {code:'XOF', label:'XOF'}, {code:'GBP', label:'£ GBP'}];
   let devise = localStorage.getItem('rocy_devise') || 'FCFA';
-  let tauxJour = JSON.parse(localStorage.getItem('rocy_taux')||'{}');
+  const TAUX_FIXE_EUR = 655.957; // BCEAO - 1 EUR = 655,957 FCFA - ne bouge jamais
+  let tauxJour = null;
+  let tauxTimestamp = 0;
+  try{ const saved = JSON.parse(localStorage.getItem('rocy_taux')||'null'); if(saved && saved.rates && Date.now() - saved.ts < 5*60*1000){ tauxJour = saved.rates; tauxTimestamp = saved.ts; } }catch(e){}
+
   async function chargerTaux(){
-    try{ const res = await fetch('https://open.er-api.com/v6/latest/XOF'); const j = await res.json(); if(j && j.rates){ tauxJour = j.rates; localStorage.setItem('rocy_taux', JSON.stringify(tauxJour)); } }catch(e){}
-    if(!tauxJour || !tauxJour.EUR) tauxJour = { XOF:1, FCFA:1, EUR:0.00152, USD:0.00165, NGN:2.45, GHS:0.025, GBP:0.0013 };
+    // Si cache de moins de 5 min, on garde
+    if(tauxJour && tauxJour.USD && Date.now() - tauxTimestamp < 5*60*1000) return;
+    try{ const res = await fetch('https://open.er-api.com/v6/latest/XOF'); const j = await res.json(); if(j && j.rates){ tauxJour = j.rates; tauxTimestamp = Date.now(); try{ localStorage.setItem('rocy_taux', JSON.stringify({rates:tauxJour, ts:tauxTimestamp})); }catch(e){} } }catch(e){}
+    if(!tauxJour || !tauxJour.USD) tauxJour = { XOF:1, FCFA:1, EUR:0.00152, USD:0.00165, NGN:2.45, GHS:0.025, GBP:0.0013 };
+    if(!tauxJour.FCFA) tauxJour.FCFA = tauxJour.XOF || 1;
+    // On force le taux fixe EUR pour être exact à 100%
+    tauxJour.EUR = 1 / TAUX_FIXE_EUR;
   }
+
+  // Retourne le taux actuel pour la devise choisie, pour figer au paiement
+  window.rocyGetTauxActuel = function(){
+    if(!tauxJour) return 1;
+    if(devise==='FCFA' || devise==='XOF') return 1;
+    if(devise==='EUR') return 1 / TAUX_FIXE_EUR;
+    return tauxJour[devise] || 1;
+  };
+
   window.rocyFormatPrix = function(prixFCFA){
     if(!prixFCFA || prixFCFA<=0) return window.rocyT('prixDiscuter');
-    const taux = tauxJour[devise] || tauxJour[devise==='FCFA'?'XOF':devise] || 1; const v = prixFCFA * taux;
+    if(!tauxJour) tauxJour = { XOF:1, FCFA:1, EUR:0.00152, USD:0.00165, NGN:2.45, GHS:0.025, GBP:0.0013 };
+    let taux = 1;
+    if(devise==='FCFA' || devise==='XOF') taux = 1;
+    else if(devise==='EUR') taux = 1 / TAUX_FIXE_EUR;
+    else taux = tauxJour[devise] || 1;
+    const v = Number(prixFCFA) * taux;
     if(devise==='FCFA' || devise==='XOF') return Math.round(v).toLocaleString('fr-FR') + ' FCFA';
     if(devise==='EUR' || devise==='USD' || devise==='GBP') return v.toFixed(2) + ' ' + devise;
     return Math.round(v).toLocaleString('fr-FR') + ' ' + devise;
   };
+
+  // Pour figer le taux au moment du paiement - à appeler dans panier.html / paiement.html
+  window.rocyFigerTauxPaiement = function(montantFCFA){
+    const taux = window.rocyGetTauxActuel();
+    const montantAffiche = window.rocyFormatPrix(montantFCFA);
+    const info = { montant_fcfa: Number(montantFCFA), devise_affichee: devise, taux_utilise: taux, montant_affiche: montantAffiche, date_heure: new Date().toISOString() };
+    try{ localStorage.setItem('rocy_dernier_taux_paiement', JSON.stringify(info)); }catch(e){}
+    return info;
+  };
+
+  function appliquerDevises(){
+    document.querySelectorAll('[data-prix-fcfa]').forEach(el=>{
+      const raw = el.getAttribute('data-prix-fcfa');
+      const val = Number(raw);
+      if(!isNaN(val) && val>0) el.textContent = window.rocyFormatPrix(val);
+    });
+  }
+  window.rocyAppliquerDevises = appliquerDevises;
   window.rocySetDevise = function(d){ localStorage.setItem('rocy_devise', d); location.reload(); };
 
-  // 🔔 CLOCHE : compte les notifs non lues + temps réel
   async function chargerNotifs(){
     try{
       const sb = window.supabaseClient; if(!sb || !uid) return;
@@ -121,7 +180,6 @@
       sb.channel('rocy-notifs-'+uid).on('postgres_changes',{event:'*',schema:'public',table:'notifications',filter:'user_id=eq.'+uid},()=>chargerNotifs()).subscribe();
     }catch(e){}
   }
-
   async function verifierAdmin(){
     if(!uid || typeLocal !== 'admin') return false;
     try{
@@ -162,7 +220,6 @@
 
   async function construire(){
     if(document.querySelector('.rocy-header')) return;
-    // ✅ Vrai user Supabase, pas localStorage
     try{
       const sb = window.supabaseClient;
       if(sb){ const {data:{user}} = await sb.auth.getUser(); if(user){ uid = user.id; isConnecte = true; const {data:prof} = await sb.from('profiles').select('nom, type_compte, role, type, type_fournisseur').eq('id', uid).maybeSingle(); if(prof){ nom = prof.nom||nom; typeLocal = String(prof.type_compte||prof.role||prof.type||prof.type_fournisseur||typeLocal||'').toLowerCase(); isPresta = ['prestataire','livreur','entreprise','fournisseur','professionnel','pro'].includes(typeLocal); localStorage.setItem('rocy_user_id', uid); localStorage.setItem('rocy_user_type', typeLocal); localStorage.setItem('rocy_user_nom', nom); } } }
@@ -228,35 +285,36 @@
       </div>
       <div class="rocy-header-ligne2">
         ${isConnecte ? `<button type="button" class="rocy-bell" onclick="location.href='notifications.html'">🔔<span class="rocy-bell-badge" id="rocyNotifBadge">0</span></button>` : ''}
-        ${!isConnecte ? `<button type="button" class="rocy-espace-btn" onclick="location.href='connexion.html'">${t('connexion')}</button>` : `<button type="button" class="rocy-espace-btn" onclick="rocyAllerEspace()">👤 ${t('espace')}</button>`}
+        ${!isConnecte ? `<button type="button" class="rocy-espace-btn" onclick="location.href='connexion.html'"><span data-traduire="Connexion">Connexion</span></button>` : `<button type="button" class="rocy-espace-btn" onclick="rocyAllerEspace()">👤 <span data-traduire="Mon espace">Mon espace</span></button>`}
       </div>
     </header>
     <div class="rocy-drawer" id="rocyDrawer">
-      <div class="rocy-drawer-head"><b><span class="blanc">ROCY</span><span class="jaune">INTER</span></b><br><small style="letter-spacing:3px">SERVICES</small><br><small>${isConnecte ? '👋 '+t('bonjour')+', '+nom : t('visiteur')}</small><br><button type="button" style="margin-top:8px;background:#f59e0b;border:none;padding:6px 12px;border-radius:999px;font-weight:700;cursor:pointer" onclick="rocyFermerMenu()">${t('fermer')}</button></div>
-      <div class="rocy-menu-label">${t('compte')}</div>
-      ${!isConnecte ? `<button type="button" class="rocy-menu-item" onclick="location.href='connexion.html'">${t('seConnecter')}</button><button type="button" class="rocy-menu-item" onclick="location.href='inscription.html'">${t('creerCompte')}</button>` : `<button type="button" class="rocy-menu-item" onclick="rocyAllerEspace()">👤 ${t('espace')}</button><button type="button" class="rocy-menu-item" onclick="location.href='favoris.html'">${t('favoris')}</button><button type="button" class="rocy-menu-item" onclick="location.href='panier.html'">${t('panier')}</button><button type="button" class="rocy-menu-item" onclick="location.href='notifications.html'">${t('notif')}<span class="rocy-notif-count" id="rocyNotifBadgeMenu"></span></button><button type="button" class="rocy-menu-item" onclick="rocyDeconnexion()">${t('deconnexion')}</button>`}
-      <div class="rocy-menu-label">${t('services')}</div>
-      <button type="button" class="rocy-menu-item" onclick="location.href='index.html'">🏠 ${t('accueil')}</button>
-      <button type="button" class="rocy-menu-item" onclick="location.href='immobilier.html'">${t('immobilier')}</button>
-      <button type="button" class="rocy-menu-item" onclick="location.href='livreurs.html'">${t('livreurs')}</button>
-      <button type="button" class="rocy-menu-item" onclick="location.href='escrow.html'">${t('escrow')}</button>
-      <button type="button" class="rocy-menu-item" onclick="location.href='abonnement.html'">${t('abonnement')}</button>
-      <div class="rocy-menu-label">${t('aide')}</div>
-      <button type="button" class="rocy-menu-item" onclick="location.href='comment-ca-marche.html'">${t('comment')}</button>
-      <button type="button" class="rocy-menu-item" onclick="location.href='aide-faq.html'">${t('faq')}</button>
-      <button type="button" class="rocy-menu-item" onclick="location.href='contact.html'">${t('contact')}</button>
-      <button type="button" class="rocy-menu-item" onclick="location.href='tarifs.html'">${t('tarifs')}</button>
-      <button type="button" class="rocy-menu-item" onclick="location.href='cgu.html'">${t('cgu')}</button>
-      <button type="button" class="rocy-menu-item" onclick="location.href='confidentialite.html'">${t('conf')}</button>
+      <div class="rocy-drawer-head"><b><span class="blanc">ROCY</span><span class="jaune">INTER</span></b><br><small style="letter-spacing:3px">SERVICES</small><br><small>${isConnecte ? '👋 '+t('bonjour')+', '+nom : t('visiteur')}</small><br><button type="button" style="margin-top:8px;background:#f59e0b;border:none;padding:6px 12px;border-radius:999px;font-weight:700;cursor:pointer" onclick="rocyFermerMenu()"><span data-traduire="Fermer">Fermer</span></button></div>
+      <div class="rocy-menu-label"><span data-traduire="MON COMPTE">MON COMPTE</span></div>
+      ${!isConnecte ? `<button type="button" class="rocy-menu-item" onclick="location.href='connexion.html'"><span data-traduire="Se connecter">Se connecter</span></button><button type="button" class="rocy-menu-item" onclick="location.href='inscription.html'"><span data-traduire="Créer un compte">Créer un compte</span></button>` : `<button type="button" class="rocy-menu-item" onclick="rocyAllerEspace()">👤 <span data-traduire="Mon espace">Mon espace</span></button><button type="button" class="rocy-menu-item" onclick="location.href='favoris.html'"><span data-traduire="Mes Favoris">Mes Favoris</span></button><button type="button" class="rocy-menu-item" onclick="location.href='panier.html'"><span data-traduire="Mon Panier">Mon Panier</span></button><button type="button" class="rocy-menu-item" onclick="location.href='notifications.html'"><span data-traduire="Notifications">Notifications</span><span class="rocy-notif-count" id="rocyNotifBadgeMenu"></span></button><button type="button" class="rocy-menu-item" onclick="rocyDeconnexion()"><span data-traduire="Déconnexion">Déconnexion</span></button>`}
+      <div class="rocy-menu-label"><span data-traduire="SERVICES">SERVICES</span></div>
+      <button type="button" class="rocy-menu-item" onclick="location.href='index.html'">🏠 <span data-traduire="Accueil">Accueil</span></button>
+      <button type="button" class="rocy-menu-item" onclick="location.href='immobilier.html'"><span data-traduire="Immobilier">Immobilier</span></button>
+      <button type="button" class="rocy-menu-item" onclick="location.href='livreurs.html'"><span data-traduire="Livreurs">Livreurs</span></button>
+      <button type="button" class="rocy-menu-item" onclick="location.href='escrow.html'"><span data-traduire="Mon Escrow">Mon Escrow</span></button>
+      <button type="button" class="rocy-menu-item" onclick="location.href='abonnement.html'"><span data-traduire="Abonnement Prestataire">Abonnement Prestataire</span></button>
+      <div class="rocy-menu-label"><span data-traduire="AIDE">AIDE</span></div>
+      <button type="button" class="rocy-menu-item" onclick="location.href='comment-ca-marche.html'"><span data-traduire="Comment ça marche ?">Comment ça marche ?</span></button>
+      <button type="button" class="rocy-menu-item" onclick="location.href='aide-faq.html'"><span data-traduire="Aide / FAQ">Aide / FAQ</span></button>
+      <button type="button" class="rocy-menu-item" onclick="location.href='contact.html'"><span data-traduire="Contact">Contact</span></button>
+      <button type="button" class="rocy-menu-item" onclick="location.href='tarifs.html'"><span data-traduire="Tarifs">Tarifs</span></button>
+      <button type="button" class="rocy-menu-item" onclick="location.href='cgu.html'"><span data-traduire="CGU">CGU</span></button>
+      <button type="button" class="rocy-menu-item" onclick="location.href='confidentialite.html'"><span data-traduire="Confidentialité">Confidentialité</span></button>
       ${isAdmin ? `<div class="rocy-menu-label">ADMIN - QUE POUR TOI</div><button type="button" class="rocy-menu-item" onclick="location.href='admin.html'">🛡️ Panel Admin</button>` : ''}
-      ${isPresta ? `<div class="rocy-menu-label">PRESTATAIRE</div><button type="button" class="rocy-menu-item" onclick="rocyProposerService()">${t('proposer')}</button><button type="button" class="rocy-menu-item" onclick="location.href='revenus.html'">💰 Mes Revenus</button><button type="button" class="rocy-menu-item" onclick="location.href='agenda.html'">📅 Mon Agenda</button>` : ''}
+      ${isPresta ? `<div class="rocy-menu-label">PRESTATAIRE</div><button type="button" class="rocy-menu-item" onclick="rocyProposerService()"><span data-traduire="Créer une annonce">Créer une annonce</span></button><button type="button" class="rocy-menu-item" onclick="location.href='revenus.html'">💰 <span data-traduire="Mes Revenus">Mes Revenus</span></button><button type="button" class="rocy-menu-item" onclick="location.href='agenda.html'">📅 <span data-traduire="Mon Agenda">Mon Agenda</span></button>` : ''}
     </div>`;
-    const footerHTML = `<footer class="rocy-footer">Rocyinter Service © 2026 - Paiement sécurisé Escrow - Bénin<br><a href="tarifs.html">${t('tarifs')}</a> | <a href="cgu.html">${t('cgu')}</a> | <a href="confidentialite.html">${t('conf')}</a> | <a href="aide-faq.html">${t('faq')}</a> | <a href="contact.html">${t('contact')}</a></footer>`;
+    const footerHTML = `<footer class="rocy-footer">Rocyinter Service © 2026 - Paiement sécurisé Escrow - Bénin<br><a href="tarifs.html"><span data-traduire="Tarifs">Tarifs</span></a> | <a href="cgu.html"><span data-traduire="CGU">CGU</span></a> | <a href="confidentialite.html"><span data-traduire="Confidentialité">Confidentialité</span></a> | <a href="aide-faq.html"><span data-traduire="Aide / FAQ">Aide / FAQ</span></a> | <a href="contact.html"><span data-traduire="Contact">Contact</span></a></footer>`;
     document.querySelectorAll('header:not(.rocy-header)').forEach(h=>h.remove());
     document.querySelectorAll('footer:not(.rocy-footer)').forEach(f=>f.remove());
     document.body.insertAdjacentHTML('afterbegin', headerHTML);
     document.body.insertAdjacentHTML('beforeend', footerHTML);
     await traduirePageEntiere();
+    appliquerDevises();
     observerNouveauContenu();
     chargerNotifs();
     ecouterNotifs();
