@@ -38,9 +38,10 @@ async function charger(){
   const {data:{user}} = await sb.auth.getUser();
   if(!user){location.href='connexion.html';return;}
   MON_UID = user.id;
-  const {data: profil} = await sb.from('profiles').select('type_compte, role').eq('id', MON_UID).maybeSingle();
-  MON_ROLE = String(profil?.type_compte || profil?.role || 'client').toLowerCase();
-  let query = sb.from('escrow_transactions').select('id, montant_total, commission, montant_prestataire, status, created_at').order('created_at',{ascending:false});
+  const {data: profil} = await sb.from('profiles').select('type_compte, type_fournisseur').eq('id', MON_UID).maybeSingle();
+  MON_ROLE = String(profil?.type_compte || profil?.type_fournisseur || 'client').toLowerCase();
+  // ESCROW = table commandes, pas escrow_transactions (qui n'existe pas)
+  let query = sb.from('commandes').select('id, titre, univers, montant, montant_total, commission, montant_prestataire, devise, status, created_at, client_id, prestataire_id').order('created_at',{ascending:false});
   if(MON_ROLE==='prestataire'||MON_ROLE==='livreur') query = query.eq('prestataire_id',MON_UID);
   else query = query.eq('client_id',MON_UID);
   const {data, error} = await query;
@@ -49,30 +50,32 @@ async function charger(){
   let bloque=0, libere=0;
   list.forEach(t=>{
     const s = String(t.status||'').toLowerCase();
-    if(s==='bloque'||s==='en_escrow'||s==='pending') bloque+=Number(t.montant_total||0);
-    if(s==='libere'||s==='released') libere+=Number(t.montant_total||0);
+    if(s==='bloque'||s==='en_escrow'||s==='pending'||s==='paye'||s==='en_cours'||s==='accepte') bloque+=Number(t.montant_total||t.montant||0);
+    if(s==='libere'||s==='released'||s==='termine'||s==='terminee') libere+=Number(t.montant_total||t.montant||0);
   });
   document.getElementById('bloque').textContent = bloque.toLocaleString()+' FCFA';
   document.getElementById('libere').textContent = libere.toLocaleString()+' FCFA';
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   document.getElementById('liste').innerHTML = list.length ? list.map(t=>{
     const s = String(t.status||'').toLowerCase();
-    const estBloque = (s==='bloque'||s==='en_escrow'||s==='pending');
-    const estLibere = (s==='libere'||s==='released');
+    const estBloque = (s==='bloque'||s==='en_escrow'||s==='pending'||s==='paye'||s==='en_cours'||s==='accepte');
+    const estLibere = (s==='libere'||s==='released'||s==='termine'||s==='terminee');
+    const total = Number(t.montant_total||t.montant||0);
     const badge = estLibere ? '<span class="badge badge-libere">✅ LIBÉRÉ</span>' : '<span class="badge badge-bloque">🔒 BLOQUÉ</span>';
     const bouton = (MON_ROLE!=='prestataire' && MON_ROLE!=='livreur' && estBloque)
-      ? `<button class="btn" onclick="liberer('${t.id}', ${Number(t.montant_total||0)})">✅ Valider le travail et Libérer ${Number(t.montant_total||0).toLocaleString()} FCFA</button>`
+      ? `<button class="btn" onclick="liberer('${t.id}', ${total})">✅ Valider le travail et Libérer ${total.toLocaleString()} FCFA</button>`
       : (estBloque && (MON_ROLE==='prestataire'||MON_ROLE==='livreur') ? '<p style="color:#f59e0b">⏳ En attente de validation du client</p>' : '');
-    return `<div class="card"><p><b>${Number(t.montant_total||0).toLocaleString()} FCFA</b> - ${badge}<br>Commission Rocyinter : ${Number(t.commission||0).toLocaleString()} FCFA<br>${MON_ROLE==='prestataire'||MON_ROLE==='livreur'?'Tu reçois : '+Number(t.montant_prestataire||0).toLocaleString()+' FCFA':''}</p>${bouton}</div>`;
+    return `<div class="card"><p><b>${total.toLocaleString()} ${esc(t.devise||'FCFA')}</b> - ${badge}<br>${esc(t.titre||'Commande')} • ${esc(t.univers||'')}<br>Commission Rocyinter : ${Number(t.commission||0).toLocaleString()} FCFA<br>${MON_ROLE==='prestataire'||MON_ROLE==='livreur'?'Tu reçois : '+Number(t.montant_prestataire||0).toLocaleString()+' FCFA':''}</p>${bouton}</div>`;
   }).join('') : '<p style="text-align:center;color:#64748b">Aucune transaction Escrow pour l’instant.</p>';
 }
 async function liberer(id, montant){
   if(!confirm('Tu confirmes avoir bien reçu le service ?\n\n'+montant.toLocaleString()+' FCFA seront libérés pour le prestataire.\nCette action est définitive.')) return;
-  const {error} = await sb.from('escrow_transactions')
-    .update({ status: 'libere', released_at: new Date().toISOString() })
+  // commandes n'a pas de colonne released_at / paye_le / libere_le -> on met juste status = libere
+  const {error} = await sb.from('commandes')
+    .update({ status: 'libere' })
     .eq('id', id)
     .eq('client_id', MON_UID)
-    .in('status', ['bloque','en_escrow','pending']);
+    .in('status', ['bloque','en_escrow','pending','paye','en_cours','accepte']);
   if(error){ alert('Erreur : '+error.message); return; }
   alert('✅ Argent libéré ! Merci pour ta validation.');
   charger();
