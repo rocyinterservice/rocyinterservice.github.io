@@ -169,8 +169,8 @@ async function redirigerSiDejaConnecte(){
     if(!sb) return;
     const {data:{user}} = await sb.auth.getUser();
     if(!user) return;
-    const {data: prof} = await sb.from('profiles').select('type,type_compte,role,type_fournisseur').eq('id', user.id).maybeSingle();
-    const type = prof ? (prof.type || prof.type_compte || prof.role || 'client') : 'client';
+    const {data: prof} = await sb.from('profiles').select('type_compte,type_fournisseur').eq('id', user.id).maybeSingle();
+    const type = prof ? (prof.type_compte || prof.type_fournisseur || 'client') : 'client';
     if(type==='admin') location.href='admin.html';
     else if(['prestataire','livreur','professionnel','entreprise','fournisseur','pro'].includes(String(type).toLowerCase())) location.href='dashboard-prestataire.html';
     else location.href='dashboard-client.html';
@@ -425,9 +425,9 @@ async function inscrire(){
       if(emailExistant){
         const {data: login, error: errLogin} = await sb.auth.signInWithPassword({email: String(emailExistant).toLowerCase(), password});
         if(!errLogin && login?.user){
-          const {data: prof} = await sb.from('profiles').select('id,nom,full_name,type,type_compte,role,pays,ville,localite').eq('id', login.user.id).maybeSingle();
-          const typeExiste = prof ? (prof.type||prof.type_compte||prof.role||typeFinal) : typeFinal;
-          localStorage.setItem('rocy_user_id', login.user.id); localStorage.setItem('rocy_user_nom', prof?.nom||prof?.full_name||nom); localStorage.setItem('rocy_user_type', typeExiste); localStorage.setItem('rocy_role', typeExiste); localStorage.setItem('rocy_user_email', String(emailExistant).toLowerCase()); localStorage.setItem('rocy_email', String(emailExistant).toLowerCase()); localStorage.setItem('rocy_user_whatsapp', whatsapp); localStorage.setItem('rocy_user_pays', prof?.pays||pays); localStorage.setItem('rocy_user_ville', prof?.ville||ville); localStorage.setItem('rocy_user_localite', prof?.localite||localite);
+          const {data: prof} = await sb.from('profiles').select('id,nom,type_compte,type_fournisseur,pays,ville,quartier').eq('id', login.user.id).maybeSingle();
+          const typeExiste = prof ? (prof.type_compte||prof.type_fournisseur||typeFinal) : typeFinal;
+          localStorage.setItem('rocy_user_id', login.user.id); localStorage.setItem('rocy_user_nom', prof?.nom||nom); localStorage.setItem('rocy_user_type', typeExiste); localStorage.setItem('rocy_role', typeExiste); localStorage.setItem('rocy_user_email', String(emailExistant).toLowerCase()); localStorage.setItem('rocy_email', String(emailExistant).toLowerCase()); localStorage.setItem('rocy_user_whatsapp', whatsapp); localStorage.setItem('rocy_user_pays', prof?.pays||pays); localStorage.setItem('rocy_user_ville', prof?.ville||ville); localStorage.setItem('rocy_user_localite', prof?.quartier||localite);
           showMsg('✅ Ce compte existe déjà, on te connecte...', true);
           setTimeout(()=>{ if(typeExiste==='admin') location.href='admin.html'; else if(['prestataire','livreur','professionnel','entreprise'].includes(String(typeExiste).toLowerCase())) location.href='dashboard-prestataire.html'; else location.href='dashboard-client.html'; },1000); return;
         } else {
@@ -441,14 +441,11 @@ async function inscrire(){
       options: {
         data: {
           nom: nomFinalPre,
-          full_name: nomFinalPre,
           type_compte: typeFinal,
-          role: typeFinal,
-          type: typeFinal,
           type_fournisseur: typeFinal === 'prestataire' ? typeFournisseur : typeFinal,
           pays: pays,
           ville: ville,
-          localite: localite,
+          quartier: localite,
           whatsapp: whatsapp
         }
       }
@@ -473,31 +470,27 @@ async function inscrire(){
     const nomFinal = (typeFinal==='prestataire' && typeFournisseur==='entreprise') ? (nom || nomContact || nomEntreprise) : nom;
     const univers = typeFinal==='prestataire' ? universPourCategorie(categorie) : null;
     const payload = {
-      id:userId, nom: nomFinal, full_name: nomFinal, whatsapp, phone: whatsapp,
-      email:emailFinal,
-      type:typeFinal, type_compte:typeFinal, role:typeFinal,
+      id: userId,
+      nom: nomFinal,
+      whatsapp: whatsapp,
+      email: emailFinal,
+      type_compte: typeFinal,
       type_fournisseur: typeFinal==='prestataire' ? typeFournisseur : null,
       nom_entreprise: (typeFinal==='prestataire' && typeFournisseur==='entreprise') ? nomEntreprise : null,
       rccm: (typeFinal==='prestataire' && typeFournisseur==='entreprise') ? (rccm || null) : null,
       taille_entreprise: (typeFinal==='prestataire' && typeFournisseur==='entreprise') ? (tailleEntreprise || null) : null,
-      pays, country: pays, ville, city: ville, localite,
+      pays: pays,
+      ville: ville,
       quartier: localite,
       verification_quartier: 'non_envoye',
       quartier_verifie: false,
-      description:description||null, description_profil:description||null,
-      photo_url:photoBase64||null, avatar_url:photoBase64||null, photo_profil_url:photoBase64||null,
-      categorie:typeFinal==='prestataire'?categorie:null,
-      categorie_prestataire:typeFinal==='prestataire'?categorie:null,
-      univers:univers,
-      statut_validation:(typeFinal==='prestataire'?'en_attente':'valide'),
-      status_prestataire:typeFinal==='prestataire'?'en_attente':'valide'
+      description_profil: description||null,
+      photo_profil_url: photoBase64||null,
+      categorie_prestataire: typeFinal==='prestataire'?categorie:null,
+      univers: univers,
+      statut_validation: (typeFinal==='prestataire'?'en_attente':'valide')
     };
     let {data,error}=await sb.from('profiles').upsert([payload], {onConflict:'id'}).select().single();
-    if(error && (error.message.includes("Could not find the") || error.message.includes("column"))){
-      const minimal = { id:userId, nom: nomFinal, whatsapp, phone: whatsapp, email:emailFinal, type:typeFinal, type_compte:typeFinal, pays, ville, localite, quartier: localite, quartier_verifie: false, verification_quartier: 'non_envoye', photo_url:photoBase64||null, avatar_url:photoBase64||null, photo_profil_url:photoBase64||null, description_profil:description||null, categorie_prestataire:typeFinal==='prestataire'?categorie:null, univers:univers, statut_validation:(typeFinal==='prestataire'?'en_attente':'valide'), status_prestataire:typeFinal==='prestataire'?'en_attente':'valide' };
-      const retry = await sb.from('profiles').upsert([minimal], {onConflict:'id'}).select().single();
-      data = retry.data; error = retry.error;
-    }
     if(error){ showMsg('Erreur profil : '+error.message, false); btn.disabled=false; btn.textContent='Créer mon compte →'; return; }
     localStorage.setItem('rocy_user_id', userId); localStorage.setItem('rocy_user_nom', nomFinal); localStorage.setItem('rocy_user_type', typeFinal); localStorage.setItem('rocy_role', typeFinal); localStorage.setItem('rocy_user_email', emailFinal); localStorage.setItem('rocy_email', emailFinal); localStorage.setItem('rocy_user_whatsapp', whatsapp); localStorage.setItem('rocy_user_pays', pays); localStorage.setItem('rocy_user_ville', ville); localStorage.setItem('rocy_user_localite', localite);
     showMsg('✅ Compte créé ! Redirection...', true);
