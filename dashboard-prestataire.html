@@ -60,7 +60,7 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px}
   <div class="info">
     <b id="profilNom">Mon Profil</b>
     <span id="profilQuartier">📍 Quartier : ...</span>
-    <span id="profilBadge">⏳ Vérification...</span>
+    <span id="profilBadge">📍 Quartier : ...</span>
   </div>
 </div>
 <button class="btn btn-dark" onclick="location.href='profil.html'">👤 Mon Profil</button>
@@ -154,7 +154,7 @@ async function charger(){
   if(!user){ location.href='connexion.html'; return; }
   uid = user.id;
   const {data: profil, error: errProfil} = await sb.from('profiles')
-    .select('id, nom, nom_entreprise, type_compte, type_fournisseur, quartier, ville, pays, quartier_verifie, verification_quartier, photo_profil_url, statut_validation, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert')
+    .select('id, nom, nom_entreprise, type_compte, type_fournisseur, quartier, ville, pays, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert')
     .eq('id', uid).maybeSingle();
   if(errProfil){
     document.getElementById('infoUser').textContent = 'Erreur chargement profil : ' + errProfil.message;
@@ -184,41 +184,14 @@ async function charger(){
     document.getElementById('infoUser').textContent = `${profil.quartier || ''} - ${profil.ville || ''} • ${profil.pays || ''}`;
   }
   const quartier = profil.quartier || '';
-  const photo = profil.photo_profil_url || '';
   document.getElementById('profilNom').textContent = nomAffiche(profil);
   document.getElementById('profilQuartier').textContent = '📍 Quartier : ' + (quartier || 'Non rempli');
-  const badgeEl = document.getElementById('profilBadge');
-  const btnVerif = document.getElementById('btnVerif');
-  const btnAttente = document.getElementById('btnVerifAttente');
-  const stQ = profil.verification_quartier || 'non_envoye';
-  if(profil.quartier_verifie === true || stQ === 'valide' || stQ === 'verifie'){
-    badgeEl.textContent = '✅ Vérifié à ' + quartier;
-    badgeEl.style.color = '#166534';
-    btnVerif.style.display='none'; btnAttente.style.display='none';
-  } else if(stQ === 'en_attente' || stQ === 'demande_envoyee'){
-    badgeEl.textContent = '⏳ Vérification en attente pour ' + quartier;
-    badgeEl.style.color = '#1e40af';
-    btnVerif.style.display='none'; btnAttente.style.display='block';
-  } else if(stQ === 'refuse' || stQ === 'rejete'){
-    badgeEl.textContent = '❌ Vérification refusée - Renvoie tes photos';
-    badgeEl.style.color = '#991b1b';
-    btnVerif.style.display='block'; btnAttente.style.display='none';
-  } else {
-    badgeEl.textContent = '❌ Non vérifié - Les clients te feront moins confiance';
-    badgeEl.style.color = '#991b1b';
-    btnVerif.style.display='block'; btnAttente.style.display='none';
-  }
-  if(photo){ const img=document.getElementById('photoProfil'); img.src=photo; img.style.display='block'; }
-  const statut = String(profil?.statut_validation || 'en_attente').toLowerCase();
+  document.getElementById('profilBadge').textContent = quartier ? '📍 ' + quartier : '📍 Quartier non rempli';
+  document.getElementById('btnVerif').style.display='none';
+  document.getElementById('btnVerifAttente').style.display='none';
   const banner = document.getElementById('bannerStatut');
   const t = window.rocyT || (k=>k);
-  if(statut==='valide'){
-    banner.innerHTML = `<div class="banner valide">✅ <b>${esc(t('compteValide'))}</b> - ${esc(t('compteValideSous'))}</div>`;
-  } else if(statut==='rejete' || statut==='refuse'){
-    banner.innerHTML = `<div class="banner rejete">❌ <b>${esc(t('compteRefuse'))}</b> - ${esc(t('compteRefuseSous'))}</div>`;
-  } else {
-    banner.innerHTML = `<div class="banner attente">⏳ <b>${esc(t('compteAttente'))}</b> - ${esc(t('compteAttenteSous'))}</div>`;
-  }
+  banner.innerHTML = `<div class="banner valide">✅ <b>${esc(t('compteValide'))}</b> - ${esc(t('compteValideSous'))}</div>`;
   const resAbo = verifierAbonnement(profil||{});
   const boxAbo = document.getElementById('bandeauAbo');
   const btnCreer = document.getElementById('btnCreer');
@@ -232,21 +205,23 @@ async function charger(){
     boxAbo.innerHTML = `<div class="bandeau-abo abo-expire">⛔ Abonnement expiré. Tu ne peux pas publier de nouvelle annonce tant que tu ne renouvelles pas.<br><button class="btn btn-dark" onclick="location.href='abonnement.html'">Renouveler maintenant →</button></div>`;
     btnCreer.disabled=true; btnCreer.textContent='⛔ Publier bloqué - Abonnement expiré';
   }
-  const {data: annonces} = await sb.from('annonces')
-    .select('id, titre, categorie, univers, quartier, localite, ville, prix_indicatif, prix_fixe, photo_url, status, created_at')
+  const {data: annonces, error: errAnnonces} = await sb.from('annonces')
+    .select('id, titre, categorie, univers, quartier, localite, ville, prix_indicatif, prix_fixe, devise, photo_url, status, created_at')
     .eq('prestataire_id', uid).order('created_at',{ascending:false});
   const boxA = document.getElementById('listeAnnonces');
   document.getElementById('nbAnnonces').textContent = annonces?.length || 0;
-  if(!annonces || annonces.length===0){
+  if(errAnnonces){
+    boxA.innerHTML = `<div class="empty">Erreur annonces : ${esc(errAnnonces.message)}</div>`;
+  } else if(!annonces || annonces.length===0){
     boxA.innerHTML = `<div class="empty">Aucune annonce. Crée ta première annonce pour commencer à gagner.</div>`;
   } else {
     boxA.innerHTML = annonces.map(a=>{
       const lieu = a.quartier || a.localite || '';
-      const prixTxt = a.prix_fixe ? fmt(a.prix_indicatif||0)+' FCFA - Prix fixe' : 'Prix à discuter';
+      const prixTxt = a.prix_fixe ? fmt(a.prix_indicatif||0)+' '+(a.devise||'FCFA')+' - Prix fixe' : (a.prix_indicatif ? 'À partir de '+fmt(a.prix_indicatif)+' '+(a.devise||'FCFA') : 'Prix à discuter');
       return `<div class="card">${badgeAnnonce(a)}<h3 style="margin-top:8px">${esc(a.titre)}</h3><p>${esc(a.categorie)} • ${esc(lieu)} - ${esc(a.ville)}<br>${prixTxt}</p><button class="btn btn-dark" onclick="location.href='creer-annonce.html'">✏️ Modifier / Voir</button></div>`;
     }).join('');
   }
-  const {data: cmds} = await sb.from('commandes')
+  const {data: cmds, error: errCmds} = await sb.from('commandes')
     .select('id, titre, client_id, conversation_id, annonce_id, status, univers, commission, montant_total, montant_prestataire, localite, ville, litige_raison, created_at')
     .eq('prestataire_id', uid).order('created_at',{ascending:false});
   const boxC = document.getElementById('listeCommandes');
@@ -254,7 +229,9 @@ async function charger(){
   let total = 0;
   (cmds||[]).forEach(c=>{ if(['paye','en_cours','valide','libere'].includes(c.status)) total += Number(c.montant_prestataire||0); });
   document.getElementById('totalGagne').textContent = fmt(total) + ' F';
-  if(!cmds || cmds.length===0){
+  if(errCmds){
+    boxC.innerHTML = `<div class="empty">Erreur commandes : ${esc(errCmds.message)}</div>`;
+  } else if(!cmds || cmds.length===0){
     boxC.innerHTML = `<div class="empty">Aucune commande pour l'instant. Quand un client te parlera dans le chat et créera une commande, elle apparaîtra ici.</div>`;
   } else {
     const clientIds = [...new Set(cmds.map(c=>c.client_id).filter(Boolean))];
@@ -273,15 +250,23 @@ async function charger(){
       return `<div class="card">${badgeCommande(c.status)}<h3 style="margin-top:8px">${esc(c.titre)}</h3><p>Client : ${esc(nomsClients[c.client_id] || 'Client')}<br>Total : ${fmt(c.montant_total)} FCFA • ${esc(texteCommission(c))} • Tu reçois : <b>${fmt(c.montant_prestataire)} FCFA</b><br>📍 ${esc(c.localite||'')} - ${esc(c.ville||'')}<br><span style="color:#16a34a">🔒 Escrow : argent bloqué chez Rocyinter jusqu'à validation client</span></p>${action}<button class="btn btn-dark" onclick="voirConversation('${esc(c.conversation_id)}','${esc(c.annonce_id)}')">Ouvrir le chat</button></div>`;
     }).join('');
   }
-  const {data: convsBrutes} = await sb.from('conversations')
-    .select('id, client_id, prestataire_id, annonce_id, created_at, annonces(titre)')
+  const {data: convsBrutes, error: errConvs} = await sb.from('conversations')
+    .select('id, client_id, prestataire_id, annonce_id, created_at')
     .eq('prestataire_id', uid).order('created_at',{ascending:false});
   const convs = (convsBrutes||[]).filter(cv => String(cv.client_id)!==String(cv.prestataire_id));
   const boxV = document.getElementById('listeConvs');
-  if(!convs || convs.length===0){
+  if(errConvs){
+    boxV.innerHTML = `<div class="empty">Erreur conversations : ${esc(errConvs.message)}</div>`;
+  } else if(!convs || convs.length===0){
     boxV.innerHTML = `<div class="empty">Aucune conversation pour l'instant.</div>`;
   } else {
-    boxV.innerHTML = convs.map(cv=>`<div class="card"><b>${esc(cv.annonces?.titre || 'Discussion')}</b><p>Conversation • ${esc(new Date(cv.created_at).toLocaleDateString('fr-FR'))}</p><button class="btn btn-green" onclick="voirConversation('${esc(cv.id)}','${esc(cv.annonce_id)}')">Répondre</button></div>`).join('');
+    let titres = {};
+    const annonceIds = [...new Set(convs.map(cv=>cv.annonce_id).filter(Boolean))];
+    if(annonceIds.length){
+      const {data: anns} = await sb.from('annonces').select('id, titre').in('id', annonceIds);
+      (anns||[]).forEach(a=> titres[a.id]=a.titre);
+    }
+    boxV.innerHTML = convs.map(cv=>`<div class="card"><b>${esc(titres[cv.annonce_id] || 'Discussion')}</b><p>Conversation • ${esc(new Date(cv.created_at).toLocaleDateString('fr-FR'))}</p><button class="btn btn-green" onclick="voirConversation('${esc(cv.id)}','${esc(cv.annonce_id)}')">Répondre</button></div>`).join('');
   }
   if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 }
@@ -295,7 +280,7 @@ async function changerStatut(id, action){
     const {data: cmd} = await sb.from('commandes').select('id, titre, conversation_id').eq('id', id).eq('prestataire_id', user.id).single();
     if(!cmd){ alert('Commande introuvable.'); return; }
     if(cmd?.conversation_id){
-      await sb.from('messages').insert([{conversation_id: cmd.conversation_id, sender_id: user.id, contenu: `✅ J'ai terminé le service "${cmd.titre}". Peux-tu valider pour que l'argent soit libéré ?`, type: 'texte'}]);
+      await sb.from('messages').insert([{conversation_id: cmd.conversation_id, sender_id: user.id, contenu: `✅ J'ai terminé le service "${cmd.titre}". Peux-tu valider pour que l'argent soit libéré ?`}]);
     }
     alert('✅ Client prévenu dans le chat. Il doit valider pour libérer l’argent.');
   }
