@@ -97,9 +97,9 @@ async function afficherBandeauRole(){
     const {data:{user}} = await sb.auth.getUser();
     moiId = user?.id || '';
     if(user){
-      const {data:p} = await sb.from('profiles').select('type_compte, role, type, type_fournisseur, nom_entreprise, nom, quartier, localite, quartier_verifie, verification_quartier').eq('id',user.id).maybeSingle();
+      const {data:p} = await sb.from('profiles').select('id, type_compte, type_fournisseur, nom_entreprise, nom, quartier').eq('id',user.id).maybeSingle();
       profil = p;
-      let r = String(p?.type_compte || p?.role || p?.type || p?.type_fournisseur || '').toLowerCase().trim();
+      let r = String(p?.type_compte || p?.type_fournisseur || '').toLowerCase().trim();
       if(!r && p?.nom_entreprise) r = 'entreprise';
       monRole = r;
     }
@@ -110,8 +110,8 @@ async function afficherBandeauRole(){
     box.innerHTML = `<div class="bandeau-role bandeau-visiteur">👁️ ${esc(t('bandeauVisiteur'))}</div>`;
     return;
   }
-  const quartier = profil?.quartier || profil?.localite || '';
-  const badgeQ = (profil?.quartier_verifie===true || profil?.verification_quartier==='valide' || profil?.verification_quartier==='verifie') ? `✅ Vérifié à ${esc(quartier)}` : (profil?.verification_quartier==='en_attente' || profil?.verification_quartier==='demande_envoyee' ? `⏳ En attente - ${esc(quartier)}` : `📍 ${esc(quartier||'Quartier non rempli')}`);
+  const quartier = profil?.quartier || '';
+  const badgeQ = quartier ? `📍 ${esc(quartier)}` : `📍 Quartier non rempli`;
   const typeF = String(profil?.type_fournisseur||'').toLowerCase();
   const isEntreprise = !!profil?.nom_entreprise || typeF==='entreprise' || monRole==='entreprise';
   const isPro = typeF==='professionnel' || monRole==='professionnel' || monRole==='pro';
@@ -135,20 +135,19 @@ async function chargerAnnonces(){
     const loc = document.getElementById('filtreLocalite').value.trim().toLowerCase();
     const search = document.getElementById('filtreSearch').value.trim().toLowerCase();
     if(!sb){ box.innerHTML = `<div class="empty"><b>${esc(t('pasConnexion'))}</b><br><button type="button" class="btn" onclick="chargerAnnonces()">${esc(t('reessayer'))}</button></div>`; return; }
-    // ✅ CORRIGÉ : SANS profiles(nom) - c'était ça qui cassait
-    let q = sb.from('annonces').select('id, titre, categorie, univers, description, prix_fixe, prix_indicatif, prix, montant, photo_url, image_url, photo, localite, ville, pays, status, statut, prestataire_id, user_id').order('created_at',{ascending:false});
+    // ✅ CORRIGÉ : seulement les colonnes qui existent vraiment dans annonces
+    let q = sb.from('annonces').select('id, titre, categorie, univers, description, prix_fixe, prix_indicatif, devise, photo_url, localite, ville, pays, status, prestataire_id').order('created_at',{ascending:false});
     if(pays) q = q.eq('pays', pays);
     const {data, error} = await q;
     if(error) throw error;
-    // Noms à part, sans bloquer si ça échoue
     let noms = {};
-    const ids = [...new Set((data||[]).map(a=>a.prestataire_id || a.user_id).filter(Boolean))];
+    const ids = [...new Set((data||[]).map(a=>a.prestataire_id).filter(Boolean))];
     if(ids.length){
       const {data: profs} = await sb.from('profiles').select('id, nom, nom_entreprise').in('id', ids);
       (profs||[]).forEach(p=> noms[p.id] = p.nom_entreprise || p.nom);
     }
     let filtres = (data || []).filter(a => {
-      const s = String(a.status || a.statut || '').toLowerCase().trim();
+      const s = String(a.status || '').toLowerCase().trim();
       if(!s) return true;
       return s==='valide' || s==='valid' || s==='publie' || s==='publié' || s==='publiee' || s==='actif' || s==='active';
     });
@@ -159,12 +158,12 @@ async function chargerAnnonces(){
       return;
     }
     box.innerHTML = filtres.map(a=>{
-      const img = a.photo_url || a.image_url || a.photo || 'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&q=80';
-      const prestaId = a.prestataire_id || a.user_id || '';
+      const img = a.photo_url || 'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&q=80';
+      const prestaId = a.prestataire_id || '';
       const nom = noms[prestaId] || 'Prestataire';
       const lieu = [a.localite, a.ville, a.pays].filter(Boolean).join(' - ');
-      const prixVal = a.prix_indicatif || a.prix || a.montant || 0;
-      const prixTxt = a.prix_fixe ? `${window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal+' FCFA'} - ${t('prixFixe')}` : (prixVal>0 ? `${t('aPartir')} ${window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal+' FCFA'}` : t('prixDiscuter'));
+      const prixVal = a.prix_indicatif || 0;
+      const prixTxt = a.prix_fixe ? `${window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal+' '+(a.devise||'FCFA')} - ${t('prixFixe')}` : (prixVal>0 ? `${t('aPartir')} ${window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal+' '+(a.devise||'FCFA')}` : t('prixDiscuter'));
       const cestMoi = prestaId && moiId && String(prestaId)===String(moiId);
       const btnChat = cestMoi
         ? `<button type="button" class="btn-mine" disabled>C'est ton annonce</button>`
