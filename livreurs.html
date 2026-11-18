@@ -58,7 +58,7 @@ async function afficherBandeauRole(){
   const box = document.getElementById('bandeauRole'); if(!box) return;
   const {data:{user}} = await sb.auth.getUser();
   moiId = user?.id || '';
-  if(user){ const {data:p}=await sb.from('profiles').select('type_compte, role').eq('id',user.id).maybeSingle(); monRole=String(p?.type_compte||p?.role||'').toLowerCase(); }
+  if(user){ const {data:p}=await sb.from('profiles').select('type_compte, type_fournisseur').eq('id',user.id).maybeSingle(); monRole=String(p?.type_compte||p?.type_fournisseur||'').toLowerCase(); }
   const t = window.rocyT || (k=>k);
   if(!moiId) box.innerHTML = `<div class="bandeau-role bandeau-visiteur">👁️ ${esc(t('bandeauVisiteur'))}</div>`;
   else if(monRole==='prestataire' || monRole==='livreur') box.innerHTML = `<div class="bandeau-role bandeau-presta">🛠️ ${esc(t('bandeauPresta'))}</div>`;
@@ -71,13 +71,13 @@ function afficher(){
   const box=document.getElementById('liste'); const t = window.rocyT || (k=>k);
   let list=tous;
   if(pays) list=list.filter(l=>(l.pays||'')===pays);
-  if(q) list=list.filter(l=>((l.nom||'')+' '+(l.ville||'')+' '+(l.localite||'')+' '+(l.description||'')).toLowerCase().includes(q));
+  if(q) list=list.filter(l=>((l.nom||'')+' '+(l.ville||'')+' '+(l.quartier||'')+' '+(l.description_profil||'')).toLowerCase().includes(q));
   if(!list.length){box.innerHTML=`<div class="empty"><b>${esc(t('aucuneTitre'))}</b><br>${esc(t('aucuneSous'))}<br><br><button class="btn" onclick="location.href='inscription.html'">${esc(t('devenirLivreur'))}</button></div>`;return;}
   box.innerHTML=list.map(l=>{
-    const lieu=[l.localite,l.ville,l.pays].filter(Boolean).join(' - ');
+    const lieu=[l.quartier,l.ville,l.pays].filter(Boolean).join(' - ');
     const cestMoi = moiId && String(l.id)===String(moiId);
     const btnChat = cestMoi ? `<button class="btn btn-gris" disabled>C'est toi</button>` : `<button class="btn btn-dark" onclick="discuter('${esc(l.id)}')">💬 ${esc(t('confierLivraison'))}</button>`;
-    return `<div class="card"><span class="badge">✅ ${esc(t('verifie'))}</span><h3 style="margin-top:8px">🛵 ${esc(l.nom)}</h3><p>📍 ${esc(lieu)}<br>${esc(l.description||t('livreurDesc'))}<br><b>💬 ${esc(t('prixDiscuter'))}</b> - ${esc(t('pasPrixFixe'))}</p><button class="btn btn-gris" onclick="voirPresta('${esc(l.id)}')">${esc(t('voirLivreur'))}</button>${btnChat}</div>`;
+    return `<div class="card"><span class="badge">✅ ${esc(t('verifie'))}</span><h3 style="margin-top:8px">🛵 ${esc(l.nom)}</h3><p>📍 ${esc(lieu)}<br>${esc(l.description_profil||t('livreurDesc'))}<br><b>💬 ${esc(t('prixDiscuter'))}</b> - ${esc(t('pasPrixFixe'))}</p><button class="btn btn-gris" onclick="voirPresta('${esc(l.id)}')">${esc(t('voirLivreur'))}</button>${btnChat}</div>`;
   }).join('');
   if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 }
@@ -85,12 +85,12 @@ async function charger(){
   const box=document.getElementById('liste'); const t = window.rocyT || (k=>k);
   if(!sb){box.innerHTML=`<div class="empty"><b>${esc(t('pasConnexion'))}</b><br><button class="btn" onclick="charger()">${esc(t('reessayer'))}</button></div>`;return;}
   try{
-    const {data,error}=await sb.from('profiles').select('id, nom, ville, localite, pays, description, photo_url, avatar_url').or('role.eq.livreur,type_compte.eq.livreur').eq('statut_validation','valide').order('created_at',{ascending:false});
+    const {data,error}=await sb.from('profiles').select('id, nom, ville, quartier, pays, description_profil, photo_profil_url, type_compte, type_fournisseur').or('type_compte.eq.livreur,type_fournisseur.eq.livreur').eq('statut_validation','valide').order('created_at',{ascending:false});
     if(error) throw error;
     tous=data||[]; afficher();
   }catch(e){ console.log('ROCY livreurs erreur:',e); box.innerHTML=`<div class="empty"><b>${esc(t('erreurConnexion'))}</b><br><button class="btn" onclick="charger()">${esc(t('reessayer'))}</button></div>`; }
 }
-function voirPresta(id){localStorage.setItem('fiche_prestataire_id',id); location.href='fiche-prestataire.html';}
+function voirPresta(id){localStorage.setItem('fiche_prestataire_id',id); location.href='fiche-prestataire.html?id='+encodeURIComponent(id);}
 async function discuter(id){
   const t = window.rocyT || (k=>k);
   const {data:{user}} = await sb.auth.getUser();
