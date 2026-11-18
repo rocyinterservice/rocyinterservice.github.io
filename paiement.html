@@ -71,7 +71,8 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 window.supabaseClient = sb;
 const WHATSAPP_ROCY = '2290191478460';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const commandeId = localStorage.getItem('paiement_commande_id');
+const params = new URLSearchParams(location.search);
+const commandeId = params.get('commande') || params.get('commande_id') || localStorage.getItem('paiement_commande_id') || localStorage.getItem('commande_a_payer');
 let commande = null; let uid=''; let monRole='';
 async function notifier(destinataire, titre, message, type, lien){
   try{ if(!destinataire) return; await sb.rpc('creer_notification', { p_user_id: destinataire, p_titre: titre, p_message: String(message||'').slice(0,120), p_type: type||'info', p_lien: lien||'notifications.html' }); }catch(e){ console.log('Notif échouée (pas grave):', e); }
@@ -80,10 +81,8 @@ async function init(){
   const {data:{user}} = await sb.auth.getUser();
   if(!user){ location.href='connexion.html'; return; }
   uid = user.id;
-  const {data:p}=await sb.from('profiles').select('type_compte, role, type_fournisseur').eq('id',uid).maybeSingle();
-  monRole = String(p?.type_compte||p?.role||p?.type_fournisseur||'').toLowerCase();
-  // CORRIGÉ : on ne bloque plus les prestataires / professionnels / entreprises
-  // Un prestataire peut aussi être client d'une autre commande. On vérifie dans charger() si c'est bien SA commande.
+  const {data:p}=await sb.from('profiles').select('type_compte, type_fournisseur').eq('id',uid).maybeSingle();
+  monRole = String(p?.type_compte||p?.type_fournisseur||'').toLowerCase();
   if(monRole==='admin'){ location.href='admin.html'; return; }
   if(!commandeId){ document.getElementById('resume').innerHTML = 'Aucune commande à payer. Va dans Mes commandes.'; document.getElementById('blocPaiement').style.display='none'; return; }
   charger();
@@ -105,13 +104,12 @@ function detailImmobilier(c){
 }
 async function charger(){
   if(!commandeId) return;
-  const {data, error} = await sb.from('commandes').select('*').eq('id', commandeId).maybeSingle();
+  const {data, error} = await sb.from('commandes').select('id, client_id, prestataire_id, univers, titre, montant, devise, status, conversation_id, annonce_id, commission, montant_total, montant_prestataire, localite, ville, created_at').eq('id', commandeId).maybeSingle();
   if(error || !data){ document.getElementById('resume').innerHTML = 'Commande introuvable.'; document.getElementById('blocPaiement').style.display='none'; return; }
   if(String(data.client_id)!==String(uid)){
     document.getElementById('resume').innerHTML = `<b>⛔ Accès refusé.</b><p>Cette commande ne t'appartient pas.</p><button class="btn btn-dark" onclick="location.href='dashboard-client.html'">Voir mes commandes</button>`;
     document.getElementById('blocPaiement').style.display='none'; return;
   }
-  // Sécurité : on ne paie jamais sa propre commande
   if(String(data.prestataire_id)===String(uid)){
     document.getElementById('resume').innerHTML = `<b>⛔ Impossible.</b><p>Tu ne peux pas payer ta propre commande.</p><button class="btn btn-dark" onclick="location.href='dashboard-prestataire.html'">Voir mon dashboard</button>`;
     document.getElementById('blocPaiement').style.display='none'; return;
@@ -139,7 +137,7 @@ async function confirmerPaiement(mode){
   if(!commande) return;
   const {data: frais} = await sb.from('commandes').select('status').eq('id', commande.id).single();
   if(!frais || frais.status !== 'en_attente'){ showMsg('Cette commande a déjà été payée.', false); setTimeout(()=>location.href='dashboard-client.html', 1000); return; }
-  const {error} = await sb.from('commandes').update({status: 'paye', mode_paiement: mode, paye_le: new Date().toISOString()}).eq('id', commande.id).eq('client_id', uid).eq('status', 'en_attente');
+  const {error} = await sb.from('commandes').update({status: 'paye'}).eq('id', commande.id).eq('client_id', uid).eq('status', 'en_attente');
   if(error){ showMsg('Erreur : ' + error.message, false); return; }
   if(commande.conversation_id){
     await sb.from('messages').insert([{conversation_id: commande.conversation_id, sender_id: uid, contenu: `💳 Paiement reçu (${mode}) - ${Number(commande.montant_total).toLocaleString()} FCFA bloqué en escrow. Tu peux commencer le service.`, type: 'texte'}]);
