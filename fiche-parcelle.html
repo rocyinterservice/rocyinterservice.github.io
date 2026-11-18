@@ -33,30 +33,35 @@ const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 window.supabaseClient = sb;
-const annonceId = localStorage.getItem('fiche_parcelle_id');
+const params = new URLSearchParams(location.search);
+const annonceId = params.get('id') || params.get('annonce') || localStorage.getItem('fiche_parcelle_id');
 let moiId = '';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function estValide(a){
-  const s = String(a.status || a.statut || '').toLowerCase().trim();
+  const s = String(a.status || '').toLowerCase().trim();
   if(!s) return true;
-  return s==='valide' || s==='valid' || s==='publie' || s==='publié' || s==='publiee' || s==='actif' || s==='active';
+  return ['valide','valid','publie','publié','publiee','actif','active'].includes(s);
 }
 async function charger(){
   const {data:{user}} = await sb.auth.getUser();
   moiId = user?.id || '';
   if(!annonceId){document.getElementById('contenu').innerHTML='<div class="empty">Bien introuvable.<br><br><button class="btn btn-dark" onclick="location.href=\'immobilier.html\'">Voir Immobilier</button></div>';return;}
-  const {data:a} = await sb.from('annonces').select('id, titre, categorie, univers, description, prix_indicatif, prix, montant, photo_url, image_url, photo, localite, ville, pays, status, statut, prestataire_id, user_id, profiles_id, profiles(nom, whatsapp)').eq('id',annonceId).maybeSingle();
-  if(!a){document.getElementById('contenu').innerHTML='<div class="empty">Bien introuvable.<br><br><button class="btn btn-dark" onclick="location.href=\'immobilier.html\'">Voir Immobilier</button></div>';return;}
+  const {data:a, error} = await sb.from('annonces').select('id, titre, categorie, univers, description, prix_indicatif, prix_fixe, photo_url, localite, quartier, ville, pays, status, devise, prestataire_id').eq('id',annonceId).maybeSingle();
+  if(error || !a){document.getElementById('contenu').innerHTML='<div class="empty">Bien introuvable.<br><br><button class="btn btn-dark" onclick="location.href=\'immobilier.html\'">Voir Immobilier</button></div>';return;}
   if(!estValide(a)){
     document.getElementById('contenu').innerHTML = `<div class="empty"><b>Bien en cours de vérification</b><br>Ce bien n'est pas encore validé par Rocyinter.<br><br><button class="btn btn-dark" onclick="location.href='immobilier.html'">Voir d'autres biens</button></div>`;
     return;
   }
-  const img = a.photo_url || a.image_url || a.photo || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80';
+  const img = a.photo_url || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80';
   const estParcelle = (a.categorie||'').toLowerCase().includes('parcelle');
-  const prestaId = a.prestataire_id || a.user_id || a.profiles_id || '';
-  const nomPresta = a.profiles?.nom || 'Prestataire';
-  const lieu = [a.localite, a.ville, a.pays].filter(Boolean).join(' - ');
-  const prixTxt = (a.prix_indicatif||a.prix||a.montant||0)>0 ? Number(a.prix_indicatif||a.prix||a.montant).toLocaleString()+' FCFA' : '💬 Prix à discuter';
+  const prestaId = a.prestataire_id || '';
+  let nomPresta = 'Prestataire';
+  if(prestaId){
+    const {data: prof} = await sb.from('profiles').select('nom, nom_entreprise').eq('id', prestaId).maybeSingle();
+    if(prof) nomPresta = prof.nom_entreprise || prof.nom || 'Prestataire';
+  }
+  const lieu = [a.localite || a.quartier, a.ville, a.pays].filter(Boolean).join(' - ');
+  const prixTxt = (a.prix_indicatif||0)>0 ? Number(a.prix_indicatif).toLocaleString()+' FCFA' : '💬 Prix à discuter';
   const cestMoi = prestaId && moiId && String(prestaId)===String(moiId);
   const btnChat = cestMoi
     ? `<button class="btn btn-mine" disabled>C'est ton annonce</button>`
@@ -80,20 +85,20 @@ async function discuter(){
   const uid = user?.id;
   const t = window.rocyT || (k=>k);
   if(!uid){ alert(t('connectePourCommander')); location.href='connexion.html'; return; }
-  const {data: profil} = await sb.from('profiles').select('type_compte, role').eq('id', uid).maybeSingle();
-  const type = String(profil?.type_compte || profil?.role || '').toLowerCase();
+  const {data: profil} = await sb.from('profiles').select('type_compte').eq('id', uid).maybeSingle();
+  const type = String(profil?.type_compte || '').toLowerCase();
   if(type==='admin'){ alert('Admin : tu ne peux pas chatter, tu gères dans Admin.'); return; }
   const a = window._a; if(!a) return;
-  const prestaId = a.prestataire_id || a.user_id || a.profiles_id || '';
+  const prestaId = a.prestataire_id || '';
   if(!prestaId){ alert('Annonce sans prestataire.'); return; }
   if(String(prestaId)===String(uid)){ alert("C'est ton annonce. Tu ne peux pas te parler à toi-même."); return; }
   localStorage.setItem('chat_prestataire',prestaId); localStorage.setItem('chat_annonce',a.id); location.href='chat.html';
 }
 function voirPresta(){
   const a = window._a; if(!a) return;
-  const prestaId = a.prestataire_id || a.user_id || a.profiles_id || '';
+  const prestaId = a.prestataire_id || '';
   if(!prestaId) return;
-  localStorage.setItem('fiche_prestataire_id',prestaId); location.href='fiche-prestataire.html';
+  localStorage.setItem('fiche_prestataire_id',prestaId); location.href='fiche-prestataire.html?id='+encodeURIComponent(prestaId);
 }
 charger();
 </script>
