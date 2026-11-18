@@ -49,7 +49,7 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px;line-height:1.5}
   <div class="info">
     <b id="profilNom">Mon Profil</b>
     <span id="profilQuartier">📍 Quartier : ...</span>
-    <span id="profilBadge">⏳ Vérification...</span>
+    <span id="profilBadge">📍 Quartier : ...</span>
   </div>
 </div>
 <button class="btn btn-dark" onclick="location.href='profil.html'">👤 Mon Profil</button>
@@ -123,9 +123,13 @@ async function charger(){
   const user = await getUtilisateurSecurise();
   if(!user){ location.href='connexion.html'; return; }
   uid = user.id;
-  const {data: profil} = await sb.from('profiles')
-    .select('id, nom, full_name, nom_entreprise, type_fournisseur, type_compte, role, type, quartier, localite, ville, quartier_verifie, verification_quartier, photo_url, avatar_url, photo_profil_url')
+  const {data: profil, error: errProfil} = await sb.from('profiles')
+    .select('id, nom, nom_entreprise, type_fournisseur, type_compte, quartier, ville')
     .eq('id', uid).maybeSingle();
+  if(errProfil){
+    document.getElementById('listeCommandes').innerHTML = `<div class="empty">Erreur profil : ${esc(errProfil.message)}</div>`;
+    return;
+  }
   if(!profil){
     document.getElementById('nomUser').textContent = 'Client';
     document.getElementById('profilNom').textContent = 'Mon Profil';
@@ -133,36 +137,22 @@ async function charger(){
     document.getElementById('listeCommandes').innerHTML = `<div class="empty">Ton profil est introuvable. Va dans Mon Profil pour le compléter.</div>`;
     return;
   }
-  const roleReel = String(profil.type_compte || profil.role || profil.type || profil.type_fournisseur || '').toLowerCase().trim();
+  const roleReel = String(profil.type_compte || profil.type_fournisseur || '').toLowerCase().trim();
   const ROLES_PRESTA = ['prestataire','livreur','fournisseur','professionnel','entreprise','pro'];
   if(ROLES_PRESTA.includes(roleReel)){ location.href='dashboard-prestataire.html'; return; }
   if(roleReel === 'admin'){ location.href='admin.html'; return; }
-  document.getElementById('nomUser').textContent = profil.nom || profil.full_name || 'Client';
-  const quartier = profil.quartier || profil.localite || '';
-  const photo = profil.photo_profil_url || profil.photo_url || profil.avatar_url || '';
-  document.getElementById('profilNom').textContent = profil.nom || profil.full_name || 'Mon Profil';
+  document.getElementById('nomUser').textContent = profil.nom || 'Client';
+  const quartier = profil.quartier || '';
+  document.getElementById('profilNom').textContent = profil.nom || 'Mon Profil';
   document.getElementById('profilQuartier').textContent = '📍 Quartier : ' + (quartier || 'Non rempli');
-  const badgeEl = document.getElementById('profilBadge');
-  const btnVerif = document.getElementById('btnVerif');
-  if(profil.quartier_verifie === true || profil.verification_quartier === 'valide' || profil.verification_quartier === 'verifie'){
-    badgeEl.textContent = '✅ Vérifié à ' + quartier;
-    badgeEl.style.color = '#166534';
-    btnVerif.style.display = 'none';
-  } else if(profil.verification_quartier === 'en_attente' || profil.verification_quartier === 'demande_envoyee'){
-    badgeEl.textContent = '⏳ Vérification en attente pour ' + quartier;
-    badgeEl.style.color = '#1e40af';
-    btnVerif.style.display = 'none';
-  } else {
-    badgeEl.textContent = '❌ Non vérifié - Fais vérifier ton quartier';
-    badgeEl.style.color = '#991b1b';
-    btnVerif.style.display = 'block';
-  }
-  if(photo){ const img=document.getElementById('photoProfil'); img.src=photo; img.style.display='block'; }
-  const {data: cmds} = await sb.from('commandes')
+  document.getElementById('profilBadge').textContent = quartier ? '📍 ' + quartier : '📍 Quartier non rempli';
+  const {data: cmds, error: errCmds} = await sb.from('commandes')
     .select('id, titre, prestataire_id, conversation_id, annonce_id, status, univers, commission, montant_total, montant_prestataire, localite, ville, created_at')
     .eq('client_id', uid).order('created_at',{ascending:false});
   const box = document.getElementById('listeCommandes');
-  if(!cmds || cmds.length===0){
+  if(errCmds){
+    box.innerHTML = `<div class="empty">Erreur commandes : ${esc(errCmds.message)}</div>`;
+  } else if(!cmds || cmds.length===0){
     box.innerHTML = `<div class="empty">Aucune commande pour l'instant.<br>Trouvez un service, discutez, créez une commande.</div>`;
   } else {
     box.innerHTML = cmds.map(c=>`
@@ -182,15 +172,23 @@ async function charger(){
       <button class="btn btn-dark" onclick="voirConversation('${esc(c.conversation_id)}','${esc(c.annonce_id)}')">Ouvrir le chat</button>
     </div>`).join('');
   }
-  const {data: convsBrutes} = await sb.from('conversations')
-    .select('id, client_id, prestataire_id, annonce_id, created_at, annonces(titre)')
+  const {data: convsBrutes, error: errConvs} = await sb.from('conversations')
+    .select('id, client_id, prestataire_id, annonce_id, created_at')
     .eq('client_id', uid).order('created_at',{ascending:false});
   const convs = (convsBrutes||[]).filter(cv => String(cv.client_id)!==String(cv.prestataire_id));
   const boxV = document.getElementById('listeConvs');
-  if(!convs || convs.length===0){
+  if(errConvs){
+    boxV.innerHTML = `<div class="empty">Erreur conversations : ${esc(errConvs.message)}</div>`;
+  } else if(!convs || convs.length===0){
     boxV.innerHTML = `<div class="empty">Aucune conversation pour l'instant.</div>`;
   } else {
-    boxV.innerHTML = convs.map(cv=>`<div class="card"><b>${esc(cv.annonces?.titre || 'Discussion')}</b><p>${esc(new Date(cv.created_at).toLocaleDateString('fr-FR'))}</p><button class="btn btn-dark" onclick="voirConversation('${esc(cv.id)}','${esc(cv.annonce_id)}')">Ouvrir le chat</button></div>`).join('');
+    let titres = {};
+    const annonceIds = [...new Set(convs.map(cv=>cv.annonce_id).filter(Boolean))];
+    if(annonceIds.length){
+      const {data: anns} = await sb.from('annonces').select('id, titre').in('id', annonceIds);
+      (anns||[]).forEach(a=> titres[a.id]=a.titre);
+    }
+    boxV.innerHTML = convs.map(cv=>`<div class="card"><b>${esc(titres[cv.annonce_id] || 'Discussion')}</b><p>${esc(new Date(cv.created_at).toLocaleDateString('fr-FR'))}</p><button class="btn btn-dark" onclick="voirConversation('${esc(cv.id)}','${esc(cv.annonce_id)}')">Ouvrir le chat</button></div>`).join('');
   }
   if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 }
