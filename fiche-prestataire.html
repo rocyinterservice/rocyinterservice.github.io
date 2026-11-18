@@ -46,16 +46,16 @@ const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 window.supabaseClient = sb;
-const prestaId = localStorage.getItem('fiche_prestataire_id');
+// ✅ CORRIGÉ : on récupère l'id dans l'URL ?id= OU dans localStorage, pas seulement localStorage
+const params = new URLSearchParams(location.search);
+let prestaId = params.get('id') || params.get('prestataire') || localStorage.getItem('fiche_prestataire_id') || '';
 let moiId = '';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-if(!prestaId){ document.getElementById('contenu').innerHTML='Prestataire introuvable. <a href="index.html">Retour</a>'; }
 function estValideAnnonce(a){
   const s = String(a.status || a.statut || '').toLowerCase().trim();
   if(!s) return true;
   return s==='valide' || s==='valid' || s==='publie' || s==='publié' || s==='publiee' || s==='actif' || s==='active';
 }
-// Badge vérification par quartier - DYNAMIQUE, pas que Godomey
 function badgeQuartierHTML(p){
   const quartier = p.quartier || p.localite || '';
   const verifie = p.quartier_verifie === true || String(p.verification_quartier||'').toLowerCase()==='valide' || String(p.verification_quartier||'').toLowerCase()==='verifie';
@@ -66,20 +66,24 @@ function badgeQuartierHTML(p){
   return `<div><span class="badgeQuartier gris">📍 ${esc(quartier)} (non vérifié)</span></div>`;
 }
 async function charger(){
-  if(!prestaId) return;
   const {data:{user}} = await sb.auth.getUser();
   moiId = user?.id || '';
+  // ✅ CORRIGÉ : si pas d'id dans URL ni localStorage, et que je suis connecté, c'est ma propre fiche (cas après vérification)
+  if(!prestaId && moiId) prestaId = moiId;
+  if(!prestaId){ document.getElementById('contenu').innerHTML='Prestataire introuvable. <a href="index.html">Retour</a>'; return; }
   const t = window.rocyT || (k=>k);
-  const {data: p} = await sb.from('profiles').select('id, nom, nom_entreprise, type_compte, role, type_fournisseur, photo_url, photo_profil, photo_profil_url, avatar_url, photo, description_profil, description, categorie_prestataire, categorie, localite, quartier, verification_quartier, quartier_verifie, ville, pays, statut_validation, statut').eq('id', prestaId).maybeSingle();
-  if(!p){ document.getElementById('contenu').innerHTML='Prestataire introuvable. <a href="index.html">Retour Accueil</a>'; return; }
-  const statut = String(p.statut_validation || p.statut || '').toLowerCase();
+  // ✅ CORRIGÉ : on ne demande QUE les colonnes qui existent dans profiles. On a enlevé 'statut' et 'photo_profil' qui n'existent pas et faisaient planter la requête
+  const {data: p, error} = await sb.from('profiles').select('id, nom, nom_entreprise, type_compte, role, type_fournisseur, photo_url, photo_profil_url, avatar_url, photo, description_profil, description, categorie_prestataire, categorie, localite, quartier, verification_quartier, quartier_verifie, ville, pays, statut_validation').eq('id', prestaId).maybeSingle();
+  if(error || !p){ document.getElementById('contenu').innerHTML='Prestataire introuvable. <a href="index.html">Retour Accueil</a>'; return; }
+  // ✅ CORRIGÉ : on utilise seulement statut_validation, pas 'statut'
+  const statut = String(p.statut_validation || '').toLowerCase();
   if(statut && statut!=='valide' && statut!=='valid'){
     document.getElementById('contenu').innerHTML = `<div class="empty"><b>Profil en cours de vérification</b><br>Ce prestataire n'est pas encore validé par Rocyinter.<br><br><button class="btn btn-dark" onclick="location.href='index.html'">Voir d'autres services</button></div>`;
     document.getElementById('annonces').innerHTML = '';
     document.getElementById('avis').innerHTML = '';
     return;
   }
-  const photo = p.photo_profil_url || p.avatar_url || p.photo_url || p.photo_profil || p.photo || '';
+  const photo = p.photo_profil_url || p.avatar_url || p.photo_url || p.photo || '';
   const description = p.description_profil || p.description || '';
   const categorie = p.categorie_prestataire || p.categorie || '';
   const nomAff = p.nom_entreprise || p.nom || 'Prestataire';
@@ -87,7 +91,6 @@ async function charger(){
   const labelType = typeC==='entreprise' ? '🏢 Entreprise' : typeC==='professionnel' ? '👨‍🔧 Professionnel' : typeC==='livreur' ? '🛵 Livreur' : typeC==='client' ? '🛒 Client' : '💼 Fournisseur';
   const initiale = (nomAff||'R').charAt(0).toUpperCase();
   const lieu = [p.quartier || p.localite, p.ville, p.pays].filter(Boolean).join(' - ');
-  // Annonces : prestataire_id OU user_id
   let annoncesBrutes = [];
   const r1 = await sb.from('annonces').select('id, titre, categorie, description, prix_fixe, prix_indicatif, prix, localite, ville, status, statut').eq('prestataire_id', prestaId).order('created_at',{ascending:false});
   if(r1.data && r1.data.length) annoncesBrutes = r1.data;
