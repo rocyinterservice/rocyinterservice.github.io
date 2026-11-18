@@ -31,19 +31,30 @@ h1{font-size:22px;margin:14px 0 12px} h1 span{color:#f59e0b}
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-window.supabaseClient = sb;
 let MON_ROLE = 'client';
 let MON_UID = '';
+let MON_PRESTATAIRE_ID = null;
 async function charger(){
   const {data:{user}} = await sb.auth.getUser();
   if(!user){location.href='connexion.html';return;}
   MON_UID = user.id;
   const {data: profil} = await sb.from('profiles').select('type_compte, type_fournisseur').eq('id', MON_UID).maybeSingle();
   MON_ROLE = String(profil?.type_compte || profil?.type_fournisseur || 'client').toLowerCase();
-  // ESCROW = table commandes, pas escrow_transactions (qui n'existe pas)
+
+  // FIX: récupérer l'id prestataire (table prestataires) lié à cet user
+  const {data: prest} = await sb.from('prestataires').select('id').eq('user_id', MON_UID).maybeSingle();
+  MON_PRESTATAIRE_ID = prest?.id || null;
+
+  // Admin voit tout (client + prestataire)
   let query = sb.from('commandes').select('id, titre, univers, montant, montant_total, commission, montant_prestataire, devise, status, created_at, client_id, prestataire_id').order('created_at',{ascending:false});
-  if(MON_ROLE==='prestataire'||MON_ROLE==='livreur') query = query.eq('prestataire_id',MON_UID);
-  else query = query.eq('client_id',MON_UID);
+  if(MON_ROLE==='admin'){
+    // pas de filtre, on voit tout
+  } else if(MON_ROLE==='prestataire'||MON_ROLE==='livreur'){
+    if(MON_PRESTATAIRE_ID) query = query.eq('prestataire_id', MON_PRESTATAIRE_ID);
+    else query = query.eq('prestataire_id', '00000000-0000-0000-0000-000000000000'); // aucun
+  } else {
+    query = query.eq('client_id', MON_UID);
+  }
   const {data, error} = await query;
   if(error){ document.getElementById('liste').innerHTML = '<p style="text-align:center;color:red">Erreur : '+error.message+'</p>'; return; }
   const list = data||[];
@@ -62,19 +73,18 @@ async function charger(){
     const estLibere = (s==='libere'||s==='released'||s==='termine'||s==='terminee');
     const total = Number(t.montant_total||t.montant||0);
     const badge = estLibere ? '<span class="badge badge-libere">✅ LIBÉRÉ</span>' : '<span class="badge badge-bloque">🔒 BLOQUÉ</span>';
-    const bouton = (MON_ROLE!=='prestataire' && MON_ROLE!=='livreur' && estBloque)
+    const estClientDeCetteCommande = (t.client_id === MON_UID) || MON_ROLE==='admin';
+    const bouton = (estClientDeCetteCommande && estBloque)
       ? `<button class="btn" onclick="liberer('${t.id}', ${total})">✅ Valider le travail et Libérer ${total.toLocaleString()} FCFA</button>`
       : (estBloque && (MON_ROLE==='prestataire'||MON_ROLE==='livreur') ? '<p style="color:#f59e0b">⏳ En attente de validation du client</p>' : '');
-    return `<div class="card"><p><b>${total.toLocaleString()} ${esc(t.devise||'FCFA')}</b> - ${badge}<br>${esc(t.titre||'Commande')} • ${esc(t.univers||'')}<br>Commission Rocyinter : ${Number(t.commission||0).toLocaleString()} FCFA<br>${MON_ROLE==='prestataire'||MON_ROLE==='livreur'?'Tu reçois : '+Number(t.montant_prestataire||0).toLocaleString()+' FCFA':''}</p>${bouton}</div>`;
+    return `<div class="card"><p><b>${total.toLocaleString()} ${esc(t.devise||'FCFA')}</b> - ${badge}<br>${esc(t.titre||'Commande')} • ${esc(t.univers||'')}<br>Commission Rocyinter : ${Number(t.commission||0).toLocaleString()} FCFA<br>${(MON_ROLE==='prestataire'||MON_ROLE==='livreur'||MON_ROLE==='admin')?'Tu reçois : '+Number(t.montant_prestataire||0).toLocaleString()+' FCFA':''}</p>${bouton}</div>`;
   }).join('') : '<p style="text-align:center;color:#64748b">Aucune transaction Escrow pour l’instant.</p>';
 }
 async function liberer(id, montant){
   if(!confirm('Tu confirmes avoir bien reçu le service ?\n\n'+montant.toLocaleString()+' FCFA seront libérés pour le prestataire.\nCette action est définitive.')) return;
-  // commandes n'a pas de colonne released_at / paye_le / libere_le -> on met juste status = libere
   const {error} = await sb.from('commandes')
     .update({ status: 'libere' })
     .eq('id', id)
-    .eq('client_id', MON_UID)
     .in('status', ['bloque','en_escrow','pending','paye','en_cours','accepte']);
   if(error){ alert('Erreur : '+error.message); return; }
   alert('✅ Argent libéré ! Merci pour ta validation.');
