@@ -26,9 +26,12 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:12px;line-height:1.5}
 .btn{width:100%;background:#f59e0b;border:none;padding:11px;border-radius:10px;font-weight:800;cursor:pointer;margin-top:8px}
 .btn-dark{background:#0f172a;color:#fff}
 .btn-gris{background:#f1f5f9;color:#111}
+.btn-visit{background:#059669;color:#fff}
 .btn-mine{background:#e2e8f0;color:#64748b;cursor:not-allowed}
 .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:700;background:#dcfce7;color:#166534}
+.badge-warn{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:700;background:#fef3c7;color:#92400e}
 .badge-cat{display:inline-block;background:#dbeafe;color:#1e40af;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:700}
+.badge-role{display:inline-block;background:#fef9c3;color:#854d0e;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:700}
 .price{font-weight:800;margin-top:6px;color:#111}
 .bandeau-role{padding:12px;border-radius:12px;font-size:13px;font-weight:600;text-align:center;line-height:1.5;margin-bottom:12px}
 .bandeau-visiteur{background:#fef3c7;color:#92400e}
@@ -43,7 +46,7 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:12px;line-height:1.5}
 <div class="back" onclick="location.href='index.html'">← <span data-i18n="accueil">Accueil</span></div>
 <h1>🏠 <span data-i18n="immobilierTitre">Immobilier</span></h1>
 <p class="sub" data-i18n="immobilierSous">Maisons à louer, chambres, parcelles à vendre. Validés par Rocyinter.</p>
-<div class="info-commission">💰 Commission Immobilier : Parcelle 10 000 FCFA + 2% du prix. Location 50% d'un mois de loyer. Ne paie jamais en dehors de Rocyinter.</div>
+<div class="info-commission">💰 Commission Immobilier : Parcelle 10 000 FCFA + 2% du prix. Location 50% d'un mois de loyer. Visite 2 000 FCFA déduite de la commission. Ne paie jamais en dehors de Rocyinter.</div>
 <div id="bandeauRole"></div>
 <div class="filters">
   <div><label data-i18n="pays">PAYS</label><select id="filtrePays" onchange="charger()"><option value="">Tous les pays</option></select></div>
@@ -89,6 +92,24 @@ function estValide(a){
   if(!s) return true;
   return s==='valide' || s==='valid' || s==='publie' || s==='publié' || s==='publiee' || s==='actif' || s==='active';
 }
+// NOUVEAU : badge terrain vérifié + badge rôle
+function badgeVerification(a){
+  const cat = String(a.categorie||'').toLowerCase();
+  const isTerrain = cat.includes('terrain') || cat.includes('parcelle');
+  if(isTerrain){
+    // Si tu as un champ terrain_verifie dans ta table, il sera utilisé. Sinon on affiche Non Vérifié par prudence.
+    if(a.terrain_verifie === true || a.verifie === true) return `<span class="badge">✅ Terrain Vérifié</span>`;
+    return `<span class="badge-warn">⚠️ Non Vérifié - Attention</span>`;
+  }
+  return `<span class="badge">✅ Vérifié</span>`;
+}
+function badgeRole(a, pr){
+  const role = String(pr.type_fournisseur || pr.type_compte || a.type_vendeur || '').toLowerCase();
+  if(role.includes('demarcheur')) return `<span class="badge-role">🏷️ Démarcheur Vérifié</span>`;
+  if(role.includes('proprietaire') || role.includes('propriétaire')) return `<span class="badge-role">🏠 Propriétaire</span>`;
+  // Par défaut, si pas de rôle, on ne dit rien pour ne pas mentir
+  return '';
+}
 function afficher(){
   const q=(document.getElementById('search').value||'').trim().toLowerCase();
   const pays=document.getElementById('filtrePays')?document.getElementById('filtrePays').value:'';
@@ -107,8 +128,11 @@ function afficher(){
     const lieu=[a.localite||a.quartier,a.ville,a.pays].filter(Boolean).join(' - ');
     const prestaId=a.prestataire_id||'';
     const cestMoi = prestaId && moiId && String(prestaId)===String(moiId);
-    const btnChat = cestMoi ? `<button class="btn btn-mine" disabled>C'est ton annonce</button>` : `<button class="btn btn-dark" onclick="discuter('${esc(prestaId)}','${esc(a.id)}')">💬 ${esc(t('discuter'))}</button>`;
-    return `<div class="card"><img src="${esc(img)}" onclick="voirParcelle('${esc(a.id)}')" style="cursor:pointer" onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80'"><div class="card-body"><span class="badge">✅ ${esc(t('verifie'))}</span> <span class="badge-cat">${esc(a.categorie)}</span><h3 style="margin-top:8px">${esc(a.titre)}</h3><p>👤 ${esc(nom)}<br>📍 ${esc(lieu)}</p><p>${esc((a.description||'').slice(0,120))}...</p><div class="price">${esc(prixTexte(a))}</div><button class="btn btn-gris" onclick="voirParcelle('${esc(a.id)}')">${esc(t('voirBien'))}</button>${btnChat}</div></div>`;
+    const nbChambres = a.nb_chambres || a.nb_pieces || a.nombre_chambres || '';
+    const infoChambres = nbChambres ? `🛏️ ${esc(nbChambres)} chambres / pièces<br>` : '';
+    const btnChat = cestMoi ? `<button class="btn btn-mine" disabled>C'est ton annonce</button>` : `<button class="btn btn-dark" onclick="discuter('${esc(prestaId)}','${esc(a.id)}')">💬 Discuter sur le site</button>`;
+    const btnVisite = cestMoi ? '' : `<button class="btn btn-visit" onclick="visiter('${esc(a.id)}')">📍 Visiter - Payer 2 000 FCFA</button>`;
+    return `<div class="card"><img src="${esc(img)}" onclick="voirParcelle('${esc(a.id)}')" style="cursor:pointer" onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80'"><div class="card-body">${badgeVerification(a)} <span class="badge-cat">${esc(a.categorie)}</span> ${badgeRole(a,pr)}<h3 style="margin-top:8px">${esc(a.titre)}</h3><p>👤 ${esc(nom)}<br>📍 ${esc(lieu)}<br>${infoChambres}</p><p>${esc((a.description||'').slice(0,120))}...</p><div class="price">${esc(prixTexte(a))}</div><button class="btn btn-gris" onclick="voirParcelle('${esc(a.id)}')">${esc(t('voirBien'))}</button>${btnChat}${btnVisite}</div></div>`;
   }).join('');
   if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 }
@@ -116,18 +140,27 @@ async function charger(){
   const box=document.getElementById('liste'); const t = window.rocyT || (k=>k);
   if(!sb){box.innerHTML=`<div class="empty"><b>${esc(t('pasConnexion'))}</b><br><button class="btn" onclick="charger()">${esc(t('reessayer'))}</button></div>`;return;}
   try{
-    const {data,error}=await sb.from('annonces').select('id, titre, categorie, univers, description, prix_fixe, prix_indicatif, photo_url, localite, quartier, ville, pays, status, prestataire_id, devise, created_at').eq('univers','immobilier').order('created_at',{ascending:false});
+    const {data,error}=await sb.from('annonces').select('id, titre, categorie, univers, description, prix_fixe, prix_indicatif, photo_url, localite, quartier, ville, pays, status, prestataire_id, devise, created_at, nb_chambres, nb_pieces, terrain_verifie, type_vendeur').eq('univers','immobilier').order('created_at',{ascending:false});
     if(error) throw error;
     toutesAnnonces=(data||[]).filter(estValide);
     const ids=[...new Set(toutesAnnonces.map(a=>a.prestataire_id).filter(Boolean))];
     if(ids.length){
-      const {data: profs} = await sb.from('profiles').select('id,nom,nom_entreprise,whatsapp,quartier_verifie,quartier').in('id', ids);
+      // On ne récupère JAMAIS whatsapp ici, pour protéger la commission
+      const {data: profs} = await sb.from('profiles').select('id,nom,nom_entreprise,type_compte,type_fournisseur,quartier_verifie,quartier').in('id', ids);
       (profs||[]).forEach(p=> nomsPresta[p.id]=p);
     }
     construireFiltres(); afficher();
   }catch(e){ console.log('ROCY immobilier erreur:',e); box.innerHTML=`<div class="empty"><b>${esc(t('erreurConnexion'))}</b><br><button class="btn" onclick="charger()">${esc(t('reessayer'))}</button></div>`; }
 }
 function voirParcelle(id){ if(!id) return; localStorage.setItem('fiche_parcelle_id',id); location.href='fiche-parcelle.html';}
+function visiter(id){
+  if(!id) return;
+  // On envoie vers paiement avec type=visite. Le montant 2000 sera déduit de la commission.
+  localStorage.setItem('paiement_annonce', id);
+  localStorage.setItem('paiement_type', 'visite');
+  localStorage.setItem('paiement_montant', '2000');
+  location.href='paiement.html';
+}
 async function discuter(prestaId,annonceId){
   const {data:{user}} = await sb.auth.getUser();
   const uid = user?.id;
