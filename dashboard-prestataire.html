@@ -76,7 +76,6 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px}
 <p style="font-size:11px;color:#64748b;margin:-10px 0 14px" data-i18n="totalAide">* Seulement les commandes payées / en cours / validées. Les commandes en attente ne comptent pas.</p>
 <button class="btn" id="btnCreer" onclick="location.href='creer-annonce.html'">➕ <span data-i18n="creerAnnonce">Créer une nouvelle annonce</span></button>
 <button class="btn btn-dark" onclick="location.href='abonnement.html'">💳 <span data-i18n="voirAbonnement">Voir / Renouveler mon abonnement</span></button>
-<button class="btn" style="background:#f1f5f9;color:#111" onclick="location.href='mes-activites.html'">🛠️ <span data-i18n="mesActivites">Mes Activités</span></button>
 <div class="section"><h2>📋 <span data-i18n="mesAnnonces">Mes annonces</span></h2><div id="listeAnnonces"></div></div>
 <div class="section"><h2>💰 <span data-i18n="mesCommandes">Mes commandes</span></h2><div id="listeCommandes"></div></div>
 <div class="section"><h2>💬 <span data-i18n="mesConversations">Mes conversations</span></h2><div id="listeConvs"></div></div>
@@ -85,19 +84,16 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px}
 <script>
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
-// ✅ CORRIGÉ : on réutilise le même client que rocy-layout.js, pas un 2ème
 const sb = window.supabaseClient || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 window.supabaseClient = sb;
 let uid = null;
 function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmt(n){ return Number(n || 0).toLocaleString('fr-FR'); }
 async function getUtilisateurSecurise(){
-  // On attend un peu que la session se charge, sinon on croit à tort qu'on est déconnecté
   for(let i=0;i<5;i++){
     const {data:{user}, error} = await sb.auth.getUser();
     if(user) return user;
-    if(error) await new Promise(r=>setTimeout(r,300));
-    else await new Promise(r=>setTimeout(r,300));
+    await new Promise(r=>setTimeout(r,300));
   }
   const {data:{user}} = await sb.auth.getUser();
   return user || null;
@@ -145,7 +141,7 @@ function badgeAnnonce(a){
   if(s==='rejete' || s==='refuse' || s==='refusé' || s==='rejeté') return '<span class="badge rejete">❌ Rejetée</span>';
   return '<span class="badge attente">⏳ En attente</span>';
 }
-function nomAffiche(profil){ return profil.nom_entreprise || profil.nom || 'Prestataire'; }
+function nomAffiche(profil){ return profil.nom_entreprise || profil.nom || profil.full_name || 'Prestataire'; }
 function badgeTypeFournisseur(profil){
   const type = String(profil.type_fournisseur || profil.type_compte || profil.role || profil.type || '').toLowerCase();
   const nomEnt = profil.nom_entreprise;
@@ -157,23 +153,21 @@ async function charger(){
   const user = await getUtilisateurSecurise();
   if(!user){ location.href='connexion.html'; return; }
   uid = user.id;
-  let profil = null;
-  let res1 = await sb.from('profiles')
-    .select('id, nom, full_name, nom_entreprise, type_fournisseur, type_compte, role, type, localite, quartier, ville, pays, quartier_verifie, verification_quartier, photo_url, avatar_url, photo_profil_url, statut_validation, status_prestataire, statut, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert')
+  // ✅ CORRIGÉ : on ne demande QUE les colonnes qui existent vraiment dans profiles
+  // On a enlevé 'statut' qui n'existe pas et qui faisait planter res1 et res2
+  const {data: profil, error: errProfil} = await sb.from('profiles')
+    .select('id, nom, full_name, nom_entreprise, type_fournisseur, type_compte, role, type, localite, quartier, ville, pays, quartier_verifie, verification_quartier, photo_url, avatar_url, photo_profil_url, statut_validation, status_prestataire, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert')
     .eq('id', uid).maybeSingle();
-  if(res1.error){
-    let res2 = await sb.from('profiles')
-      .select('id, nom, type_compte, role, type, localite, quartier, ville, pays, quartier_verifie, verification_quartier, statut_validation, status_prestataire, statut, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert')
-      .eq('id', uid).maybeSingle();
-    profil = res2.data;
-  } else { profil = res1.data; }
-  // ✅ CORRIGÉ : on ne renvoie plus en boucle, on affiche le vrai problème
+  if(errProfil){
+    document.getElementById('infoUser').textContent = 'Erreur chargement profil : ' + errProfil.message;
+    document.getElementById('bannerStatut').innerHTML = '<div class="banner attente">⚠️ Erreur : '+esc(errProfil.message)+'</div>';
+    return;
+  }
   if(!profil){
     document.getElementById('infoUser').textContent = 'Aucun profil trouvé pour ce compte. Va dans ton profil pour le compléter, ou contacte le support.';
     document.getElementById('bannerStatut').innerHTML = '<div class="banner attente">⚠️ Ton compte existe mais ton profil est introuvable dans la table profiles. ID : '+uid+'</div>';
     return;
   }
-  // ✅ CORRIGÉ : on regarde tous les champs de rôle + nom_entreprise
   let roleReel = String(profil.type_compte || profil.role || profil.type || profil.type_fournisseur || '').toLowerCase().trim();
   if(!roleReel && profil.nom_entreprise) roleReel = 'entreprise';
   const ROLES_FOURNISSEUR = ['prestataire','livreur','fournisseur','professionnel','entreprise','pro'];
@@ -217,7 +211,8 @@ async function charger(){
     btnVerif.style.display='block'; btnAttente.style.display='none';
   }
   if(photo){ const img=document.getElementById('photoProfil'); img.src=photo; img.style.display='block'; }
-  const statut = String(profil?.statut_validation || profil?.status_prestataire || profil?.statut || 'en_attente').toLowerCase();
+  // ✅ CORRIGÉ : on utilise seulement statut_validation ou status_prestataire, pas 'statut'
+  const statut = String(profil?.statut_validation || profil?.status_prestataire || 'en_attente').toLowerCase();
   const banner = document.getElementById('bannerStatut');
   const t = window.rocyT || (k=>k);
   if(statut==='valide' || statut==='valid'){
