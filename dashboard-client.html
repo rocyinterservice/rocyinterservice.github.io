@@ -55,7 +55,7 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px;line-height:1.5}
 <button class="btn btn-dark" onclick="location.href='profil.html'">👤 Mon Profil</button>
 <button class="btn btn-gris" id="btnVerif" onclick="location.href='verification.html'" style="display:none">📍 Faire vérifier mon quartier</button>
 <button class="btn" onclick="location.href='index.html'">🔍 <span data-i18n="trouverService">Trouver un service</span></button>
-<button class="btn btn-gris" onclick="location.href='inscription.html?type=prestataire'">💼 <span data-i18n="devenirPresta">Devenir Fournisseur aussi ? Publier mes services →</span></button>
+<button class="btn btn-gris" onclick="location.href='devenir-fournisseur.html'">💼 <span data-i18n="devenirPresta">Devenir Fournisseur aussi ? Publier mes services →</span></button>
 <div class="section">
   <h2>📦 <span data-i18n="mesCommandes">Mes commandes</span></h2>
   <div id="listeCommandes"></div>
@@ -69,7 +69,6 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px;line-height:1.5}
 <script>
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
-// ✅ CORRIGÉ : même client que rocy-layout.js
 const sb = window.supabaseClient || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 window.supabaseClient = sb;
 let uid = null;
@@ -127,7 +126,6 @@ async function charger(){
   const {data: profil} = await sb.from('profiles')
     .select('id, nom, full_name, nom_entreprise, type_fournisseur, type_compte, role, type, quartier, localite, ville, quartier_verifie, verification_quartier, photo_url, avatar_url, photo_profil_url')
     .eq('id', uid).maybeSingle();
-  // ✅ CORRIGÉ : pas de renvoi en boucle si profil introuvable, on affiche quand même la page
   if(!profil){
     document.getElementById('nomUser').textContent = 'Client';
     document.getElementById('profilNom').textContent = 'Mon Profil';
@@ -135,12 +133,10 @@ async function charger(){
     document.getElementById('listeCommandes').innerHTML = `<div class="empty">Ton profil est introuvable. Va dans Mon Profil pour le compléter.</div>`;
     return;
   }
-  // ✅ CORRIGÉ : on regarde tous les champs de rôle
   const roleReel = String(profil.type_compte || profil.role || profil.type || profil.type_fournisseur || '').toLowerCase().trim();
   const ROLES_PRESTA = ['prestataire','livreur','fournisseur','professionnel','entreprise','pro'];
   if(ROLES_PRESTA.includes(roleReel)){ location.href='dashboard-prestataire.html'; return; }
   if(roleReel === 'admin'){ location.href='admin.html'; return; }
-  // Si rôle = client OU vide, on reste ici. On ne renvoie plus à connexion pour un rôle vide.
   document.getElementById('nomUser').textContent = profil.nom || profil.full_name || 'Client';
   const quartier = profil.quartier || profil.localite || '';
   const photo = profil.photo_profil_url || profil.photo_url || profil.avatar_url || '';
