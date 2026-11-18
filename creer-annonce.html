@@ -103,8 +103,6 @@ function verifierAbonnement(profil){
   if(fin && fin < auj) return {ok:false, type:'expire', fin};
   if(!fin && (actif || offert)) return {ok:true, type:'offert', fin:null};
   if(actif && !fin) return {ok:true, type:'offert', fin:null};
-  // CORRIGÉ : jamais eu d'abonnement = 1er mois offert, on laisse publier
-  // Seulement si statut = expire explicitement, on bloque
   if(!fin && !profil.abonnement_statut && !profil.abonnement_actif && !expireExplicit) return {ok:true, type:'offert', fin:null};
   return {ok:false, type:'expire', fin};
 }
@@ -151,12 +149,11 @@ async function init(){
   if(!user){ location.href='connexion.html'; return; }
   uidActuel = user.id;
   const {data: profil, error: errProfil} = await sb.from('profiles')
-    .select('id, type_compte, role, type_fournisseur, nom_entreprise, activites, categorie, categorie_prestataire, ville, localite, quartier, pays, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert')
+    .select('id, type_compte, type_fournisseur, nom_entreprise, activites, categorie_prestataire, ville, quartier, pays, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert')
     .eq('id', uidActuel).single();
   if(errProfil || !profil){ showMsg('Profil introuvable. Reconnecte-toi.', false); await sb.auth.signOut(); setTimeout(()=> location.href='connexion.html', 1200); return; }
   profilFournisseur = profil;
-  // CORRIGÉ : tous les types fournisseurs peuvent publier
-  const roleReel = (profil.type_compte || profil.role || profil.type_fournisseur || '').toLowerCase();
+  const roleReel = (profil.type_compte || profil.type_fournisseur || '').toLowerCase();
   if(roleReel === 'client'){ showMsg('Client : crée un compte Prestataire pour publier.', false); setTimeout(()=> location.href='inscription.html?type=prestataire', 1500); return; }
   if(roleReel === 'admin'){ location.href='admin.html'; return; }
   if(!['prestataire','livreur','fournisseur','professionnel','entreprise','pro'].includes(roleReel)){
@@ -164,13 +161,13 @@ async function init(){
   }
   remplirPays(profil.pays);
   document.getElementById('ville').value = profil.ville || '';
-  document.getElementById('localite').value = profil.localite || profil.quartier || '';
+  document.getElementById('localite').value = profil.quartier || '';
   const res = verifierAbonnement(profil);
   abonnementAJour = res.ok;
   afficherBandeauAbo(res);
   let acts = profil.activites || [];
   if(typeof acts === 'string'){ try{ acts = JSON.parse(acts); }catch(e){ acts = [acts]; } }
-  if(!acts.length && (profil.categorie || profil.categorie_prestataire)) acts = [profil.categorie || profil.categorie_prestataire];
+  if(!acts.length && profil.categorie_prestataire) acts = [profil.categorie_prestataire];
   if(roleReel === 'livreur' && !acts.length) acts = ['Livraison moto'];
   mesActivites = acts;
   const sel = document.getElementById('categorie');
@@ -220,16 +217,15 @@ async function publier(){
   btn.disabled = true; btn.textContent = 'Publication...';
   const {error} = await sb.from('annonces').insert([{
     prestataire_id: uid,
-    user_id: uid,
     univers: universChoisi,
     categorie, titre, description,
     prix_fixe: prixFixe,
     prix_indicatif: prixFixe ? Number(prix) : (prix ? Number(prix) : null),
+    devise: 'FCFA',
     pays, ville, localite,
     quartier: localite,
     photo_url: photo || null,
-    status: 'en_attente',
-    statut: 'en_attente'
+    status: 'en_attente'
   }]).select('id').single();
   if(error){ showMsg('Erreur : ' + error.message, false); btn.disabled = false; btn.textContent = 'Publier mon annonce →'; return; }
   showMsg('✅ Annonce envoyée ! En attente de validation.', true);
