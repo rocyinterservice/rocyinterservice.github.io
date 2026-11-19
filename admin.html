@@ -29,6 +29,7 @@ header button{background:#fff;color:#000;border:none;padding:8px 12px;border-rad
 .badge.valide{background:#dcfce7;color:#166534}
 .badge.rejete{background:#fee2e2;color:#991b1b}
 .badge.litige{background:#fee2e2;color:#991b1b}
+.badge.doublon{background:#fee2e2;color:#991b1b}
 .actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 .actions button{flex:1;padding:10px;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:13px;min-width:120px}
 .btn-val{background:#16a34a;color:#fff} .btn-rej{background:#fee2e2;color:#991b1b} .btn-chat{background:#0f172a;color:#fff}
@@ -38,6 +39,7 @@ header button{background:#fff;color:#000;border:none;padding:8px 12px;border-rad
 .photos{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
 .photos img{width:100%;height:140px;object-fit:cover;border-radius:10px;border:1px solid #e2e8f0;cursor:pointer}
 .photos small{display:block;text-align:center;color:#64748b;font-size:11px;margin-top:4px}
+.card select,.card input{width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:8px;margin-top:6px}
 </style>
 </head>
 <body>
@@ -66,6 +68,9 @@ header button{background:#fff;color:#000;border:none;padding:8px 12px;border-rad
   </div>
   <div class="tabs">
     <button type="button" id="tab-annonces" class="active" onclick="setTab('annonces')">📋 Annonces</button>
+    <button type="button" id="tab-autre" onclick="setTab('autre')">🏷️ Classer Autre</button>
+    <button type="button" id="tab-terrains" onclick="setTab('terrains')">🏞️ Terrains / Doublons</button>
+    <button type="button" id="tab-demandes" onclick="setTab('demandes')">📣 Demandes</button>
     <button type="button" id="tab-prestataires" onclick="setTab('prestataires')">👷 Prestataires</button>
     <button type="button" id="tab-quartiers" onclick="setTab('quartiers')">📍 Quartiers</button>
     <button type="button" id="tab-commandes" onclick="setTab('commandes')">💰 Commandes</button>
@@ -129,8 +134,9 @@ async function initAdmin(){
 }
 function setTab(t){
   tabActuel = t;
-  ['annonces','prestataires','quartiers','commandes','litiges','users','avis'].forEach(k=>{
-    document.getElementById('tab-'+k).classList.toggle('active', k===t);
+  ['annonces','autre','terrains','demandes','prestataires','quartiers','commandes','litiges','users','avis'].forEach(k=>{
+    const el = document.getElementById('tab-'+k);
+    if(el) el.classList.toggle('active', k===t);
   });
   chargerTout();
 }
@@ -139,11 +145,12 @@ function texteCommission(c){
   if(c.univers==='pro') return 'Commission 5 000 FCFA fixe';
   if(c.univers==='manger') return 'Commission 12%';
   if(c.univers==='sejour') return 'Commission 12%';
+  if(c.univers==='evenement') return 'Commission 12%';
   if(c.univers==='livreur') return 'Commission 20% (Livreur 80%)';
   if(c.univers==='immobilier'){
     const t = String(c.titre||'').toLowerCase();
-    if(t.includes('parcelle') || t.includes('vente') || t.includes('terrain')) return 'Commission Parcelle 10 000 + 2% plafonné 200 000';
-    return 'Commission Location 50% d\'un mois';
+    if(t.includes('parcelle') || t.includes('vente') || t.includes('terrain')) return 'Commission Parcelle 2% plafonné 200 000';
+    return "Commission Location 50% d'un mois";
   }
   return 'Commission';
 }
@@ -190,6 +197,55 @@ async function chargerTout(){
           </div>
         </div>`;
       }).join('');
+    }
+    if(tabActuel==='autre'){
+      const {data} = await sb.from('annonces').select('id, titre, categorie, univers, quartier, localite, ville, pays, prix_indicatif, prix_fixe, devise, status, prestataire_id, description').order('created_at',{ascending:false});
+      const autres = (data||[]).filter(a=> String(a.categorie||'').toLowerCase().includes('autre') || String(a.univers||'').toLowerCase().includes('autre'));
+      if(!autres.length){ box.innerHTML = `<div class="empty">✅ Aucune annonce "Autre" à classer.</div>`; return; }
+      box.innerHTML = autres.map(a=>`
+        <div class="card">
+          <span class="badge attente">🏷️ À classer - Autre</span>
+          <h3 style="margin-top:8px">${esc(a.titre)}</h3>
+          <p><b>Actuel :</b> ${esc(a.univers)} / ${esc(a.categorie)}<br><b>Lieu :</b> ${esc(a.localite||a.quartier)} - ${esc(a.ville)}<br>${esc(a.description||'')}</p>
+          <label style="font-size:12px;font-weight:700">NOUVEL UNIVERS</label>
+          <select id="uni-${a.id}"><option value="domicile">🏠 Domicile</option><option value="pro">💼 Pro</option><option value="manger">🍽️ Manger</option><option value="sejour">✈️ Séjour</option><option value="evenement">🎉 Évènement</option><option value="immobilier">🏘️ Immobilier</option></select>
+          <label style="font-size:12px;font-weight:700">NOUVELLE CATÉGORIE</label>
+          <input id="cat-${a.id}" placeholder="Ex: Décorateur, DJ, Plombier..." value="${esc(a.categorie)}">
+          <div class="actions"><button type="button" class="btn-val" onclick="classerAutre('${esc(a.id)}')">✅ Classer + Valider</button><button type="button" class="btn-rej" onclick="rejeterAnnonce('${esc(a.id)}')">❌ Rejeter</button></div>
+        </div>`).join('');
+    }
+    if(tabActuel==='terrains'){
+      const {data} = await sb.from('annonces').select('id, titre, categorie, univers, quartier, localite, ville, pays, prix_indicatif, prix_fixe, devise, status, prestataire_id, description').eq('univers','immobilier').order('created_at',{ascending:false});
+      const parcelles = (data||[]).filter(a=> String(a.categorie||'').toLowerCase().includes('parcelle') || String(a.categorie||'').toLowerCase().includes('terrain') || String(a.titre||'').toLowerCase().includes('parcelle') || String(a.titre||'').toLowerCase().includes('terrain'));
+      // Doublons : même ville + même localité + même titre
+      const groupes = {};
+      parcelles.forEach(a=>{ const k = `${(a.ville||'').toLowerCase().trim()}|${(a.localite||a.quartier||'').toLowerCase().trim()}|${(a.titre||'').toLowerCase().trim()}`; if(!groupes[k]) groupes[k]=[]; groupes[k].push(a); });
+      const doublons = Object.values(groupes).filter(g=>g.length>1);
+      let html = '';
+      if(doublons.length){
+        html += `<div class="card" style="border:2px solid #fca5a5"><h3>🚨 Doublons possibles - Même parcelle vendue 2 fois ?</h3><p>Vérifie avant de valider. Contacte les 2 vendeurs, demande les papiers.</p></div>`;
+        doublons.forEach(g=>{
+          html += g.map(a=>`<div class="card"><span class="badge doublon">🚨 DOUBLON POSSIBLE</span><h3 style="margin-top:8px">${esc(a.titre)}</h3><p>📍 ${esc(a.localite||a.quartier)} - ${esc(a.ville)} - ${esc(a.pays)}<br>Prix : ${Number(a.prix_indicatif||0).toLocaleString()} FCFA<br>Statut : ${esc(a.status)} • Prestataire : ${esc(a.prestataire_id||'')}</p><div class="actions"><button type="button" class="btn-val" onclick="validerAnnonce('${esc(a.id)}')">✅ Valider ce terrain</button><button type="button" class="btn-rej" onclick="rejeterAnnonce('${esc(a.id)}')">❌ Rejeter - Doublon / Faux</button></div></div>`).join('');
+        });
+      } else {
+        html += `<div class="empty">✅ Aucun doublon détecté sur les parcelles.</div>`;
+      }
+      html += `<h3 style="margin:16px 0 10px">🏞️ Toutes les parcelles / terrains</h3>`;
+      html += (parcelles.length ? parcelles.map(a=>`<div class="card"><span class="badge ${a.status==='valide'?'valide':'attente'}">${esc(a.status)}</span><h3 style="margin-top:8px">${esc(a.titre)}</h3><p>${esc(a.categorie)} • 📍 ${esc(a.localite||a.quartier)} - ${esc(a.ville)}<br>${esc(a.description||'')}</p><div class="actions"><button type="button" class="btn-val" onclick="validerAnnonce('${esc(a.id)}')">✅ Valider terrain</button><button type="button" class="btn-rej" onclick="rejeterAnnonce('${esc(a.id)}')">❌ Refuser</button></div></div>`).join('') : `<div class="empty">Aucune parcelle.</div>`);
+      box.innerHTML = html;
+    }
+    if(tabActuel==='demandes'){
+      let html = `<h3 style="margin-bottom:10px">📣 Demandes Livreur</h3>`;
+      try{
+        const {data: dLiv} = await sb.from('demandes_livraison').select('*').order('created_at',{ascending:false}).limit(20);
+        html += (!dLiv || !dLiv.length) ? `<div class="empty">Aucune demande livreur.</div>` : dLiv.map(d=>`<div class="card"><b>${esc(d.de_localite)} → ${esc(d.a_localite)}</b><p>${esc(d.type_colis)} - ${esc(d.detail||'')} • ${esc(d.status)} • ${Number(d.prix_propose||0).toLocaleString()} FCFA</p></div>`).join('');
+      }catch(e){ html += `<div class="empty">Table demandes_livraison non créée.</div>`; }
+      html += `<h3 style="margin:16px 0 10px">🎉 Demandes Évènement</h3>`;
+      try{
+        const {data: dEv} = await sb.from('demandes_evenement').select('*').order('created_at',{ascending:false}).limit(20);
+        html += (!dEv || !dEv.length) ? `<div class="empty">Aucune demande évènement.</div>` : dEv.map(d=>`<div class="card"><b>${esc(d.type_evenement)} - ${esc(d.categorie_recherchee)}</b><p>📅 ${esc(d.date_evenement)} • 📍 ${esc(d.lieu)} • 👥 ${esc(d.nb_personnes||0)} • 💰 ${Number(d.budget||0).toLocaleString()} FCFA • ${esc(d.status)}</p></div>`).join('');
+      }catch(e){ html += `<div class="empty">Table demandes_evenement non créée.</div>`; }
+      box.innerHTML = html;
     }
     if(tabActuel==='prestataires'){
       const {data} = await sb.from('profiles').select('id, nom, nom_entreprise, whatsapp, type_compte, type_fournisseur, statut_validation, categorie_prestataire, description_profil, quartier, ville, pays').in('type_compte',['prestataire','professionnel','entreprise','livreur','fournisseur','pro']).order('created_at',{ascending:false});
@@ -280,6 +336,15 @@ async function chargerTout(){
   }catch(e){
     document.getElementById('contenu').innerHTML = `<div class="empty">Erreur chargement : ${esc(e.message)}<br><button type="button" onclick="chargerTout()" style="margin-top:10px;padding:10px 14px;border-radius:10px;border:none;background:#f59e0b;font-weight:800;cursor:pointer">Réessayer</button></div>`;
   }
+}
+async function classerAutre(id){
+  const univers = document.getElementById('uni-'+id)?.value;
+  const categorie = document.getElementById('cat-'+id)?.value.trim();
+  if(!univers || !categorie){ alert('Choisis un univers + une catégorie.'); return; }
+  const {error} = await sb.from('annonces').update({univers, categorie, status:'valide'}).eq('id', id);
+  if(error){ alert('Erreur : '+error.message); return; }
+  alert('✅ Classé en '+univers+' / '+categorie+' et validé !');
+  chargerTout();
 }
 async function validerAnnonce(id){
   const {error} = await sb.from('annonces').update({status:'valide'}).eq('id', id);
