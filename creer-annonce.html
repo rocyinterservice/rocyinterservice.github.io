@@ -43,9 +43,7 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:8p
 <div class="back" onclick="location.href='index.html'">← <span data-i18n="accueil">Accueil</span></div>
 <h1><span data-i18n="creerTitre">Publiez votre</span> <span data-i18n="vraiService">vrai service</span></h1>
 <p class="sub" data-i18n="creerSous">Tu ne peux publier que sur tes activités + avec un abonnement à jour.</p>
-
 <div id="bandeauAbo"></div>
-
 <div class="card">
   <div>
     <label data-i18n="categorie">CATÉGORIE * - TES ACTIVITÉS SEULEMENT</label>
@@ -69,7 +67,7 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:8p
     <div><label>🛏️ NOMBRE DE CHAMBRES / PIÈCES</label>
       <input id="nbChambres" type="number" min="0" placeholder="Ex: 2, 3... Laisse vide pour Terrain">
     </div>
-    <div id="blocParcelle"><label>📜 NUMÉRO DE PARCELLE * (Pour Terrain / Parcelle)</label>
+    <div id="blocParcelle" style="display:none"><label>📜 NUMÉRO DE PARCELLE * (Pour Terrain / Parcelle)</label>
       <input id="numeroParcelle" placeholder="Ex: TF 12345, Lot 12...">
       <small style="text-align:left">Si ce numéro existe déjà, on bloque. Une parcelle = une annonce. Ça évite la vente à 2-3 personnes.</small>
     </div>
@@ -85,8 +83,10 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:8p
       <div><label>📍 LIEU DE L'ÉVÈNEMENT</label><input id="lieuEvenement" placeholder="Ex: Salle à Godomey..."></div>
     </div>
     <div id="compManger" style="display:none">
-      <div><label>🍽️ PLAT DISPONIBLE AUJOURD'HUI ?</label><select id="platDispo"><option value="true">Oui - Disponible</option><option value="false">Non - Pas dispo</option></select></div>
-      <div><label>⏰ DÉLAI LIVRAISON (min)</label><input id="delaiLivraison" type="number" placeholder="Ex: 45"></div>
+      <div><label>🍽️ PLAT DISPONIBLE ?</label><select id="platDispo"><option value="true">Oui - Disponible</option><option value="false">Non - Pas dispo</option></select></div>
+      <div><label>⏰ TEMPS DE PRÉPARATION (min)</label><input id="tempsPreparation" type="number" placeholder="Ex: 30 - Temps pour préparer le plat"></div>
+      <div><label>🛵 LIVRAISON DISPONIBLE ?</label><select id="livraisonDispo"><option value="true">Oui - On livre</option><option value="false">Non - Sur place seulement</option></select></div>
+      <div><label>⏱️ DÉLAI DE LIVRAISON (min) - Si livraison</label><input id="delaiLivraison" type="number" placeholder="Ex: 45 - On vous livre dans 45 min"></div>
     </div>
     <div id="compSejour" style="display:none">
       <div><label>🛏️ CHAMBRES RESTANTES</label><input id="chambresRestantes" type="number" min="0" placeholder="Ex: 3"></div>
@@ -98,22 +98,29 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:8p
     <div id="compLivreur" style="display:none">
       <div><label>🛵 VÉHICULE</label><input id="vehiculeAnnonce" placeholder="Ex: Moto, Voiture"></div>
       <div><label>🟢 DISPONIBLE MAINTENANT ?</label><select id="livreurDispo"><option value="true">Oui</option><option value="false">Non</option></select></div>
+      <div><label>⏱️ DÉLAI DE LIVRAISON (min)</label><input id="delaiLivreur" type="number" placeholder="Ex: 30"></div>
     </div>
     <div id="compPro" style="display:none">
       <div><label>💻 TRAVAILLE À DISTANCE ?</label><select id="proDistance"><option value="false">Non - Sur place</option><option value="true">Oui - À distance</option></select></div>
       <div><label>📁 PORTFOLIO (lien)</label><input id="portfolioAnnonce" placeholder="https://..."></div>
     </div>
+    <div id="compGuide" style="display:none">
+      <div><label>🗣️ LANGUES PARLÉES</label><input id="languesGuide" placeholder="Ex: Français, Fon, Anglais"></div>
+      <div><label>📍 LIEUX CONNUS</label><input id="lieuxGuide" placeholder="Ex: Ouidah, Grand-Popo, Ganvié"></div>
+      <div><label>⏱️ DURÉE DE LA VISITE (heures)</label><input id="dureeGuide" type="number" placeholder="Ex: 4"></div>
+    </div>
   </div>
 
-  <div><label data-i18n="titreAnnonce">TITRE DE VOTRE ANNONCE *</label><input id="titre" placeholder="Ex: Plombier rapide à Calavi" maxlength="80"></div>
-  <div><label data-i18n="description">DESCRIPTION DÉTAILLÉE *</label><textarea id="description" placeholder="Ex: Je suis plombier à Godomey depuis 5 ans..." maxlength="2000"></textarea></div>
-  <div><label data-i18n="typePrix">TYPE DE PRIX *</label>
+  <div><label data-i18n="titreAnnonce">TITRE DE VOTRE ANNONCE *</label><input id="titre" placeholder="Ex: Décrivez votre service en quelques mots" maxlength="80"></div>
+  <div><label data-i18n="description">DESCRIPTION DÉTAILLÉE *</label><textarea id="description" placeholder="Ex: Décrivez votre service..." maxlength="2000"></textarea></div>
+  <div id="blocTypePrix"><label data-i18n="typePrix">TYPE DE PRIX *</label>
     <div class="toggle"><button type="button" id="btnFixe" onclick="setPrixType(true)">💰 Prix fixe</button><button type="button" id="btnDiscuter" class="active" onclick="setPrixType(false)">💬 À discuter</button></div>
+    <small id="notePrixManger" style="display:none;text-align:left;color:#1e40af">🍽️ Restaurant : le prix est obligatoire. Un plat a toujours un prix.</small>
   </div>
-  <div id="blocPrix" style="display:none"><label>PRIX INDICATIF (FCFA)</label><input id="prix" type="number" placeholder="Ex: 15000" min="0" max="10000000"></div>
+  <div id="blocPrix" style="display:none"><label>PRIX INDICATIF (FCFA)</label><input id="prix" type="number" placeholder="Ex: 5000" min="0" max="10000000"></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
     <div><label data-i18n="pays">PAYS *</label><select id="pays"></select></div>
-    <div><label data-i18n="ville">VILLE *</label><input id="ville" placeholder="Ex: Calavi" maxlength="60"></div>
+    <div><label data-i18n="ville">VILLE *</label><input id="ville" placeholder="Ex: Cotonou" maxlength="60"></div>
   </div>
   <div><label data-i18n="localite">LOCALITÉ / QUARTIER *</label><input id="localite" placeholder="Ex: Godomey, Calavi Centre, Fidjrossè..." maxlength="80"></div>
   <div><label>PHOTO (lien - optionnel)</label><input id="photo" placeholder="Collez un lien photo https://..." maxlength="500"></div>
@@ -128,8 +135,7 @@ const SUPABASE_KEY="sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 window.supabaseClient = sb;
 let prixFixe=false, mesActivites=[], universChoisi="", abonnementAJour=false, profilFournisseur=null, uidActuel=null;
-
-const infosCommission={manger:"🍽️ <b>Manger : 12%</b>",domicile:"🏠 <b>Domicile : 8%</b> - Tu reçois 92%",pro:"💼 <b>Pro : 5 000 FCFA fixe</b>",sejour:"✈️ <b>Séjour : 12% par nuit</b>",evenement:"🎉 <b>Évènement : 12%</b> - prélevée à la libération. Devis dans le chat.",immobilier:"🏘️ <b>Immobilier :</b> Visite 2 000 FCFA pour Rocyinter, non remboursable. Parcelle 2% plafonné 200 000 FCFA. Location 50% d'un mois. Le bien disparaît quand il est payé.",livreur:"🛵 <b>Livreur 80% / Rocyinter 20%</b>"};
+const infosCommission={manger:"🍽️ <b>Manger : 12%</b> - Le client voit ton menu, il commande, tu livres.",domicile:"🏠 <b>Domicile : 8%</b> - Tu reçois 92%",pro:"💼 <b>Pro : 5 000 FCFA fixe</b>",sejour:"✈️ <b>Séjour : 12% par nuit</b>",evenement:"🎉 <b>Évènement : 12%</b> - prélevée à la libération. Devis dans le chat.",immobilier:"🏘️ <b>Immobilier :</b> Visite 2 000 FCFA pour Rocyinter, non remboursable. Parcelle 2% plafonné 200 000 FCFA. Location 50% d'un mois. Le bien disparaît quand il est payé.",livreur:"🛵 <b>Livreur 80% / Rocyinter 20%</b>"};
 function universPourCategorie(cat){
   const manger=['Traiteur','Restaurant','Restaurant / Maquis','Livraison repas','Pâtisserie','Jus / Boissons','Traiteur Évènement'];
   const domicile=['Nettoyage / Ménage','Ménage / Repassage','Plomberie','Électricité','Climatisation','Menuiserie','Peinture','Jardinage','Mécanique','Serrurerie','Déménagement','Nettoyage','Désinfection'];
@@ -145,9 +151,47 @@ function universPourCategorie(cat){
   if(evenement.includes(cat)) return 'evenement';
   if(livreur.includes(cat)) return 'livreur';
   if(immo.includes(cat)) return 'immobilier';
-  if(cat.toLowerCase().includes('livraison')||cat.toLowerCase().includes('livreur')) return 'livreur';
-  if(cat.toLowerCase().includes('dj')||cat.toLowerCase().includes('décor')||cat.toLowerCase().includes('photographe')||cat.toLowerCase().includes('évènement')||cat.toLowerCase().includes('evenement')) return 'evenement';
+  const low=cat.toLowerCase();
+  if(low.includes('guide')||low.includes('touristique')) return 'sejour';
+  if(low.includes('livraison')||low.includes('livreur')) return 'livreur';
+  if(low.includes('dj')||low.includes('décor')||low.includes('photographe')||low.includes('évènement')||low.includes('evenement')) return 'evenement';
   return 'domicile';
+}
+function majExemples(){
+  const titre=document.getElementById('titre');
+  const desc=document.getElementById('description');
+  const cat=(document.getElementById('categorie').value||'').toLowerCase();
+  const u=universChoisi;
+  if(!u && !cat){
+    titre.placeholder='Ex: Décrivez votre service en quelques mots';
+    desc.placeholder='Ex: Décrivez votre service...';
+    return;
+  }
+  if(u==='manger' || cat.includes('restaurant')){
+    titre.placeholder='Ex: Poulet braisé + Attiéké à Cotonou';
+    desc.placeholder='Ex: Restaurant à Fidjrossè depuis 3 ans. Poulet braisé, poisson, attiéké. Ouvert 11h à 23h. Livraison disponible...';
+  } else if(u==='sejour' && cat.includes('guide')){
+    titre.placeholder='Ex: Guide Ouidah - Visite historique 4h';
+    desc.placeholder='Ex: Guide à Ouidah depuis 5 ans. Je parle Français, Fon, Anglais. Visite de la Route des Esclaves...';
+  } else if(u==='sejour'){
+    titre.placeholder='Ex: Chambre climatisée à Cotonou - 15 000 FCFA / nuit';
+    desc.placeholder='Ex: Hôtel à Fidjrossè, 10 chambres climatisées, wifi, petit-déjeuner inclus...';
+  } else if(u==='livreur'){
+    titre.placeholder='Ex: Livraison rapide Moto à Cotonou';
+    desc.placeholder='Ex: Livreur moto à Cotonou depuis 2 ans, disponible 7j/7, livraison en 30 min...';
+  } else if(u==='immobilier'){
+    titre.placeholder='Ex: Appartement 2 chambres à Calavi';
+    desc.placeholder='Ex: Appartement neuf à Calavi, 2 chambres, salon, cuisine, proche goudron...';
+  } else if(u==='pro'){
+    titre.placeholder='Ex: Développeur Web - Site vitrine en 7 jours';
+    desc.placeholder='Ex: Développeur depuis 4 ans. Sites web, boutiques en ligne. Travail à distance possible...';
+  } else if(u==='evenement'){
+    titre.placeholder='Ex: DJ + Sonorisation Mariage à Cotonou';
+    desc.placeholder='Ex: DJ depuis 6 ans, mariages, anniversaires, 100 personnes max...';
+  } else if(u==='domicile' || cat){
+    titre.placeholder='Ex: Plombier rapide à Calavi';
+    desc.placeholder='Ex: Je suis plombier à Godomey depuis 5 ans...';
+  }
 }
 function verifierAbonnement(profil){
   const auj = new Date();
@@ -158,7 +202,6 @@ function verifierAbonnement(profil){
   if(fin && fin >= auj) return {ok:true, type:'paye', fin};
   if(fin && fin < auj) return {ok:false, type:'expire', fin};
   if(!fin && (actif || offert)) return {ok:true, type:'offert', fin:null};
-  if(actif && !fin) return {ok:true, type:'offert', fin:null};
   if(!fin && !profil.abonnement_statut && !profil.abonnement_actif && !expireExplicit) return {ok:true, type:'offert', fin:null};
   return {ok:false, type:'expire', fin};
 }
@@ -177,30 +220,67 @@ function afficherBandeauAbo(res){
     btn.disabled=true; btn.textContent='⛔ Abonnement expiré - Publier bloqué';
   }
 }
+function resetAffichageNeutre(){
+  universChoisi="";
+  document.getElementById('blocUnivers').style.display='none';
+  document.getElementById('infoCommission').style.display='none';
+  document.getElementById('blocImmo').style.display='none';
+  document.getElementById('blocComp').style.display='none';
+  document.getElementById('notePrixManger').style.display='none';
+  document.getElementById('btnDiscuter').style.display='';
+  ['Evenement','Manger','Sejour','Domicile','Livreur','Pro','Guide'].forEach(k=>{ const el=document.getElementById('comp'+k); if(el) el.style.display='none'; });
+  setPrixType(false);
+  majExemples();
+}
 function onCategorieChange(){
   const sel=document.getElementById('categorie');
   const isAutre=sel.value==='__AJOUTER__';
   document.getElementById('blocAutreCategorie').style.display=isAutre?'block':'none';
-  if(isAutre||!sel.value) return;
+  if(isAutre) return;
+  if(!sel.value){ resetAffichageNeutre(); return; }
   universChoisi=universPourCategorie(sel.value);
   const bloc=document.getElementById('blocUnivers'); bloc.style.display='block'; bloc.textContent='🌍 Univers automatique : '+universChoisi+' - activité '+sel.value;
   const info=document.getElementById('infoCommission'); info.innerHTML=infosCommission[universChoisi]||''; info.style.display='block';
-  const blocImmo=document.getElementById('blocImmo');
-  if(universChoisi==='immobilier'){ blocImmo.style.display='grid'; }
-  else { blocImmo.style.display='none'; }
+  document.getElementById('blocImmo').style.display = universChoisi==='immobilier' ? 'grid' : 'none';
+  if(universChoisi==='immobilier'){
+    const catLow = sel.value.toLowerCase();
+    const estParcelle = catLow.includes('parcelle') || catLow.includes('terrain');
+    document.getElementById('blocParcelle').style.display = estParcelle ? '' : 'none';
+  }
   const blocComp=document.getElementById('blocComp');
-  const showComp = ['evenement','manger','sejour','domicile','livreur','pro'].includes(universChoisi);
+  const isGuide = sel.value.toLowerCase().includes('guide') || sel.value.toLowerCase().includes('touristique');
+  const showComp = ['evenement','manger','sejour','domicile','livreur','pro'].includes(universChoisi) || isGuide;
   blocComp.style.display = showComp ? 'grid' : 'none';
-  ['Evenement','Manger','Sejour','Domicile','Livreur','Pro'].forEach(k=>{ const el=document.getElementById('comp'+k); if(el) el.style.display='none'; });
-  if(universChoisi==='evenement') document.getElementById('compEvenement').style.display='block';
-  if(universChoisi==='manger') document.getElementById('compManger').style.display='block';
-  if(universChoisi==='sejour') document.getElementById('compSejour').style.display='block';
-  if(universChoisi==='domicile') document.getElementById('compDomicile').style.display='block';
-  if(universChoisi==='livreur') document.getElementById('compLivreur').style.display='block';
-  if(universChoisi==='pro') document.getElementById('compPro').style.display='block';
-  if(universChoisi==='livreur') setPrixType(false);
+  ['Evenement','Manger','Sejour','Domicile','Livreur','Pro','Guide'].forEach(k=>{ const el=document.getElementById('comp'+k); if(el) el.style.display='none'; });
+  if(isGuide) document.getElementById('compGuide').style.display='block';
+  else if(universChoisi==='evenement') document.getElementById('compEvenement').style.display='block';
+  else if(universChoisi==='manger') document.getElementById('compManger').style.display='block';
+  else if(universChoisi==='sejour') document.getElementById('compSejour').style.display='block';
+  else if(universChoisi==='domicile') document.getElementById('compDomicile').style.display='block';
+  else if(universChoisi==='livreur') document.getElementById('compLivreur').style.display='block';
+  else if(universChoisi==='pro') document.getElementById('compPro').style.display='block';
+  const btnDisc=document.getElementById('btnDiscuter');
+  const note=document.getElementById('notePrixManger');
+  if(universChoisi==='manger'){
+    setPrixType(true);
+    btnDisc.style.display='none';
+    note.style.display='block';
+  } else {
+    btnDisc.style.display='';
+    note.style.display='none';
+    if(universChoisi==='livreur') setPrixType(false);
+  }
+  majExemples();
 }
-function setPrixType(fixe){prixFixe=fixe;document.getElementById('btnFixe').classList.toggle('active',fixe);document.getElementById('btnDiscuter').classList.toggle('active',!fixe);document.getElementById('blocPrix').style.display=fixe?'block':'none';}
+function setPrixType(fixe){
+  if(universChoisi==='manger') fixe=true;
+  prixFixe=fixe;
+  document.getElementById('btnFixe').classList.toggle('active',fixe);
+  document.getElementById('btnDiscuter').classList.toggle('active',!fixe);
+  document.getElementById('blocPrix').style.display=fixe?'block':'none';
+  const labelPrix=document.querySelector('#blocPrix label');
+  if(labelPrix) labelPrix.textContent = universChoisi==='manger' ? '💰 PRIX DU PLAT (FCFA) *' : universChoisi==='sejour' ? '💰 PRIX PAR NUIT (FCFA)' : 'PRIX INDICATIF (FCFA)';
+}
 function showMsg(t,ok){const m=document.getElementById('msg');m.textContent=t;m.className='msg '+(ok?'ok':'err');m.style.display='block';}
 function remplirPays(paysDefaut){
   const sel=document.getElementById('pays');
@@ -247,6 +327,7 @@ async function init(){
     const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     sel.innerHTML = `<option value="">Choisir parmi tes activités...</option>` + mesActivites.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('') + `<option value="__AJOUTER__">➕ + Ajouter une autre activité</option>`;
   }
+  resetAffichageNeutre();
 }
 async function publier(){
   if(!abonnementAJour){ showMsg('⛔ Abonnement expiré. Renouvelle pour publier.', false); setTimeout(()=> location.href='abonnement.html', 1200); return; }
@@ -283,6 +364,7 @@ async function publier(){
   if(titre.length < 5){ showMsg('Titre trop court, min 5 caractères', false); return; }
   if(description.length < 20){ showMsg('Description trop courte, min 20 caractères', false); return; }
   if(prixFixe && (!prix || Number(prix) <= 0)){ showMsg('Mets un prix fixe > 0', false); return; }
+  if(universChoisi==='manger' && (!prix || Number(prix) <= 0)){ showMsg('🍽️ Restaurant : mets le prix du plat, ex: 5000', false); return; }
   let typeVendeur='', nbChambres=null, numeroParcelle='', titreDoc='';
   if(universChoisi==='immobilier'){
     typeVendeur = document.getElementById('typeVendeur').value;
@@ -299,6 +381,7 @@ async function publier(){
     }
   }
   let comp = {};
+  const isGuide = categorie.toLowerCase().includes('guide');
   if(universChoisi==='evenement'){
     comp.date_evenement = document.getElementById('dateEvenement').value || null;
     comp.nb_personnes = document.getElementById('nbPersonnes').value ? Number(document.getElementById('nbPersonnes').value) : null;
@@ -306,9 +389,11 @@ async function publier(){
   }
   if(universChoisi==='manger'){
     comp.disponible = document.getElementById('platDispo').value==='true';
+    comp.temps_preparation_minutes = document.getElementById('tempsPreparation').value ? Number(document.getElementById('tempsPreparation').value) : null;
+    comp.livraison_disponible = document.getElementById('livraisonDispo').value==='true';
     comp.delai_livraison = document.getElementById('delaiLivraison').value ? Number(document.getElementById('delaiLivraison').value) : null;
   }
-  if(universChoisi==='sejour'){
+  if(universChoisi==='sejour' && !isGuide){
     comp.chambres_restantes = document.getElementById('chambresRestantes').value ? Number(document.getElementById('chambresRestantes').value) : null;
     comp.disponible = document.getElementById('sejourDispo').value==='true';
   }
@@ -318,18 +403,25 @@ async function publier(){
   if(universChoisi==='livreur'){
     comp.vehicule = document.getElementById('vehiculeAnnonce').value.trim() || null;
     comp.disponible = document.getElementById('livreurDispo').value==='true';
+    comp.delai_livraison = document.getElementById('delaiLivreur').value ? Number(document.getElementById('delaiLivreur').value) : null;
   }
   if(universChoisi==='pro'){
     comp.travaille_distance = document.getElementById('proDistance').value==='true';
     comp.portfolio_url = document.getElementById('portfolioAnnonce').value.trim() || null;
+  }
+  if(isGuide){
+    comp.langues = document.getElementById('languesGuide')?.value.trim() || null;
+    comp.lieux_connus = document.getElementById('lieuxGuide')?.value.trim() || null;
+    comp.duree_jours = document.getElementById('dureeGuide')?.value ? Number(document.getElementById('dureeGuide').value) : null;
+    comp.disponible = true;
   }
   btn.disabled = true; btn.textContent = 'Publication...';
   const {error} = await sb.from('annonces').insert([{
     prestataire_id: uid,
     univers: universChoisi,
     categorie, titre, description,
-    prix_fixe: prixFixe,
-    prix_indicatif: prixFixe ? Number(prix) : (prix ? Number(prix) : null),
+    prix_fixe: universChoisi==='manger' ? true : prixFixe,
+    prix_indicatif: prix ? Number(prix) : null,
     devise: 'FCFA',
     pays, ville, localite,
     quartier: localite,
@@ -343,9 +435,19 @@ async function publier(){
     terrain_verifie: false,
     chambres_restantes: comp.chambres_restantes ?? null,
     disponible: comp.disponible ?? true,
+    disponible_aujourd_hui: comp.disponible_aujourd_hui ?? null,
     date_evenement: comp.date_evenement || null,
     nb_personnes: comp.nb_personnes ?? null,
-    lieu_evenement: comp.lieu_evenement || null
+    lieu_evenement: comp.lieu_evenement || null,
+    temps_preparation_minutes: comp.temps_preparation_minutes ?? null,
+    livraison_disponible: comp.livraison_disponible ?? null,
+    delai_livraison: comp.delai_livraison ?? null,
+    vehicule: comp.vehicule || null,
+    travaille_distance: comp.travaille_distance ?? null,
+    portfolio_url: comp.portfolio_url || null,
+    langues: comp.langues || null,
+    lieux_connus: comp.lieux_connus || null,
+    capacite: comp.nb_personnes ?? null
   }]).select('id').single();
   if(error){ showMsg('Erreur : ' + error.message, false); btn.disabled = false; btn.textContent = 'Publier mon annonce →'; return; }
   showMsg('✅ Annonce envoyée ! En attente de validation.', true);
