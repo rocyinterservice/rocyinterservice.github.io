@@ -7,19 +7,11 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="pays.js"></script>
 <script src="rocy-layout.js"></script>
+<script src="app.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
 body{background:#f6f7f9;color:#111}
 .btn{background:#f59e0b;color:#000;border:none;padding:9px 14px;border-radius:999px;font-weight:700;cursor:pointer;font-size:13px}
-.topbar{background:#0f172a;color:#fff;padding:10px 16px;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-.topbar .logo{font-weight:800;font-size:16px}
-.topbar .logo span{color:#f59e0b}
-.topbar .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.topbar .actions button{padding:8px 12px;border-radius:999px;border:none;font-weight:700;cursor:pointer;font-size:12px}
-.topbar .btn-blanc{background:#fff;color:#111}
-.topbar .btn-orange{background:#f59e0b;color:#000}
-.topbar .btn-dark2{background:#334155;color:#fff}
-.topbar .quartierBadge{font-size:11px;background:#1e293b;padding:6px 10px;border-radius:999px;color:#fde68a}
 .hero{background:#0f172a;color:#fff;padding:28px 16px 20px;text-align:center}
 .hero h1{font-size:26px;line-height:1.2} .hero h1 span{color:#f59e0b} .hero p{opacity:.8;margin-top:8px;font-size:14px;line-height:1.5}
 .filters{background:#fff;margin:-10px 16px 16px;padding:14px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.08);display:grid;gap:10px}
@@ -48,21 +40,15 @@ body{background:#f6f7f9;color:#111}
 </style>
 </head>
 <body>
-<div class="topbar">
-  <div class="logo">Rocy<span>inter</span></div>
-  <div class="actions" id="topActions">
-    <button class="btn-blanc" onclick="location.href='connexion.html'">Connexion</button>
-    <button class="btn-orange" onclick="location.href='inscription.html'">Inscription</button>
-  </div>
-</div>
 <div class="hero">
   <h1><span data-i18n="heroTitre1">Trouvez un vrai service</span><br><span data-i18n="heroTitre2">près de chez vous</span></h1>
   <p data-i18n="heroSous">Des prestataires vérifiés près de chez vous. Découvrez leurs services, comparez leurs offres, discutez directement et commandez en toute sécurité avec le paiement Escrow.</p>
 </div>
 <div id="bandeauRole"></div>
 <div class="filters">
-  <div><label data-i18n="pays">PAYS</label><select id="filtrePays" onchange="chargerAnnonces()"><option value="">Pays</option></select></div>
-  <div><label data-i18n="ville">VILLE / LOCALITÉ</label><input id="filtreLocalite" placeholder="Ex: Calavi, Cotonou, Godomey..." oninput="chargerAnnonces()"></div>
+  <div><label data-i18n="pays">PAYS</label><select id="filtrePays" onchange="majVilleQuartierIndex();chargerAnnonces()"><option value="">Pays</option></select></div>
+  <div><label>VILLE / LOCALITÉ</label><select id="filtreVille" onchange="majQuartierIndex();chargerAnnonces()"><option value="">-- Ville --</option></select></div>
+  <div><label>QUARTIER</label><select id="filtreQuartier" onchange="chargerAnnonces()"><option value="">-- Quartier --</option></select></div>
   <div><label data-i18n="rechercher">RECHERCHER UN SERVICE</label><input id="filtreSearch" placeholder="Ex: Plombier, Traiteur, Nettoyage..." oninput="chargerAnnonces()"></div>
 </div>
 <div class="univers">
@@ -90,9 +76,21 @@ function remplirPaysIndex(){
   const sel=document.getElementById('filtrePays');
   if(window.ROCY_PAYS&&window.ROCY_PAYS.length){ sel.innerHTML='<option value="">Pays</option>'+window.ROCY_PAYS.map(p=>`<option value="${esc(p.nom)}">${esc(p.drapeau)} ${esc(p.nom)}</option>`).join(''); }
 }
+function majVilleQuartierIndex(){
+  const pays = document.getElementById('filtrePays').value;
+  const selV = document.getElementById('filtreVille');
+  const selQ = document.getElementById('filtreQuartier');
+  if(window.rocyRemplirSelectVilles) window.rocyRemplirSelectVilles(selV, pays, '');
+  else selV.innerHTML='<option value="">-- Ville --</option>';
+  if(selQ) selQ.innerHTML='<option value="">-- Quartier --</option>';
+}
+function majQuartierIndex(){
+  const ville = document.getElementById('filtreVille').value;
+  const selQ = document.getElementById('filtreQuartier');
+  if(window.rocyRemplirSelectQuartiers) window.rocyRemplirSelectQuartiers(selQ, ville, '');
+}
 async function afficherBandeauRole(){
   const box = document.getElementById('bandeauRole'); if(!box) return;
-  const top = document.getElementById('topActions');
   let profil = null;
   try{
     const {data:{user}} = await sb.auth.getUser();
@@ -107,24 +105,18 @@ async function afficherBandeauRole(){
   }catch(e){}
   const t = window.rocyT || (k=>k);
   if(!moiId){
-    if(top) top.innerHTML = `<button class="btn-blanc" onclick="location.href='connexion.html'">Connexion</button><button class="btn-orange" onclick="location.href='inscription.html'">Inscription</button>`;
     box.innerHTML = `<div class="bandeau-role bandeau-visiteur">👁️ ${esc(t('bandeauVisiteur'))}</div>`;
     return;
   }
-  const quartier = profil?.quartier || '';
-  const badgeQ = quartier ? `📍 ${esc(quartier)}` : `📍 Quartier non rempli`;
   const typeF = String(profil?.type_fournisseur||'').toLowerCase();
   const isEntreprise = !!profil?.nom_entreprise || typeF==='entreprise' || monRole==='entreprise';
   const isPro = typeF==='professionnel' || monRole==='professionnel' || monRole==='pro';
   if(monRole==='admin'){
-    if(top) top.innerHTML = `<span class="quartierBadge">🛡️ Admin</span><button class="btn-dark2" onclick="location.href='admin.html'">Panel Admin</button>`;
     box.innerHTML = `<div class="bandeau-role bandeau-presta">🛡️ ${esc(t('bandeauAdmin'))} <a href="admin.html" style="color:#1e40af">Panel Admin →</a></div>`;
   } else if(['prestataire','livreur','fournisseur','professionnel','entreprise','pro'].includes(monRole) || isEntreprise || isPro){
     const label = isEntreprise ? '🏢 Entreprise' : (monRole==='livreur' ? '🛵 Livreur' : (isPro ? '👨‍🔧 Professionnel' : '💼 Fournisseur'));
-    if(top) top.innerHTML = `<span class="quartierBadge">${badgeQ}</span><button class="btn-blanc" onclick="location.href='profil.html'">👤 Mon Profil</button><button class="btn-orange" onclick="rocyAllerEspace()">📊 Dashboard</button>`;
-    box.innerHTML = `<div class="bandeau-role bandeau-presta">🛠️ ${esc(t('bandeauPresta'))} ${label} <a href="creer-annonce.html" style="color:#1e40af">${esc(t('creerAnnonce'))} →</a><br><small style="font-weight:400">Sans abonnement à jour, tu ne peux pas publier. Prix fixe, jamais d'augmentation.</small></div>`;
+    box.innerHTML = `<div class="bandeau-role bandeau-presta">🛠️ ${esc(t('bandeauPresta'))} ${label} <a href="creer-annonce.html" style="color:#1e40af">${esc(t('creerAnnonce'))} →</a><br><small style="font-weight:400">Sans abonnement à jour, tu ne peux pas publier de nouvelle annonce. Prix fixe, jamais d'augmentation.</small></div>`;
   } else {
-    if(top) top.innerHTML = `<span class="quartierBadge">${badgeQ}</span><button class="btn-blanc" onclick="location.href='profil.html'">👤 Mon Profil</button><button class="btn-orange" onclick="rocyAllerEspace()">📊 Mes commandes</button>`;
     box.innerHTML = `<div class="bandeau-role bandeau-client">🛒 ${esc(t('bandeauClient'))}</div>`;
   }
 }
@@ -133,10 +125,11 @@ async function chargerAnnonces(){
   const t = window.rocyT || (k=>k);
   try{
     const pays = document.getElementById('filtrePays').value;
-    const loc = document.getElementById('filtreLocalite').value.trim().toLowerCase();
+    const ville = document.getElementById('filtreVille').value.trim().toLowerCase();
+    const quartier = document.getElementById('filtreQuartier').value.trim().toLowerCase();
     const search = document.getElementById('filtreSearch').value.trim().toLowerCase();
     if(!sb){ box.innerHTML = `<div class="empty"><b>${esc(t('pasConnexion'))}</b><br><button type="button" class="btn" onclick="chargerAnnonces()">${esc(t('reessayer'))}</button></div>`; return; }
-    let q = sb.from('annonces').select('id, titre, categorie, univers, description, prix_fixe, prix_indicatif, devise, photo_url, localite, ville, pays, status, prestataire_id').order('created_at',{ascending:false});
+    let q = sb.from('annonces').select('id, titre, categorie, univers, description, prix_fixe, prix_indicatif, prix, devise, photo_url, localite, ville, pays, status, prestataire_id, quartier').order('created_at',{ascending:false});
     if(pays) q = q.eq('pays', pays);
     const {data, error} = await q;
     if(error) throw error;
@@ -148,10 +141,12 @@ async function chargerAnnonces(){
     }
     let filtres = (data || []).filter(a => {
       const s = String(a.status || '').toLowerCase().trim();
+      if(['vendu','vendue','loue','loué','louee','louée','indisponible','refuse','refusé','en_attente','attente','brouillon'].includes(s)) return false;
       if(!s) return true;
       return s==='valide' || s==='valid' || s==='publie' || s==='publié' || s==='publiee' || s==='actif' || s==='active';
     });
-    if(loc) filtres = filtres.filter(a => (a.localite||'').toLowerCase().includes(loc) || (a.ville||'').toLowerCase().includes(loc));
+    if(ville) filtres = filtres.filter(a => (a.localite||'').toLowerCase().includes(ville) || (a.ville||'').toLowerCase().includes(ville) || (a.quartier||'').toLowerCase().includes(ville));
+    if(quartier) filtres = filtres.filter(a => (a.localite||'').toLowerCase().includes(quartier) || (a.quartier||'').toLowerCase().includes(quartier));
     if(search) filtres = filtres.filter(a => (a.titre||'').toLowerCase().includes(search) || (a.categorie||'').toLowerCase().includes(search) || (a.description||'').toLowerCase().includes(search));
     if(filtres.length===0){
       box.innerHTML = `<div class="empty"><b>${esc(t('aucuneTitre'))}</b>${esc(t('aucuneSous'))}<br><br><button type="button" class="btn" onclick="rocyProposerService()">${esc(t('proposerTitre'))}</button></div>`;
@@ -161,9 +156,10 @@ async function chargerAnnonces(){
       const img = a.photo_url || 'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&q=80';
       const prestaId = a.prestataire_id || '';
       const nom = noms[prestaId] || 'Prestataire';
-      const lieu = [a.localite, a.ville, a.pays].filter(Boolean).join(' - ');
-      const prixVal = a.prix_indicatif || 0;
-      const prixTxt = a.prix_fixe ? `${window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal+' '+(a.devise||'FCFA')} - ${t('prixFixe')}` : (prixVal>0 ? `${t('aPartir')} ${window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal+' '+(a.devise||'FCFA')}` : t('prixDiscuter'));
+      const lieu = [a.localite || a.quartier, a.ville, a.pays].filter(Boolean).join(' - ');
+      const prixVal = Number(a.prix ?? a.prix_indicatif ?? 0) || 0;
+      const isFixe = a.prix_fixe === true || a.prix_fixe === 'true' || Number(a.prix) > 0;
+      const prixTxt = isFixe ? `${window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal+' '+(a.devise||'FCFA')} - ${t('prixFixe')}` : (prixVal>0 ? `${t('aPartir')} ${window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal+' '+(a.devise||'FCFA')}` : t('prixDiscuter'));
       const cestMoi = prestaId && moiId && String(prestaId)===String(moiId);
       const btnChat = cestMoi
         ? `<button type="button" class="btn-mine" disabled>C'est ton annonce</button>`
