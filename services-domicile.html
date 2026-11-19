@@ -7,6 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="pays.js"></script>
 <script src="rocy-layout.js"></script>
+<script src="app.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
 body{background:#f6f7f9;color:#111}
@@ -104,7 +105,6 @@ function afficher(){
     const pr = nomsPresta[a.prestataire_id]||{};
     return pr.disponible_aujourd_hui === true || String(pr.disponibilite||'').toLowerCase().includes('aujourd');
   });
-  // Tri : le plus proche en premier - si tu as tapé une localité, ceux de cette localité passent devant
   if(loc){
     list = list.sort((a,b)=>{
       const aMatch = ((a.localite||'')+' '+(a.quartier||'')).toLowerCase().includes(loc) ? 0 : 1;
@@ -112,9 +112,6 @@ function afficher(){
       if(aMatch!==bMatch) return aMatch-bMatch;
       return 0;
     });
-    // On filtre aussi : on garde ceux qui matchent ville ou quartier, mais on montre aussi les autres après
-    // Pour rester simple, on ne cache pas, on trie juste. Si tu veux cacher, décommente :
-    // list = list.filter(a => (a.localite||'').toLowerCase().includes(loc) || (a.quartier||'').toLowerCase().includes(loc) || (a.ville||'').toLowerCase().includes(loc));
   }
   if(!list.length){ box.innerHTML = `<div class="empty"><b>Aucun prestataire Domicile</b><br>Essaie une autre ville ou catégorie.<br><br><button class="btn" onclick="rocyProposerService()">Proposer mon service</button></div>`; return; }
   box.innerHTML = list.map(a=>{
