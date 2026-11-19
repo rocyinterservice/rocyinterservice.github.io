@@ -27,8 +27,10 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:12px;line-height:1.5}
 .btn-dark{background:#0f172a;color:#fff}
 .btn-gris{background:#f1f5f9;color:#111}
 .btn-mine{background:#e2e8f0;color:#64748b;cursor:not-allowed}
+.btn-green{background:#16a34a;color:#fff}
 .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:700;background:#dcfce7;color:#166534}
 .badge-cat{display:inline-block;background:#dbeafe;color:#1e40af;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:700}
+.badge-orange{display:inline-block;background:#fef3c7;color:#92400e;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:700}
 .price{font-weight:800;margin-top:6px;color:#111}
 .bandeau-role{padding:12px;border-radius:12px;font-size:13px;font-weight:600;text-align:center;line-height:1.5;margin-bottom:12px}
 .bandeau-visiteur{background:#fef3c7;color:#92400e}
@@ -37,55 +39,83 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:12px;line-height:1.5}
 .empty{background:#fff;border:1px dashed #cbd5e1;border-radius:16px;padding:24px;text-align:center;color:#64748b}
 .link-box{background:#fff7ed;border:1px solid #fed7aa;border-radius:14px;padding:14px;margin-bottom:12px;font-size:13px;line-height:1.5;color:#92400e}
 .info-commission{background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:10px;font-size:12px;line-height:1.5;color:#92400e;margin-bottom:12px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;justify-content:center;z-index:20}
+.modal.show{display:flex}
+.modal-box{background:#fff;width:100%;max-width:480px;border-radius:20px 20px 0 0;padding:20px;display:grid;gap:12px}
+.modal-box label{font-size:12px;font-weight:700;color:#475569}
+.modal-box input,.modal-box select{width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:10px}
 </style>
 </head>
 <body>
 <div class="top">
 <div class="back" onclick="location.href='index.html'">← <span data-i18n="accueil">Accueil</span></div>
 <h1>✈️ <span data-i18n="sejourTitre">Séjour</span></h1>
-<p class="sub" data-i18n="sejourSous">Hôtels, locations courtes, guides, transports... validés par Rocyinter.</p>
-<div class="info-commission">💰 Commission Séjour : 12% par nuit réservée. Ne paie jamais en dehors de Rocyinter.</div>
+<p class="sub">Hôtels, locations courtes, guides, transports... validés par Rocyinter.</p>
+<div class="info-commission">💰 Commission Séjour : 12% par nuit réservée. Salle = par heure. Voiture = par jour. Guide = par jour. Transport = par trajet. Ne paie jamais en dehors de Rocyinter.</div>
 <div id="bandeauRole"></div>
-<div class="link-box">🏠 <span data-i18n="sejourVersImmo">Pour une location longue, voir :</span> <a href="immobilier.html" style="font-weight:800;color:#92400e" data-i18n="immobilierTitre">Immobilier</a></div>
+<div class="link-box">🏠 Pour une location longue, voir : <a href="immobilier.html" style="font-weight:800;color:#92400e">Immobilier</a></div>
 <div class="filters">
-  <div><label data-i18n="pays">PAYS</label><select id="filtrePays" onchange="charger()"><option value="">🌍 Tous les pays</option></select></div>
-  <div><label data-i18n="ville">VILLE / LOCALITÉ</label><input id="filtreLocalite" placeholder="Ex: Cotonou, Ouidah, Grand-Popo..." oninput="afficher()"></div>
-  <div><label data-i18n="rechercher">RECHERCHER UN SÉJOUR</label><input id="search" placeholder="Ex: Hôtel, Guide, Transport..." oninput="afficher()"></div>
+  <div><label>PAYS</label><select id="filtrePays" onchange="charger()"><option value="">🌍 Tous les pays</option></select></div>
+  <div><label>VILLE / LOCALITÉ</label><input id="filtreLocalite" placeholder="Ex: Cotonou, Ouidah, Grand-Popo..." oninput="afficher()"></div>
+  <div><label>RECHERCHER UN SÉJOUR</label><input id="search" placeholder="Ex: Hôtel, Guide, Transport..." oninput="afficher()"></div>
 </div>
-<div class="filtres" id="filtres"><button class="active" data-cat="" onclick="setCat('')" data-i18n="tous">Tous</button></div>
-<div id="liste"><span data-i18n="chargement">Chargement...</span></div>
+<div class="filtres" id="filtres"><button class="active" data-cat="" onclick="setCat('')">Tous</button></div>
+<div id="liste">Chargement...</div>
 </div>
+
+<div class="modal" id="modalResa">
+  <div class="modal-box">
+    <h3 id="resaTitre">Réserver</h3>
+    <p id="resaAide" style="font-size:13px;color:#64748b"></p>
+    <div id="champDates"><label>DU</label><input id="resaDu" type="date"><label>AU</label><input id="resaAu" type="date"></div>
+    <div id="champHeures" style="display:none"><label>DATE</label><input id="resaDate" type="date"><label>DE</label><input id="resaHeureDe" type="time" value="10:00"><label>À</label><input id="resaHeureA" type="time" value="12:00"></div>
+    <div id="champTrajet" style="display:none"><label>JE SUIS À</label><input id="trajetDe" placeholder="Ex: Godomey"><label>JE VEUX ALLER À</label><input id="trajetA" placeholder="Ex: Fidjrossè"><label>À QUELLE HEURE ?</label><input id="trajetHeure" type="datetime-local"></div>
+    <button style="background:#16a34a;color:#fff;border:none;padding:14px;border-radius:12px;font-weight:800;cursor:pointer" onclick="confirmerResa()">Envoyer la demande →</button>
+    <button style="background:#f1f5f9;border:none;padding:12px;border-radius:12px;cursor:pointer" onclick="fermerResa()">Annuler</button>
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 let sb = null;
 try{ sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); window.supabaseClient = sb; }catch(e){}
 let catActuelle = ''; let toutesAnnonces = []; let moiId=''; let monRole=''; let nomsPresta = {};
+let resaAnnonce = null; let resaType = '';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function remplirPays(){ const sel=document.getElementById('filtrePays'); if(window.ROCY_PAYS&&window.ROCY_PAYS.length){ sel.innerHTML='<option value="">🌍 Tous les pays</option>'+window.ROCY_PAYS.map(p=>`<option value="${esc(p.nom)}">${esc(p.drapeau)} ${esc(p.nom)}</option>`).join(''); } }
 async function afficherBandeauRole(){
   const box = document.getElementById('bandeauRole'); if(!box) return;
   const {data:{user}} = await sb.auth.getUser(); moiId = user?.id || '';
   if(user){ const {data:p}=await sb.from('profiles').select('type_compte, type_fournisseur').eq('id',user.id).maybeSingle(); monRole=String(p?.type_compte||p?.type_fournisseur||'').toLowerCase(); }
-  const t = window.rocyT || (k=>k);
-  if(!moiId) box.innerHTML = `<div class="bandeau-role bandeau-visiteur">👁️ ${esc(t('bandeauVisiteur'))}</div>`;
-  else if(monRole==='prestataire' || monRole==='livreur') box.innerHTML = `<div class="bandeau-role bandeau-presta">🛠️ ${esc(t('bandeauPresta'))}</div>`;
-  else if(monRole==='admin') box.innerHTML = `<div class="bandeau-role bandeau-presta">🛡️ ${esc(t('bandeauAdmin'))}</div>`;
-  else box.innerHTML = `<div class="bandeau-role bandeau-client">🛒 ${esc(t('bandeauClient'))}</div>`;
+  if(!moiId) box.innerHTML = `<div class="bandeau-role bandeau-visiteur">👁️ Visiteur - Connecte-toi pour réserver</div>`;
+  else if(monRole==='prestataire' || monRole==='livreur') box.innerHTML = `<div class="bandeau-role bandeau-presta">🛠️ Prestataire</div>`;
+  else if(monRole==='admin') box.innerHTML = `<div class="bandeau-role bandeau-presta">🛡️ Admin</div>`;
+  else box.innerHTML = `<div class="bandeau-role bandeau-client">🛒 Client - Réserve, le proprio valide</div>`;
 }
 function setCat(c){ catActuelle = c; document.querySelectorAll('#filtres button').forEach(b=> b.classList.toggle('active', b.dataset.cat === c)); afficher(); }
 function construireFiltres(){
   const cats = [...new Set(toutesAnnonces.map(a=>a.categorie).filter(Boolean))].sort();
-  const box = document.getElementById('filtres'); const t = window.rocyT || (k=>k);
-  box.innerHTML = `<button class="active" data-cat="" onclick="setCat('')">${esc(t('tous'))}</button>` + cats.map(c=>`<button data-cat="${esc(c)}" onclick="setCat('${esc(c)}')">${esc(c)}</button>`).join('');
+  const box = document.getElementById('filtres');
+  box.innerHTML = `<button class="active" data-cat="" onclick="setCat('')">Tous</button>` + cats.map(c=>`<button data-cat="${esc(c)}" onclick="setCat('${esc(c)}')">${esc(c)}</button>`).join('');
   document.querySelectorAll('#filtres button').forEach(b=> b.classList.toggle('active', b.dataset.cat === catActuelle));
-  if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
+}
+function typeSejour(a){
+  const cat = String(a.categorie||'').toLowerCase();
+  if(cat.includes('voiture') || cat.includes('location voiture')) return 'voiture';
+  if(cat.includes('salle')) return 'salle';
+  if(cat.includes('transport') || cat.includes('moto') || cat.includes('taxi') || cat.includes('chauffeur')) return 'transport';
+  if(cat.includes('guide')) return 'guide';
+  return 'hotel';
 }
 function prixTexte(a){
-  const prixVal = Number(a.prix_indicatif || 0); const t = window.rocyT || (k=>k);
-  if(a.prix_fixe) return (window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal+' '+(a.devise||'FCFA')) + ' - ' + t('prixFixe');
-  if(prixVal>0) return t('aPartir') + ' ' + (window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal+' '+(a.devise||'FCFA'));
-  return t('prixDiscuter');
+  const prixVal = Number(a.prix_indicatif || 0);
+  const t = typeSejour(a);
+  if(t==='voiture') return (prixVal>0 ? prixVal.toLocaleString()+' FCFA / jour' : 'Prix à discuter / jour');
+  if(t==='salle') return (prixVal>0 ? prixVal.toLocaleString()+' FCFA / heure' : 'Prix à discuter / heure');
+  if(t==='guide') return (prixVal>0 ? prixVal.toLocaleString()+' FCFA / jour' : 'Prix à discuter / jour');
+  if(t==='transport') return (prixVal>0 ? 'À partir de '+prixVal.toLocaleString()+' FCFA / trajet' : 'Prix à discuter / trajet');
+  return (prixVal>0 ? prixVal.toLocaleString()+' FCFA / nuit' : 'Prix à discuter / nuit');
 }
 function estValide(a){
   const s = String(a.status || '').toLowerCase().trim();
@@ -96,13 +126,13 @@ function afficher(){
   const q = (document.getElementById('search').value || '').trim().toLowerCase();
   const pays = document.getElementById('filtrePays') ? document.getElementById('filtrePays').value : '';
   const loc = (document.getElementById('filtreLocalite').value || '').trim().toLowerCase();
-  const box = document.getElementById('liste'); const t = window.rocyT || (k=>k);
+  const box = document.getElementById('liste');
   let list = toutesAnnonces.filter(a => (a.univers||'sejour') === 'sejour' && estValide(a));
   if(pays) list = list.filter(a => (a.pays||'') === pays);
   if(loc) list = list.filter(a => (a.localite||'').toLowerCase().includes(loc) || (a.quartier||'').toLowerCase().includes(loc) || (a.ville||'').toLowerCase().includes(loc));
   if(catActuelle) list = list.filter(a=> a.categorie === catActuelle);
   if(q) list = list.filter(a=>((a.titre||'')+' '+(a.ville||'')+' '+(a.localite||'')+' '+(a.quartier||'')+' '+(a.categorie||'')+' '+((nomsPresta[a.prestataire_id]?.nom)||'')+' '+(a.description||'')).toLowerCase().includes(q));
-  if(!list.length){ box.innerHTML = `<div class="empty"><b>${esc(t('aucuneTitre'))}</b><br>${esc(t('aucuneSous'))}<br><br><button class="btn" onclick="rocyProposerService()">${esc(t('proposerTitre'))}</button></div>`; return; }
+  if(!list.length){ box.innerHTML = `<div class="empty"><b>Aucun séjour</b><br>Essaie une autre ville ou catégorie.<br><br><button class="btn" onclick="rocyProposerService()">Proposer mon service</button></div>`; return; }
   box.innerHTML = list.map(a=>{
     const img = a.photo_url || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80';
     const pr = nomsPresta[a.prestataire_id] || {};
@@ -110,30 +140,99 @@ function afficher(){
     const lieu = [a.localite || a.quartier, a.ville, a.pays].filter(Boolean).join(' - ');
     const prestaId = a.prestataire_id || '';
     const cestMoi = prestaId && moiId && String(prestaId)===String(moiId);
-    const btnChat = cestMoi ? `<button class="btn btn-mine" disabled>C'est ton annonce</button>` : `<button class="btn btn-dark" onclick="discuter('${esc(prestaId)}','${esc(a.id)}')">💬 ${esc(t('discuter'))}</button>`;
-    return `<div class="card"><img src="${esc(img)}" onclick="voirPresta('${esc(prestaId)}')" style="cursor:pointer" onerror="this.src='https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80'"><div class="card-body"><span class="badge">✅ ${esc(t('verifie'))}</span> <span class="badge-cat">${esc(a.categorie)}</span><h3 style="margin-top:8px">${esc(a.titre)}</h3><p>👤 ${esc(nom)}<br>📍 ${esc(lieu)}</p><p>${esc((a.description||'').slice(0,120))}...</p><div class="price">${esc(prixTexte(a))}</div><button class="btn btn-gris" onclick="voirPresta('${esc(prestaId)}')">${esc(t('voirPresta'))}</button>${btnChat}</div></div>`;
+    const t = typeSejour(a);
+    let extra = '';
+    if(t==='hotel') extra = `<br>🛏️ Chambres restantes : <b>${a.chambres_restantes ?? 'À confirmer'}</b>`;
+    if(t==='voiture') extra = `<br>🚗 Disponible : <b>${a.disponible ? 'Oui' : 'À confirmer dans le chat'}</b>`;
+    if(t==='salle') extra = `<br>⏰ Par heure - Si l'heure est déjà prise, le proprio propose une autre heure dans le chat.`;
+    if(t==='guide') extra = `<br>🗣️ Langues : ${esc(pr.langues || a.langues || 'À voir dans la fiche')}<br>📍 Lieux connus : ${esc(pr.lieux_connus || a.lieux_connus || 'À voir')}`;
+    if(t==='transport') extra = `<br>🚕 Demande de trajet : Tu dis où tu es, où tu vas, à quelle heure. Premier chauffeur proche qui accepte prend.`;
+    const btnResa = cestMoi ? `<button class="btn btn-mine" disabled>C'est ton annonce</button>` :
+      t==='transport' ? `<button class="btn btn-green" onclick="ouvrirResa('${esc(a.id)}','transport')">🚕 Demander un trajet</button>` :
+      t==='salle' ? `<button class="btn btn-green" onclick="ouvrirResa('${esc(a.id)}','salle')">📅 Réserver par heure</button>` :
+      t==='voiture' ? `<button class="btn btn-green" onclick="ouvrirResa('${esc(a.id)}','voiture')">🚗 Réserver Jour X à Jour Y</button>` :
+      `<button class="btn btn-green" onclick="ouvrirResa('${esc(a.id)}','hotel')">📅 Réserver</button>`;
+    const btnChat = cestMoi ? '' : `<button class="btn btn-dark" onclick="discuter('${esc(prestaId)}','${esc(a.id)}')">💬 Discuter</button>`;
+    return `<div class="card"><img src="${esc(img)}" onclick="voirPresta('${esc(prestaId)}')" style="cursor:pointer" onerror="this.src='https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80'"><div class="card-body"><span class="badge">✅ Vérifié</span> <span class="badge-cat">${esc(a.categorie)}</span><h3 style="margin-top:8px">${esc(a.titre)}</h3><p>👤 ${esc(nom)}<br>📍 ${esc(lieu)}${extra}</p><p>${esc((a.description||'').slice(0,120))}...</p><div class="price">${esc(prixTexte(a))}</div>${btnResa}<button class="btn btn-gris" onclick="voirPresta('${esc(prestaId)}')">Voir la fiche</button>${btnChat}</div></div>`;
   }).join('');
   if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 }
+function ouvrirResa(id, type){
+  const a = toutesAnnonces.find(x=>x.id===id);
+  if(!a) return;
+  resaAnnonce = a; resaType = type;
+  document.getElementById('resaTitre').textContent = type==='transport' ? '🚕 Demander un trajet' : type==='salle' ? '📅 Réserver la salle par heure' : type==='voiture' ? '🚗 Réserver la voiture' : '📅 Réserver';
+  document.getElementById('resaAide').textContent = type==='transport' ? 'Le premier chauffeur proche qui accepte prend ton trajet.' : type==='salle' ? 'Si l\'heure est déjà prise, le proprio te propose une autre heure dans le chat.' : 'Le proprio valide ou refuse. Tu paies après validation.';
+  document.getElementById('champDates').style.display = type==='transport' || type==='salle' ? 'none' : 'grid';
+  document.getElementById('champHeures').style.display = type==='salle' ? 'grid' : 'none';
+  document.getElementById('champTrajet').style.display = type==='transport' ? 'grid' : 'none';
+  document.getElementById('modalResa').classList.add('show');
+}
+function fermerResa(){ document.getElementById('modalResa').classList.remove('show'); }
+async function notifier(destinataire, titre, message, type, lien){
+  try{ if(!destinataire) return; await sb.rpc('creer_notification', { p_user_id: destinataire, p_titre: titre, p_message: String(message||'').slice(0,120), p_type: type||'info', p_lien: lien||'notifications.html' }); }catch(e){}
+}
+async function confirmerResa(){
+  if(!resaAnnonce) return;
+  const {data:{user}} = await sb.auth.getUser();
+  if(!user){ alert('Connecte-toi pour réserver.'); location.href='connexion.html'; return; }
+  if(String(resaAnnonce.prestataire_id)===String(user.id)){ alert("C'est ton annonce."); return; }
+  const prixUnit = Number(resaAnnonce.prix_indicatif||0);
+  let titre = resaAnnonce.titre;
+  let montant = prixUnit;
+  let detail = '';
+  if(resaType==='salle'){
+    const d = document.getElementById('resaDate').value;
+    const de = document.getElementById('resaHeureDe').value;
+    const a = document.getElementById('resaHeureA').value;
+    if(!d || !de || !a){ alert('Mets la date + heure de début + heure de fin.'); return; }
+    titre = `Salle : ${resaAnnonce.titre} - ${d} ${de} à ${a}`;
+    detail = `Salle le ${d} de ${de} à ${a}`;
+  } else if(resaType==='transport'){
+    const de = document.getElementById('trajetDe').value.trim();
+    const a = document.getElementById('trajetA').value.trim();
+    const h = document.getElementById('trajetHeure').value;
+    if(!de || !a){ alert('Mets Je suis à + Je veux aller à.'); return; }
+    titre = `Trajet : ${de} -> ${a}`;
+    detail = `Trajet ${de} -> ${a} à ${h||'maintenant'}`;
+  } else {
+    const du = document.getElementById('resaDu').value;
+    const au = document.getElementById('resaAu').value;
+    if(!du || !au){ alert('Mets la date du + au.'); return; }
+    const jours = Math.max(1, Math.ceil((new Date(au)-new Date(du))/86400000));
+    montant = prixUnit * jours;
+    titre = `${resaAnnonce.titre} - ${du} à ${au} (${jours} jour${jours>1?'s':''})`;
+    detail = `Du ${du} au ${au} = ${jours} jour(s)`;
+  }
+  if(!montant || montant<=0){ alert('Prix à discuter. Va dans Discuter.'); fermerResa(); discuter(resaAnnonce.prestataire_id, resaAnnonce.id); return; }
+  const commission = Math.round(montant * 0.12);
+  if(!confirm(`${titre}\nTotal : ${montant.toLocaleString()} FCFA (Commission 12% : ${commission.toLocaleString()} FCFA)\nLe proprio valide ou refuse.`)) return;
+  const {data: cmd, error} = await sb.from('commandes').insert([{client_id: user.id, prestataire_id: resaAnnonce.prestataire_id, annonce_id: resaAnnonce.id, univers: 'sejour', titre, montant, montant_total: montant, commission, montant_prestataire: montant - commission, status: 'en_attente', ville: resaAnnonce.ville, localite: resaAnnonce.localite, detail_reservation: detail, type_sejour: resaType}]).select('id').maybeSingle();
+  if(error){ alert('Erreur : '+error.message); return; }
+  await notifier(resaAnnonce.prestataire_id, '📅 Nouvelle réservation Séjour', `${titre} - ${montant.toLocaleString()} FCFA. Valide ou refuse.`, 'commande', 'dashboard-prestataire.html');
+  fermerResa();
+  alert('✅ Demande envoyée ! Le proprio va valider ou refuser. Suivi dans Mes commandes.');
+  location.href='dashboard-client.html';
+}
 async function charger(){
-  const box = document.getElementById('liste'); const t = window.rocyT || (k=>k);
-  if(!sb){ box.innerHTML = `<div class="empty"><b>${esc(t('pasConnexion'))}</b><br><button class="btn" onclick="charger()">${esc(t('reessayer'))}</button></div>`; return; }
+  const box = document.getElementById('liste');
+  if(!sb){ box.innerHTML = `<div class="empty"><b>Pas de connexion</b><br><button class="btn" onclick="charger()">Réessayer</button></div>`; return; }
   try{
-    const {data, error} = await sb.from('annonces').select('id, titre, categorie, univers, description, prix_fixe, prix_indicatif, photo_url, localite, quartier, ville, pays, status, prestataire_id, devise, created_at').eq('univers','sejour').order('created_at',{ascending:false});
+    const {data, error} = await sb.from('annonces').select('id, titre, categorie, univers, description, prix_fixe, prix_indicatif, photo_url, localite, quartier, ville, pays, status, prestataire_id, devise, created_at, chambres_restantes, disponible, langues, lieux_connus').eq('univers','sejour').order('created_at',{ascending:false});
     if(error) throw error;
     toutesAnnonces = (data || []).filter(estValide);
     const ids = [...new Set(toutesAnnonces.map(a=>a.prestataire_id).filter(Boolean))];
     if(ids.length){
-      const {data: profs} = await sb.from('profiles').select('id,nom,nom_entreprise,whatsapp,quartier_verifie,quartier').in('id', ids);
+      const {data: profs} = await sb.from('profiles').select('id,nom,nom_entreprise,quartier_verifie,quartier,langues,lieux_connus').in('id', ids);
       (profs||[]).forEach(p=> nomsPresta[p.id]=p);
     }
     construireFiltres(); afficher();
-  }catch(e){ console.log('ROCY sejour erreur:', e); box.innerHTML = `<div class="empty"><b>${esc(t('erreurConnexion'))}</b><br><button class="btn" onclick="charger()">${esc(t('reessayer'))}</button></div>`; }
+  }catch(e){ console.log('ROCY sejour erreur:', e); box.innerHTML = `<div class="empty"><b>Erreur de connexion</b><br><button class="btn" onclick="charger()">Réessayer</button></div>`; }
 }
 function voirPresta(id){ if(!id) return; localStorage.setItem('fiche_prestataire_id', id); location.href='fiche-prestataire.html'; }
 async function discuter(prestaId, annonceId){
-  const {data:{user}} = await sb.auth.getUser(); const uid = user?.id; const t = window.rocyT || (k=>k);
-  if(!uid){ alert(t('connectePourCommander')); location.href='connexion.html'; return; }
+  const {data:{user}} = await sb.auth.getUser(); const uid = user?.id;
+  if(!uid){ alert('Connecte-toi pour discuter.'); location.href='connexion.html'; return; }
   if(monRole==='admin'){ alert('Admin : tu ne peux pas chatter, tu gères dans Admin.'); return; }
   if(!prestaId){ alert('Annonce sans prestataire.'); return; }
   if(String(prestaId)===String(uid)){ alert("C'est ton annonce. Tu ne peux pas te parler à toi-même."); return; }
