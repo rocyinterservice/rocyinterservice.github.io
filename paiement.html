@@ -39,30 +39,30 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
 <div class="top">
 <div class="back" onclick="location.href='dashboard-client.html'">← <span data-i18n="mesCommandes">Mes commandes</span></div>
 <h1>💳 <span data-i18n="paiementSecurise">Paiement sécurisé</span></h1>
-<p class="sub" data-i18n="paiementSous">Escrow Rocyinter : tu paies à Rocyinter, Rocyinter bloque l'argent, le prestataire fait le travail, tu valides, Rocyinter libère l'argent. Commission prélevée à la libération, pas avant.</p>
-<div class="card" id="resume">Chargement de la commande...</div>
-<div class="escrow">🔒 <b data-i18n="escrow100">Escrow 100%</b> - <span data-i18n="escrowSous">Aucun paiement direct. Si litige, l'argent reste bloqué, l'Admin tranche. Ne paie jamais en dehors de Rocyinter.</span></div>
+<p class="sub" id="sousTitre">Escrow Rocyinter : tu paies à Rocyinter, Rocyinter bloque l'argent, le prestataire fait le travail, tu valides, Rocyinter libère l'argent. Commission prélevée à la libération, pas avant.</p>
+<div class="card" id="resume">Chargement...</div>
+<div class="escrow">🔒 <b>Escrow 100%</b> - Aucun paiement direct. Si litige, l'argent reste bloqué, l'Admin tranche. Ne paie jamais en dehors de Rocyinter.</div>
 <div class="card" id="blocPaiement">
-  <h3 data-i18n="choisisPaiement">Choisis ton moyen de paiement</h3>
-  <div class="bientot">⏳ <b data-i18n="fedapayBientot">Fedapay bientôt disponible.</b> <span data-i18n="fedapaySous">MTN MoMo, Moov Money, Celtiis, Carte bancaire seront ici. En attendant, utilise Espèces ou WhatsApp ci-dessous.</span></div>
-  <button class="btn btn-grey" disabled>📱 MTN MoMo - <span data-i18n="bientot">Bientôt</span></button>
-  <button class="btn btn-grey" disabled>📱 Moov Money - <span data-i18n="bientot">Bientôt</span></button>
-  <button class="btn btn-grey" disabled>📱 Celtiis Money - <span data-i18n="bientot">Bientôt</span></button>
-  <button class="btn btn-grey" disabled>💳 <span data-i18n="carte">Carte bancaire</span> - <span data-i18n="bientot">Bientôt</span></button>
+  <h3>Choisis ton moyen de paiement</h3>
+  <div class="bientot">⏳ <b>Fedapay bientôt disponible.</b> MTN MoMo, Moov Money, Celtiis, Carte bancaire seront ici. En attendant, utilise Espèces ou WhatsApp ci-dessous.</div>
+  <button class="btn btn-grey" disabled>📱 MTN MoMo - Bientôt</button>
+  <button class="btn btn-grey" disabled>📱 Moov Money - Bientôt</button>
+  <button class="btn btn-grey" disabled>📱 Celtiis Money - Bientôt</button>
+  <button class="btn btn-grey" disabled>💳 Carte bancaire - Bientôt</button>
   <div id="zoneEspeces" style="display:none">
-    <button class="btn btn-yellow" id="btnEspeces" onclick="payerEspeces()">💵 <span data-i18n="payerEspeces">Payer en espèces à la livraison (+ 500 FCFA)</span></button>
-    <p style="font-size:12px;color:#64748b;margin-top:6px" data-i18n="especesAide">Uniquement pour Manger. Tu paies en espèces quand le livreur arrive. Supplément 500 FCFA pour la livraison.</p>
+    <button class="btn btn-yellow" id="btnEspeces" onclick="payerEspeces()">💵 Payer en espèces à la livraison (+ 500 FCFA)</button>
+    <p style="font-size:12px;color:#64748b;margin-top:6px">Uniquement pour Manger. Tu paies en espèces quand le livreur arrive. Supplément 500 FCFA pour la livraison.</p>
   </div>
-  <button class="btn btn-whatsapp" id="btnWhatsapp" onclick="payerWhatsApp()">💬 <span data-i18n="payerWhatsapp">Payer via WhatsApp Rocyinter (Admin confirme)</span></button>
+  <button class="btn btn-whatsapp" id="btnWhatsapp" onclick="payerWhatsApp()">💬 Payer via WhatsApp Rocyinter (Admin confirme)</button>
   <p style="font-size:12px;color:#64748b;margin-top:6px">⚠️ WhatsApp ne marque pas la commande comme payée. L'Admin doit confirmer ton paiement. Ne paie jamais directement au prestataire.</p>
-  <button class="btn btn-dark" id="btnTest" onclick="payerTest()">🧪 <span data-i18n="payerTest">TEST - Simuler un paiement Mobile Money (pour tester maintenant)</span></button>
+  <button class="btn btn-dark" id="btnTest" onclick="payerTest()">🧪 TEST - Simuler un paiement Mobile Money (pour tester maintenant)</button>
   <div id="msg" class="msg"></div>
 </div>
 <div class="card">
-  <h3 data-i18n="commentMarche">Comment ça marche ?</h3>
-  <p data-i18n="commentMarcheTexte">1. Tu paies ici<br>2. Rocyinter bloque l'argent<br>3. Le prestataire commence<br>4. Tu valides quand c'est terminé<br>5. Rocyinter libère l'argent au prestataire moins la commission<br><br><b>Si litige :</b> Argent bloqué, Admin tranche dans la Page Litiges.</p>
+  <h3>Comment ça marche ?</h3>
+  <p id="commentMarche">1. Tu paies ici<br>2. Rocyinter bloque l'argent<br>3. Le prestataire commence<br>4. Tu valides quand c'est terminé<br>5. Rocyinter libère l'argent au prestataire moins la commission<br><br><b>Si litige :</b> Argent bloqué, Admin tranche dans la Page Litiges.</p>
 </div>
-<small data-i18n="paiementFooter">En payant, tu acceptes les règles Rocyinter : pas de paiement en dehors de la plateforme.<br><a href="index.html">Retour à l'accueil</a></small>
+<small>En payant, tu acceptes les règles Rocyinter : pas de paiement en dehors de la plateforme.<br><a href="index.html">Retour à l'accueil</a></small>
 </div>
 <script>
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
@@ -73,7 +73,11 @@ const WHATSAPP_ROCY = '2290191478460';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const params = new URLSearchParams(location.search);
 const commandeId = params.get('commande') || params.get('commande_id') || localStorage.getItem('paiement_commande_id') || localStorage.getItem('commande_a_payer');
-let commande = null; let uid=''; let monRole='';
+// NOUVEAU : mode visite / achat immobilier venant de fiche-parcelle.html
+const paiementAnnonce = localStorage.getItem('paiement_annonce') || params.get('annonce');
+const paiementType = localStorage.getItem('paiement_type') || params.get('type') || '';
+const paiementMontant = Number(localStorage.getItem('paiement_montant') || params.get('montant') || 0);
+let commande = null; let annonceImmo = null; let uid=''; let monRole='';
 async function notifier(destinataire, titre, message, type, lien){
   try{ if(!destinataire) return; await sb.rpc('creer_notification', { p_user_id: destinataire, p_titre: titre, p_message: String(message||'').slice(0,120), p_type: type||'info', p_lien: lien||'notifications.html' }); }catch(e){ console.log('Notif échouée (pas grave):', e); }
 }
@@ -84,6 +88,11 @@ async function init(){
   const {data:p}=await sb.from('profiles').select('type_compte, type_fournisseur').eq('id',uid).maybeSingle();
   monRole = String(p?.type_compte||p?.type_fournisseur||'').toLowerCase();
   if(monRole==='admin'){ location.href='admin.html'; return; }
+  // Si c'est une visite ou achat immobilier, on charge l'annonce, pas la commande
+  if(paiementType==='visite' || paiementType==='achat_immobilier'){
+    chargerImmo();
+    return;
+  }
   if(!commandeId){ document.getElementById('resume').innerHTML = 'Aucune commande à payer. Va dans Mes commandes.'; document.getElementById('blocPaiement').style.display='none'; return; }
   charger();
 }
@@ -94,13 +103,42 @@ function texteCommission(c){
   if(c.univers==='manger') return 'Commission 12%';
   if(c.univers==='sejour') return 'Commission 12% par nuit';
   if(c.univers==='livreur') return 'Commission 20% (Livreur 80%)';
-  if(c.univers==='immobilier') return 'Commission Immobilier (voir détail ci-dessous)';
+  if(c.univers==='immobilier') return 'Commission Immobilier';
   return 'Commission';
 }
-function detailImmobilier(c){
-  const t = String(c.titre||'').toLowerCase();
-  if(t.includes('parcelle') || t.includes('vente') || t.includes('terrain')) return '📜 Parcelle : Réservation 10 000 FCFA + 2% plafonné 200 000 FCFA. Reste devant notaire, pas en escrow.';
-  return "🏠 Location : 50% d'un mois en escrow pour bloquer. Libération après visite et signature.";
+// NOUVEAU : charger annonce pour visite / achat
+async function chargerImmo(){
+  if(!paiementAnnonce){ document.getElementById('resume').innerHTML='Aucun bien à payer.'; return; }
+  const {data:a, error} = await sb.from('annonces').select('id,titre,categorie,prix_indicatif,localite,ville,prestataire_id,status').eq('id',paiementAnnonce).maybeSingle();
+  if(error || !a){ document.getElementById('resume').innerHTML='Bien introuvable.'; return; }
+  if(String(a.prestataire_id)===String(uid)){ document.getElementById('resume').innerHTML='Tu ne peux pas payer ton propre bien.'; document.getElementById('blocPaiement').style.display='none'; return; }
+  annonceImmo = a;
+  if(paiementType==='visite'){
+    document.getElementById('sousTitre').innerHTML = 'Visite Rocyinter : tu paies 2 000 FCFA à Rocyinter. Argent pour notre caisse, non remboursable. Le bien reste en ligne après la visite, même si tu n\'aimes pas.';
+    document.getElementById('commentMarche').innerHTML = '1. Tu paies 2 000 FCFA ici<br>2. Rocyinter te donne la facture<br>3. Tu vas visiter<br>4. Si tu aimes, tu reviens payer le vrai prix<br>5. Si tu n\'aimes pas, le bien reste en ligne pour les autres';
+    document.getElementById('resume').innerHTML = `
+      <h3>📍 Visite - ${esc(a.titre)}</h3>
+      <div class="row"><span>📍 Lieu</span><b>${esc(a.localite)} - ${esc(a.ville)}</b></div>
+      <div class="row"><span>Pour qui ?</span><b>Rocyinter (notre caisse)</b></div>
+      <div class="row"><span>Bien reste en ligne ?</span><b>Oui, il reste</b></div>
+      <div class="row total"><span>Tu paies maintenant</span><b>2 000 FCFA</b></div>
+    `;
+  } else {
+    // achat_immobilier
+    const cat = String(a.categorie||'').toLowerCase();
+    const estParcelle = cat.includes('parcelle') || cat.includes('terrain');
+    const commission = estParcelle ? Math.min(200000, Math.round(Number(a.prix_indicatif||0)*0.02)) : Math.round(Number(a.prix_indicatif||0)*0.5);
+    document.getElementById('sousTitre').innerHTML = 'Achat Immobilier : tu paies le vrai prix. Après paiement, le bien disparaît du site.';
+    document.getElementById('commentMarche').innerHTML = '1. Tu paies le vrai prix ici<br>2. Rocyinter bloque l\'argent<br>3. Tu vérifies les papiers / tu visites<br>4. Tu valides<br>5. Rocyinter libère au vendeur moins la commission<br><br><b>Après paiement, le bien disparaît du site.</b>';
+    document.getElementById('resume').innerHTML = `
+      <h3>🛒 ${esc(a.titre)}</h3>
+      <div class="row"><span>📍 Lieu</span><b>${esc(a.localite)} - ${esc(a.ville)}</b></div>
+      <div class="row"><span>Prix du bien</span><b>${Number(a.prix_indicatif||0).toLocaleString()} FCFA</b></div>
+      <div class="row"><span>Commission Rocyinter ${estParcelle ? '(2% plafonné 200 000)' : '(50% un mois location)'}</span><b>${commission.toLocaleString()} FCFA</b></div>
+      <div class="row"><span>Vendeur recevra</span><b>${(Number(a.prix_indicatif||0)-commission).toLocaleString()} FCFA</b></div>
+      <div class="row total"><span>Tu paies maintenant</span><b>${Number(a.prix_indicatif||0).toLocaleString()} FCFA</b></div>
+    `;
+  }
 }
 async function charger(){
   if(!commandeId) return;
@@ -128,12 +166,41 @@ async function charger(){
     ${supplement ? `<div class="row"><span>Supplément espèces livraison</span><b>+ 500 FCFA</b></div>` : ''}
     <div class="row"><span>${esc(texteCommission(data))} (prélevée à la libération)</span><b>${Number(data.commission).toLocaleString()} FCFA</b></div>
     <div class="row"><span>Prestataire recevra</span><b>${Number(data.montant_prestataire).toLocaleString()} FCFA</b></div>
-    ${data.univers==='immobilier' ? `<p style="margin-top:8px">${esc(detailImmobilier(data))}</p>` : ''}
     <div class="row total"><span>Tu paies maintenant</span><b>${total.toLocaleString()} FCFA</b></div>
   `;
   if(data.univers === 'manger') document.getElementById('zoneEspeces').style.display = 'block';
 }
 async function confirmerPaiement(mode){
+  // CAS 1 : VISITE - argent pour Rocyinter, bien RESTE en ligne
+  if(paiementType==='visite' && annonceImmo){
+    const facture = 'VIS-' + Date.now();
+    const {error} = await sb.from('visites').insert([{annonce_id: annonceImmo.id, client_id: uid, prestataire_id: annonceImmo.prestataire_id, montant: 2000, statut: 'paye', facture_numero: facture}]);
+    if(error){ showMsg('Erreur : ' + error.message, false); return; }
+    // On NE change PAS annonces.status, le bien reste valide et visible
+    await notifier(annonceImmo.prestataire_id, '📍 Nouvelle visite payée', `Un client a payé 2 000 FCFA pour visiter "${annonceImmo.titre}". Facture ${facture}`, 'visite', 'dashboard-prestataire.html');
+    showMsg('✅ Visite payée ! Facture ' + facture + '. Le bien reste en ligne. Redirection...', true);
+    localStorage.removeItem('paiement_annonce'); localStorage.removeItem('paiement_type'); localStorage.removeItem('paiement_montant');
+    setTimeout(()=> location.href='immobilier.html', 1500);
+    return;
+  }
+  // CAS 2 : ACHAT IMMOBILIER - vrai prix, bien DISPARAÎT
+  if(paiementType==='achat_immobilier' && annonceImmo){
+    const cat = String(annonceImmo.categorie||'').toLowerCase();
+    const estParcelle = cat.includes('parcelle') || cat.includes('terrain');
+    const commission = estParcelle ? Math.min(200000, Math.round(Number(annonceImmo.prix_indicatif||0)*0.02)) : Math.round(Number(annonceImmo.prix_indicatif||0)*0.5);
+    // Créer commande
+    const {data:cmd, error:errCmd} = await sb.from('commandes').insert([{client_id: uid, prestataire_id: annonceImmo.prestataire_id, univers: 'immobilier', titre: annonceImmo.titre, montant: Number(annonceImmo.prix_indicatif||0), montant_total: Number(annonceImmo.prix_indicatif||0), commission: commission, montant_prestataire: Number(annonceImmo.prix_indicatif||0)-commission, annonce_id: annonceImmo.id, localite: annonceImmo.localite, ville: annonceImmo.ville, status: 'paye', mode_paiement: mode}]).select('id').maybeSingle();
+    if(errCmd){ showMsg('Erreur : ' + errCmd.message, false); return; }
+    // Faire disparaître le bien : status = vendu / loue
+    const nouveauStatus = estParcelle ? 'vendu' : 'loue';
+    await sb.from('annonces').update({status: nouveauStatus}).eq('id', annonceImmo.id);
+    await notifier(annonceImmo.prestataire_id, '💰 Bien payé', `Ton bien "${annonceImmo.titre}" a été payé. Il a disparu du site.`, 'paiement', 'dashboard-prestataire.html');
+    showMsg('✅ Paiement confirmé ! Bien payé, il disparaît du site. Redirection...', true);
+    localStorage.removeItem('paiement_annonce'); localStorage.removeItem('paiement_type'); localStorage.removeItem('paiement_montant');
+    setTimeout(()=> location.href='dashboard-client.html', 1500);
+    return;
+  }
+  // CAS 3 : commande normale (ancien système)
   if(!commande) return;
   const {data: frais} = await sb.from('commandes').select('status').eq('id', commande.id).single();
   if(!frais || frais.status !== 'en_attente'){ showMsg('Cette commande a déjà été payée.', false); setTimeout(()=>location.href='dashboard-client.html', 1000); return; }
@@ -153,8 +220,10 @@ async function payerEspeces(){
   await confirmerPaiement('especes_livraison');
 }
 function payerWhatsApp(){
-  if(!commande) return;
-  const txt = encodeURIComponent(`Bonjour Rocyinter, je veux payer ma commande "${commande.titre}" - ${Number(commande.montant_total||0).toLocaleString()} FCFA en escrow. Commande ID : ${commande.id}`);
+  let titre = commande ? commande.titre : (annonceImmo ? annonceImmo.titre : 'bien');
+  let montant = commande ? commande.montant_total : (paiementType==='visite' ? 2000 : paiementMontant);
+  let idTxt = commande ? commande.id : (annonceImmo ? annonceImmo.id : '');
+  const txt = encodeURIComponent(`Bonjour Rocyinter, je veux payer "${titre}" - ${Number(montant||0).toLocaleString()} FCFA. Type: ${paiementType || 'commande'} ID : ${idTxt}`);
   window.open('https://wa.me/' + WHATSAPP_ROCY + '?text=' + txt, '_blank');
   showMsg('WhatsApp ouvert. Après ton paiement WhatsApp, l’Admin confirmera ton paiement ici. Ta commande n’est PAS encore marquée payée.', true);
 }
