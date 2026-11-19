@@ -27,17 +27,19 @@ header b{font-size:16px} header small{display:block;opacity:.7;font-size:11px;fo
 .input-bar input{flex:1;padding:12px;border:1px solid #e2e8f0;border-radius:999px;font-size:14px}
 .input-bar button{background:#f59e0b;border:none;padding:12px 18px;border-radius:999px;font-weight:800;cursor:pointer}
 .input-bar button:disabled{opacity:.5}
-.actions{display:flex;gap:8px;padding:10px 16px;background:#fff;border-top:1px solid #e2e8f0}
-.actions button{flex:1;padding:11px;border-radius:10px;border:none;font-weight:700;cursor:pointer;font-size:13px}
+.actions{display:flex;gap:8px;padding:10px 16px;background:#fff;border-top:1px solid #e2e8f0;flex-wrap:wrap}
+.actions button{flex:1;padding:11px;border-radius:10px;border:none;font-weight:700;cursor:pointer;font-size:13px;min-width:120px}
 .btn-cmd{background:#16a34a;color:#fff}
 .btn-prop{background:#f59e0b}
 .btn-voir{background:#f1f5f9}
+.btn-visit{background:#059669;color:#fff}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;justify-content:center;z-index:20}
 .modal.show{display:flex}
 .modal-box{background:#fff;width:100%;max-width:480px;border-radius:20px 20px 0 0;padding:20px;display:grid;gap:12px}
 .modal-box h3{font-size:18px}
 .modal-box label{font-size:12px;font-weight:700;color:#475569}
 .modal-box input{width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:10px}
+.warn-chat{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:8px 12px;font-size:12px;text-align:center}
 </style>
 </head>
 <body>
@@ -46,11 +48,13 @@ header b{font-size:16px} header small{display:block;opacity:.7;font-size:11px;fo
   <div><b id="nomAutre">Discussion</b><small id="infoAutre">Chargement...</small></div>
 </header>
 <div class="annonce-bar" id="annonceBar">Chargement de l'annonce...</div>
+<div id="warnChat" class="warn-chat" style="display:none">⚠️ Ne partage jamais ton numéro / WhatsApp ici. Discute et paie seulement sur Rocyinter, sinon tu perds la protection.</div>
 <div id="messages"></div>
 <div class="actions" id="actionsBar">
   <button class="btn-voir" onclick="location.href='index.html'" data-i18n="voirAnnonces">Voir annonces</button>
   <button class="btn-prop" id="btnProp" onclick="ouvrirProposition()" style="display:none">💰 <span data-i18n="proposerPrix">Proposer un prix</span></button>
   <button class="btn-cmd" id="btnCmd" onclick="ouvrirCommande()" style="display:none">✅ <span data-i18n="creerCommande">Créer la commande</span></button>
+  <button class="btn-visit" id="btnVisit" onclick="payerVisite()" style="display:none">📍 Payer Visite 2 000 FCFA</button>
 </div>
 <div class="input-bar">
   <input id="inputMsg" data-i18n-ph="ecrisMessage" placeholder="Écris ton message... Prix, date, lieu..." onkeypress="if(event.key==='Enter') envoyer()">
@@ -98,13 +102,14 @@ function estValideAnnonce(a){
   if(!s) return true;
   return s==='valide' || s==='valid' || s==='publie' || s==='publié' || s==='publiee' || s==='actif' || s==='active';
 }
+// CORRIGÉ : Commission Immobilier sans 10 000
 function calculerCommission(univers, montant, annonce){
   if(univers==='domicile') return Math.round(montant * 0.08);
   if(univers==='pro') return 5000;
   if(univers==='manger' || univers==='sejour') return Math.round(montant * 0.12);
   if(univers==='immobilier'){
     const cat = String(annonce?.categorie||'').toLowerCase();
-    if(cat.includes('parcelle') || cat.includes('vente') || cat.includes('terrain')) return Math.min(200000, 10000 + Math.round(montant * 0.02));
+    if(cat.includes('parcelle') || cat.includes('vente') || cat.includes('terrain')) return Math.min(200000, Math.round(montant * 0.02));
     return Math.round(montant * 0.50);
   }
   if(univers==='livreur') return Math.round(montant * 0.20);
@@ -118,10 +123,18 @@ function texteCommission(univers, annonce){
   if(univers==='livreur') return 'Livreur 80% / Rocyinter 20%. Prix à discuter dans le chat.';
   if(univers==='immobilier'){
     const cat = String(annonce?.categorie||'').toLowerCase();
-    if(cat.includes('parcelle') || cat.includes('vente')) return 'Parcelle : Réservation 10 000 FCFA + 2% plafonné 200 000 FCFA. Reste devant notaire.';
-    return "Location : 50% d'un mois en escrow pour bloquer. Payé par le propriétaire, une fois.";
+    if(cat.includes('parcelle') || cat.includes('vente')) return 'Parcelle : 2% plafonné 200 000 FCFA. Visite 2 000 FCFA pour Rocyinter, à part. Reste devant notaire.';
+    return "Location : 50% d'un mois. Visite 2 000 FCFA pour Rocyinter, à part. Payé par le propriétaire, une fois.";
   }
   return 'Commission Rocyinter prélevée à la libération.';
+}
+function contientNumero(txt){
+  const t = String(txt||'').toLowerCase();
+  // Détecte numéro Bénin / WhatsApp / appel
+  if(t.includes('whatsapp') || t.includes('whats app') || t.includes('appel moi') || t.includes('appelle')) return true;
+  const chiffres = txt.replace(/\D/g,'');
+  if(chiffres.length >= 8) return true;
+  return false;
 }
 function bloquerChat(msg){
   document.getElementById('messages').innerHTML = '';
@@ -175,7 +188,11 @@ async function initAvecAnnonce(annId, prestaId, convExistante){
   document.getElementById('texteCommission').textContent = texteCommission(ann.univers, ann);
   const jeSuisPresta = (String(moiId)===String(prestaId));
   if(jeSuisPresta) document.getElementById('btnProp').style.display = 'block';
-  else document.getElementById('btnCmd').style.display = 'block';
+  else {
+    document.getElementById('btnCmd').style.display = 'block';
+    // NOUVEAU : bouton Visite seulement pour Immobilier + seulement pour le client
+    if(ann.univers==='immobilier') document.getElementById('btnVisit').style.display = 'block';
+  }
   if(convExistante){ conversationId = convExistante.id; clientIdFinal = convExistante.client_id; }
   else {
     const {data: convs} = await sb.from('conversations').select('*').eq('annonce_id', annId);
@@ -199,6 +216,14 @@ async function initAvecAnnonce(annId, prestaId, convExistante){
   if(!jeSuisPresta) clientIdFinal = moiId;
   chargerMessages();
   setInterval(chargerMessages, 3000);
+}
+function payerVisite(){
+  if(!annonceData) return;
+  localStorage.setItem('paiement_annonce', annonceData.id);
+  localStorage.setItem('paiement_type', 'visite');
+  localStorage.setItem('paiement_montant', '2000');
+  localStorage.setItem('paiement_dest', 'rocyinter');
+  location.href='paiement.html';
 }
 async function chargerMessages(){
   if(!conversationId) return;
@@ -235,6 +260,11 @@ async function envoyer(){
   const inp = document.getElementById('inputMsg'); const txt = inp.value.trim();
   if(!txt || !conversationId) return;
   if(txt.length>2000){ alert('Message trop long (max 2000).'); return; }
+  // NOUVEAU : avertir si numéro / WhatsApp
+  if(contientNumero(txt)){
+    document.getElementById('warnChat').style.display='block';
+    if(!confirm('⚠️ Tu essaies de partager un numéro / WhatsApp. Si tu paies en dehors de Rocyinter, tu perds la protection et la facture. Tu veux vraiment envoyer ?')) return;
+  }
   inp.value = '';
   const {error} = await sb.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: txt, type: 'texte'}]);
   if(error){ alert('Erreur : '+error.message); return; }
