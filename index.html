@@ -13,7 +13,11 @@
 body{background:#f6f7f9;color:#111}
 .btn{background:#f59e0b;color:#000;border:none;padding:9px 14px;border-radius:999px;font-weight:700;cursor:pointer;font-size:13px}
 .hero{background:#0f172a;color:#fff;padding:28px 16px 20px;text-align:center}
-.hero h1{font-size:26px;line-height:1.2} .hero h1 span{color:#f59e0b} .hero p{opacity:.8;margin-top:8px;font-size:14px;line-height:1.5}
+.hero h1{font-size:26px;line-height:1.2;min-height:68px;transition:opacity .4s} .hero h1 span{color:#f59e0b} .hero p{opacity:.8;margin-top:8px;font-size:14px;line-height:1.5;min-height:42px;transition:opacity .4s}
+.hero-cta{display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+.hero-cta button{padding:11px 18px;border-radius:999px;font-weight:800;cursor:pointer;font-size:13px;border:none}
+.hero-cta .btn-jaune{background:#f59e0b;color:#000}
+.hero-cta .btn-blanc{background:#fff;color:#0f172a}
 .filters{background:#fff;margin:-10px 16px 16px;padding:14px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.08);display:grid;gap:10px}
 .filters label{font-size:12px;font-weight:700;color:#475569}
 .filters select,.filters input{width:100%;padding:11px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;background:#fff}
@@ -41,8 +45,12 @@ body{background:#f6f7f9;color:#111}
 </head>
 <body>
 <div class="hero">
-  <h1><span data-i18n="heroTitre1">Trouvez un vrai service</span><br><span data-i18n="heroTitre2">près de chez vous</span></h1>
-  <p data-i18n="heroSous">Des prestataires vérifiés près de chez vous. Découvrez leurs services, comparez leurs offres, discutez directement et commandez en toute sécurité avec le paiement Escrow.</p>
+  <h1 id="heroTitre">Tout ce dont vous avez besoin, <span>près de chez vous,</span> en toute sécurité.</h1>
+  <p id="heroSous">Chambre, restaurant, plombier, DJ, livreur, maison... Des pros vérifiés dans votre quartier.</p>
+  <div class="hero-cta">
+    <button type="button" class="btn-jaune" onclick="document.getElementById('filtreSearch').focus();window.scrollTo({top:200,behavior:'smooth'})">🔍 Trouver un service</button>
+    <button type="button" class="btn-blanc" onclick="rocyProposerService()">💼 Proposer mes services</button>
+  </div>
 </div>
 <div id="bandeauRole"></div>
 <div class="filters">
@@ -72,6 +80,31 @@ let sb = window.supabaseClient || null;
 try{ if(!sb){ sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } window.supabaseClient = sb; }catch(e){}
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let moiId=''; let monRole='';
+// HERO ROTATIF - Solution 2 : 1ère phrase = Solution 1, puis rotation 3 sec
+const heroPhrases = [
+  { titre: 'Tout ce dont vous avez besoin, <span>près de chez vous,</span> en toute sécurité.', sous: 'Chambre, restaurant, plombier, DJ, livreur, maison... Des pros vérifiés dans votre quartier.' },
+  { titre: 'Vous arrivez au Bénin ? <span>Votre séjour est déjà prêt.</span>', sous: 'Hôtel, chambre, appartement, location voiture. Réservez avant d\'arriver, avec des hôtes vérifiés.' },
+  { titre: 'Vous avez faim ? <span>Commandez dans les meilleurs restaurants.</span>', sous: 'Traiteurs, maquis, pâtisseries près de chez vous. Vrais menus, vrais prix, livraison rapide.' },
+  { titre: 'Besoin d\'un pro de confiance <span>à côté de chez vous ?</span>', sous: 'Plombier, électricien, ménage, mécanicien... Vérifiés à Godomey, Calavi, Fidjrossè et partout.' },
+  { titre: 'Vous organisez un évènement ? <span>On s\'occupe de tout.</span>', sous: 'DJ, décorateur, photographe, traiteur, location salle. Comparez et réservez en 1 minute.' },
+  { titre: 'Ne payez plus jamais <span>avant d\'être satisfait.</span>', sous: 'Vous payez, on bloque, vous validez, on libère. C\'est le paiement Escrow Rocyinter.' }
+];
+let heroIndex = 0;
+function lancerHeroRotatif(){
+  const tEl = document.getElementById('heroTitre');
+  const sEl = document.getElementById('heroSous');
+  if(!tEl || !sEl) return;
+  setInterval(() => {
+    heroIndex = (heroIndex + 1) % heroPhrases.length;
+    tEl.style.opacity = 0; sEl.style.opacity = 0;
+    setTimeout(() => {
+      tEl.innerHTML = heroPhrases[heroIndex].titre;
+      sEl.textContent = heroPhrases[heroIndex].sous;
+      tEl.style.opacity = 1; sEl.style.opacity = 1;
+    }, 400);
+  }, 3000);
+}
+lancerHeroRotatif();
 function remplirPaysIndex(){
   const sel=document.getElementById('filtrePays');
   if(window.ROCY_PAYS&&window.ROCY_PAYS.length){ sel.innerHTML='<option value="">Pays</option>'+window.ROCY_PAYS.map(p=>`<option value="${esc(p.nom)}">${esc(p.drapeau)} ${esc(p.nom)}</option>`).join(''); }
