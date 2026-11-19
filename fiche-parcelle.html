@@ -16,11 +16,16 @@ body{background:#f6f7f9;color:#111;padding:16px}
 .body{padding:16px} .body p{font-size:13px;color:#64748b;margin:6px 0;line-height:1.6}
 .btn{width:100%;background:#f59e0b;border:none;padding:14px;border-radius:12px;font-weight:800;cursor:pointer;font-size:15px;margin-top:10px}
 .btn-dark{background:#0f172a;color:#fff}
+.btn-visit{background:#059669;color:#fff}
+.btn-buy{background:#7c3aed;color:#fff}
 .btn-mine{background:#e2e8f0;color:#64748b;cursor:not-allowed}
 .badge{display:inline-block;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:700;background:#dcfce7;color:#166534}
+.badge-warn{display:inline-block;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:700;background:#fef3c7;color:#92400e}
+.badge-role{display:inline-block;background:#fef9c3;color:#854d0e;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:700}
 .info{background:#fffbe6;border:1px solid #fde68a;border-radius:12px;padding:12px;font-size:13px;margin-top:12px;line-height:1.6}
 .empty{background:#fff;border:1px dashed #cbd5e1;border-radius:16px;padding:24px;text-align:center;color:#64748b;margin-top:14px}
 .info-escrow{background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:10px;font-size:12px;line-height:1.5;color:#92400e;margin-top:12px}
+.warn-box{background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:12px;font-size:13px;margin-top:12px;line-height:1.6;color:#991b1b}
 </style>
 </head>
 <body>
@@ -46,39 +51,80 @@ async function charger(){
   const {data:{user}} = await sb.auth.getUser();
   moiId = user?.id || '';
   if(!annonceId){document.getElementById('contenu').innerHTML='<div class="empty">Bien introuvable.<br><br><button class="btn btn-dark" onclick="location.href=\'immobilier.html\'">Voir Immobilier</button></div>';return;}
-  const {data:a, error} = await sb.from('annonces').select('id, titre, categorie, univers, description, prix_indicatif, prix_fixe, photo_url, localite, quartier, ville, pays, status, devise, prestataire_id').eq('id',annonceId).maybeSingle();
+  const {data:a, error} = await sb.from('annonces').select('id, titre, categorie, univers, description, prix_indicatif, prix_fixe, photo_url, localite, quartier, ville, pays, status, devise, prestataire_id, nb_chambres, nb_pieces, terrain_verifie, numero_parcelle, type_vendeur').eq('id',annonceId).maybeSingle();
   if(error || !a){document.getElementById('contenu').innerHTML='<div class="empty">Bien introuvable.<br><br><button class="btn btn-dark" onclick="location.href=\'immobilier.html\'">Voir Immobilier</button></div>';return;}
   if(!estValide(a)){
-    document.getElementById('contenu').innerHTML = `<div class="empty"><b>Bien en cours de vérification</b><br>Ce bien n'est pas encore validé par Rocyinter.<br><br><button class="btn btn-dark" onclick="location.href='immobilier.html'">Voir d'autres biens</button></div>`;
+    document.getElementById('contenu').innerHTML = `<div class="empty"><b>Bien déjà vendu / loué</b><br>Ce bien n'est plus disponible, il a été payé.<br><br><button class="btn btn-dark" onclick="location.href='immobilier.html'">Voir d'autres biens</button></div>`;
     return;
   }
   const img = a.photo_url || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80';
-  const estParcelle = (a.categorie||'').toLowerCase().includes('parcelle');
+  const catLow = (a.categorie||'').toLowerCase();
+  const estParcelle = catLow.includes('parcelle') || catLow.includes('terrain');
+  const estLocation = catLow.includes('location') || catLow.includes('louer') || catLow.includes('chambre') || catLow.includes('studio') || catLow.includes('appartement');
   const prestaId = a.prestataire_id || '';
   let nomPresta = 'Prestataire';
+  let rolePresta = '';
   if(prestaId){
-    const {data: prof} = await sb.from('profiles').select('nom, nom_entreprise').eq('id', prestaId).maybeSingle();
-    if(prof) nomPresta = prof.nom_entreprise || prof.nom || 'Prestataire';
+    const {data: prof} = await sb.from('profiles').select('nom, nom_entreprise, type_compte, type_fournisseur').eq('id', prestaId).maybeSingle();
+    if(prof){ nomPresta = prof.nom_entreprise || prof.nom || 'Prestataire'; rolePresta = String(prof.type_fournisseur || prof.type_compte || a.type_vendeur || '').toLowerCase(); }
   }
   const lieu = [a.localite || a.quartier, a.ville, a.pays].filter(Boolean).join(' - ');
   const prixTxt = (a.prix_indicatif||0)>0 ? Number(a.prix_indicatif).toLocaleString()+' FCFA' : '💬 Prix à discuter';
   const cestMoi = prestaId && moiId && String(prestaId)===String(moiId);
+  const nbCh = a.nb_chambres || a.nb_pieces || '';
+  const infoCh = nbCh ? `🛏️ ${esc(nbCh)} chambres / pièces<br>` : '';
+  const infoParcelle = estParcelle && a.numero_parcelle ? `📜 N° Parcelle : ${esc(a.numero_parcelle)}<br>` : '';
+  let badgeHtml = `<span class="badge">✅ Vérifié</span>`;
+  let warnHtml = '';
+  if(estParcelle){
+    if(a.terrain_verifie === true){ badgeHtml = `<span class="badge">✅ Terrain Vérifié</span>`; }
+    else { badgeHtml = `<span class="badge-warn">⚠️ Terrain Non Vérifié</span>`; warnHtml = `<div class="warn-box">⚠️ <b>Attention - Terrain Non Vérifié</b><br>Ce terrain n'a pas encore montré son titre. Ne paie pas le prix total avant vérification. Tu peux seulement payer la visite 2 000 FCFA et demander le titre dans le chat.</div>`; }
+  }
+  let badgeRole = '';
+  if(rolePresta.includes('demarcheur')) badgeRole = `<span class="badge-role">🏷️ Démarcheur Vérifié</span>`;
+  else if(rolePresta.includes('proprietaire') || rolePresta.includes('propriétaire')) badgeRole = `<span class="badge-role">🏠 Propriétaire</span>`;
   const btnChat = cestMoi
     ? `<button class="btn btn-mine" disabled>C'est ton annonce</button>`
-    : `<button class="btn" onclick="discuter()">💬 Discuter avec ${esc(nomPresta)}</button>`;
+    : `<button class="btn" onclick="discuter()">💬 Discuter sur le site</button>`;
+  const btnVisite = cestMoi ? '' : `<button class="btn btn-visit" onclick="visiter()">📍 Visiter - Payer 2 000 FCFA</button><p style="text-align:center;font-size:11px">Visite pour Rocyinter, non remboursable. Le bien reste en ligne après la visite.</p>`;
+  let btnAction = '';
+  if(!cestMoi){
+    if(estParcelle) btnAction = `<button class="btn btn-buy" onclick="payerBien()">🛒 Payer ce terrain - ${esc(prixTxt)}</button><p style="text-align:center;font-size:11px">Quand tu paies, le terrain disparaît du site.</p>`;
+    else if(estLocation) btnAction = `<button class="btn btn-buy" onclick="payerBien()">🔒 Louer ce bien - ${esc(prixTxt)}</button><p style="text-align:center;font-size:11px">Quand tu paies, le bien disparaît du site.</p>`;
+    else btnAction = `<button class="btn btn-buy" onclick="payerBien()">🛒 Payer ce bien - ${esc(prixTxt)}</button><p style="text-align:center;font-size:11px">Quand tu paies, le bien disparaît du site.</p>`;
+  }
   document.getElementById('contenu').innerHTML = `
   <div class="card"><img src="${esc(img)}" onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80'"><div class="body">
-  <span class="badge">✅ Vérifié</span> <span style="font-size:11px;color:#94a3b8">${esc(a.categorie)} • ${esc(a.univers)}</span>
+  ${badgeHtml} <span style="font-size:11px;color:#94a3b8">${esc(a.categorie)} • ${esc(a.univers)}</span> ${badgeRole}
   <h1 style="font-size:20px;margin:8px 0">${esc(a.titre)}</h1>
-  <p>👤 ${esc(nomPresta)}<br>📍 ${esc(lieu)}<br><b style="color:#111;font-size:16px">${esc(prixTxt)}</b></p>
+  <p>👤 ${esc(nomPresta)}<br>📍 ${esc(lieu)}<br>${infoCh}${infoParcelle}<b style="color:#111;font-size:16px">${esc(prixTxt)}</b></p>
   <p>${esc(a.description)}</p>
-  <div class="info">${estParcelle ? '📜 <b>Vente Parcelle :</b> Réservation 10 000 FCFA pour 30 jours. Reste devant notaire, pas en escrow. Commission 2% plafonnée à 200 000 FCFA.<br>⚠️ Demande toujours le titre foncier / document avant de payer.' : '🏠 <b>Location :</b> 50% d\'un mois en escrow pour bloquer. Libération après visite et signature. Payé par le propriétaire, une fois.'}</div>
+  ${warnHtml}
+  <div class="info">${estParcelle ? '📜 <b>Vente Parcelle :</b> Visite 2 000 FCFA pour Rocyinter, non remboursable. Le terrain reste en ligne après la visite. Commission 2% plafonnée à 200 000 FCFA.<br>⚠️ Demande toujours le titre foncier / document avant de payer.' : '🏠 <b>Location :</b> Visite 2 000 FCFA pour Rocyinter, non remboursable. Le bien reste en ligne après la visite. 50% d\'un mois en commission. Payé par le propriétaire, une fois.'}</div>
   ${btnChat}
+  ${btnVisite}
+  ${btnAction}
   <button class="btn btn-dark" onclick="voirPresta()">Voir le prestataire</button>
-  <div class="info-escrow">🔒 Ne paie jamais en dehors de Rocyinter. Discute ici, paie via Escrow.</div>
+  <div class="info-escrow">🔒 Ne paie jamais en dehors de Rocyinter. Discute ici, paie via Rocyinter, facture auto.</div>
   </div></div>`;
   window._a = a;
   if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
+}
+function visiter(){
+  const a = window._a; if(!a) return;
+  localStorage.setItem('paiement_annonce', a.id);
+  localStorage.setItem('paiement_type', 'visite');
+  localStorage.setItem('paiement_montant', '2000');
+  localStorage.setItem('paiement_dest', 'rocyinter'); // Argent pour notre caisse
+  location.href='paiement.html';
+}
+function payerBien(){
+  const a = window._a; if(!a) return;
+  localStorage.setItem('paiement_annonce', a.id);
+  localStorage.setItem('paiement_type', 'achat_immobilier');
+  localStorage.setItem('paiement_montant', String(a.prix_indicatif||0));
+  localStorage.setItem('paiement_dest', 'vendeur'); // Vrai prix, pour le vendeur
+  location.href='paiement.html';
 }
 async function discuter(){
   const {data:{user}} = await sb.auth.getUser();
