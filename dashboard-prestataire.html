@@ -6,11 +6,11 @@
 <title data-i18n="dashboardPrestaTitre">Mon Dashboard - Rocyinter</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="pays.js"></script>
-<script src="rocy-layout.js"></script>
+<script src="rocy-layout.js?v=5"></script>
 <script src="app.js"></script>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
-body{background:#f6f7f9;color:#111}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',system-ui,sans-serif}
+body{background:#f7f8fa;color:#111}
 .top{max-width:560px;margin:0 auto;padding:16px}
 h1{font-size:22px;margin:16px 0 4px}
 p.sub{color:#64748b;font-size:13px;margin-bottom:14px}
@@ -38,7 +38,7 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px}
 .badge.paye{background:#dbeafe;color:#1e40af}
 .badge.cours{background:#e0e7ff;color:#3730a3}
 .badge.litige{background:#fee2e2;color:#991b1b}
-.btn{width:100%;background:#f59e0b;border:none;padding:12px;border-radius:10px;font-weight:800;cursor:pointer;margin-top:8px}
+.btn{width:100%;background:#fbbf24;border:none;padding:12px;border-radius:10px;font-weight:800;cursor:pointer;margin-top:8px;color:#111}
 .btn-dark{background:#0f172a;color:#fff}
 .btn-green{background:#16a34a;color:#fff}
 .btn:disabled{opacity:.5;cursor:not-allowed}
@@ -68,41 +68,42 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px}
   <div class="info">
     <b id="profilNom">Mon Profil</b>
     <span id="profilQuartier">📍 Quartier : ...</span>
-    <span id="profilBadge">📍 Quartier : ...</span>
+    <span id="profilBadge">—</span>
   </div>
 </div>
 <button class="btn btn-dark" onclick="location.href='profil.html'">👤 Mon Profil</button>
 <button class="btn btn-green" id="btnVerif" onclick="location.href='verification.html'" style="display:none">📍 Faire vérifier mon quartier → Obtenir le badge ✅</button>
-<button class="btn" style="background:#eff6ff;color:#1e40af" id="btnVerifAttente" onclick="location.href='verification.html'" style="display:none">⏳ Vérification en attente - Voir le statut</button>
+<button class="btn" id="btnVerifAttente" onclick="location.href='verification.html'" style="display:none;background:#eff6ff;color:#1e40af">⏳ Vérification en attente - Voir le statut</button>
 <div id="bannerStatut"></div>
 <div id="bandeauAbo"></div>
 <div class="stats">
   <div class="stat"><b id="nbAnnonces">0</b><small>Annonces</small></div>
   <div class="stat"><b id="nbCommandes">0</b><small>Commandes</small></div>
-  <div class="stat"><b id="totalGagne">0</b><small>À recevoir*</small></div>
+  <div class="stat"><b id="totalGagne">0 FCFA</b><small>À recevoir*</small></div>
 </div>
 <p style="font-size:11px;color:#64748b;margin:-10px 0 14px">* Seulement les commandes payées / en cours / validées. Les commandes en attente ne comptent pas.</p>
 <button class="btn" id="btnCreer" onclick="location.href='creer-annonce.html'">➕ Créer une nouvelle annonce</button>
 <button class="btn btn-dark" onclick="location.href='abonnement.html'">💳 Voir / Renouveler mon abonnement</button>
 
-<div class="section"><h2>⚙️ Mes réglages rapides</h2>
+<div class="section" id="sectionReglages"><h2>⚙️ Mes réglages rapides</h2>
 <div class="card">
-  <p>Ce que le client voit dans ta fiche : Portfolio, Langues, Dispo...</p>
+  <p id="texteReglages">Ce que le client voit dans ta fiche.</p>
   <div class="gestion">
-    <div><label>📁 PORTFOLIO (lien)</label><input id="regPortfolio" placeholder="https://..."></div>
-    <div><label>🗣️ LANGUES</label><input id="regLangues" placeholder="Ex: Français, Fon, Anglais"></div>
-    <div><label>📍 LIEUX CONNUS (Guide)</label><input id="regLieux" placeholder="Ex: Ouidah, Grand-Popo, Ganvié"></div>
-    <div><label>🛵 VÉHICULE (Livreur)</label><input id="regVehicule" placeholder="Ex: Moto, Voiture"></div>
+    <div id="bloc-portfolio"><label>📁 PORTFOLIO (lien) - PRO</label><input id="regPortfolio" placeholder="https://..."></div>
+    <div id="bloc-langues"><label>🗣️ LANGUES - Guide / PRO</label><input id="regLangues" placeholder="Ex: Français, Fon, Anglais"></div>
+    <div id="bloc-lieux"><label>📍 LIEUX CONNUS (Guide touristique)</label><input id="regLieux" placeholder="Ex: Ouidah, Grand-Popo, Ganvié"></div>
+    <div id="bloc-vehicule"><label>🛵 VÉHICULE (Livreur)</label><input id="regVehicule" placeholder="Ex: Moto, Voiture"></div>
     <div class="row2">
-      <div><label>💻 TRAVAILLE À DISTANCE (PRO)</label><div class="toggle"><button id="tgDistanceOui" onclick="setToggle('distance',true)">Oui</button><button id="tgDistanceNon" onclick="setToggle('distance',false)">Non</button></div></div>
-      <div><label>🏠 DISPONIBLE AUJOURD'HUI (Domicile)</label><div class="toggle"><button id="tgAujOui" onclick="setToggle('auj',true)">Oui</button><button id="tgAujNon" onclick="setToggle('auj',false)">Non</button></div></div>
+      <div id="bloc-distance"><label>💻 TRAVAILLE À DISTANCE (PRO)</label><div class="toggle"><button id="tgDistanceOui" onclick="setToggle('distance',true)">Oui</button><button id="tgDistanceNon" onclick="setToggle('distance',false)">Non</button></div></div>
+      <div id="bloc-auj"><label>🏠 DISPONIBLE AUJOURD'HUI (Domicile)</label><div class="toggle"><button id="tgAujOui" onclick="setToggle('auj',true)">Oui</button><button id="tgAujNon" onclick="setToggle('auj',false)">Non</button></div></div>
     </div>
-    <div><label>🛵 DISPONIBLE MAINTENANT (Livreur)</label><div class="toggle"><button id="tgMaintOui" onclick="setToggle('maint',true)">Oui</button><button id="tgMaintNon" onclick="setToggle('maint',false)">Non</button></div></div>
+    <div id="bloc-maint"><label>🛵 DISPONIBLE MAINTENANT (Livreur)</label><div class="toggle"><button id="tgMaintOui" onclick="setToggle('maint',true)">Oui</button><button id="tgMaintNon" onclick="setToggle('maint',false)">Non</button></div></div>
     <button class="btn btn-green" onclick="sauvegarderReglages()">💾 Sauvegarder mes réglages</button>
   </div>
 </div>
 </div>
 
+<div class="section" id="sectionLivreurDemandes" style="display:none"><h2>🛵 Demandes de livraison en attente</h2><div id="listeDemandesLivreur"></div></div>
 <div class="section"><h2>📋 Mes annonces</h2><div id="listeAnnonces"></div></div>
 <div class="section"><h2>💰 Mes commandes</h2><div id="listeCommandes"></div></div>
 <div class="section"><h2>💬 Mes conversations</h2><div id="listeConvs"></div></div>
@@ -117,27 +118,25 @@ let uid = null;
 let reglages = {distance:false, auj:false, maint:false};
 let mesAnnonces = [];
 function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-function fmt(n){ return window.rocyFormatPrix ? window.rocyFormatPrix(Number(n||0)) : Number(n||0).toLocaleString('fr-FR')+' FCFA'; }
+// CORRIGÉ : 0 doit afficher 0 FCFA, pas "Prix à discuter"
+function fmt(n){ const v=Number(n||0); if(!v) return '0 FCFA'; if(window.rocyFormatPrix){ const r=window.rocyFormatPrix(v); if(r && !String(r).toLowerCase().includes('discuter')) return r; } return v.toLocaleString('fr-FR')+' FCFA'; }
 async function getUtilisateurSecurise(){
-  for(let i=0;i<5;i++){
-    const {data:{user}, error} = await sb.auth.getUser();
-    if(user) return user;
-    await new Promise(r=>setTimeout(r,300));
-  }
-  const {data:{user}} = await sb.auth.getUser();
-  return user || null;
+  for(let i=0;i<5;i++){ const {data:{user}} = await sb.auth.getUser(); if(user) return user; await new Promise(r=>setTimeout(r,300)); }
+  const {data:{user}} = await sb.auth.getUser(); return user || null;
 }
-async function deconnecter(){
-  await sb.auth.signOut();
-  const langue = localStorage.getItem('rocy_langue');
-  localStorage.clear();
-  if(langue) localStorage.setItem('rocy_langue', langue);
-  location.href='index.html';
+async function deconnecter(){ await sb.auth.signOut(); const langue=localStorage.getItem('rocy_langue'); localStorage.clear(); if(langue) localStorage.setItem('rocy_langue',langue); location.href='index.html'; }
+
+// CORRIGÉ : 30 premiers prestataires = 1 mois offert auto
+async function estDans30Premiers(profil){
+  if(!profil.created_at) return false;
+  const {count} = await sb.from('profiles').select('id',{count:'exact',head:true}).neq('type_compte','client').neq('type_compte','admin').lte('created_at', profil.created_at);
+  return (count||999) <= 30;
 }
-function verifierAbonnement(p){
+async function verifierAbonnement(p){
   const auj=new Date(); const fin=p.abonnement_fin?new Date(p.abonnement_fin):null;
   const actif=p.abonnement_actif===true||p.abonnement_statut==='actif';
-  const offert=p.abonnement_offert===true||p.premier_mois_offert===true;
+  let offert=p.abonnement_offert===true||p.premier_mois_offert===true;
+  if(!offert && !fin){ offert = await estDans30Premiers(p); }
   if(fin&&fin>=auj) return {ok:true,type:'paye',fin};
   if(!fin&&(actif||offert)) return {ok:true,type:'offert',fin:null};
   if(actif&&!fin) return {ok:true,type:'offert',fin:null};
@@ -168,6 +167,7 @@ function badgeAnnonce(a){
   const s = String(a.status || '').toLowerCase();
   if(s==='valide') return '<span class="badge valide">✅ Validée - Visible</span>';
   if(s==='rejete' || s==='refuse') return '<span class="badge rejete">❌ Rejetée</span>';
+  if(s==='vendu' || s==='loue' || s==='loué') return '<span class="badge rejete">🏁 Loué / Vendu - Masquée</span>';
   return '<span class="badge attente">⏳ En attente</span>';
 }
 function nomAffiche(profil){ return profil.nom_entreprise || profil.nom || 'Prestataire'; }
@@ -184,17 +184,51 @@ function setToggle(key, val){
   if(key==='auj'){ document.getElementById('tgAujOui').classList.toggle('on', val); document.getElementById('tgAujNon').classList.toggle('on', !val); }
   if(key==='maint'){ document.getElementById('tgMaintOui').classList.toggle('on', val); document.getElementById('tgMaintNon').classList.toggle('on', !val); }
 }
+// CORRIGÉ : On ne sauvegarde que les champs visibles pour cette activité
+function afficherReglagesParActivite(universSet, categories){
+  const has = (...u) => u.some(x => universSet.has(x));
+  const cat = (categories||[]).join(' ').toLowerCase();
+  const isGuide = cat.includes('guide') || cat.includes('touristique');
+  const isLivreur = has('livreur');
+  const isPro = has('pro');
+  const isDomicile = has('domicile');
+  const isSejour = has('sejour');
+  const isManger = has('manger');
+  const isImmo = has('immobilier');
+  const isEvent = has('evenement');
+  const show = (id, ok) => { const el=document.getElementById(id); if(el) el.style.display = ok ? '' : 'none'; };
+  // Si aucune annonce encore : on montre tout (1ère création) pour ne pas bloquer
+  if(universSet.size===0){ show('bloc-portfolio',true); show('bloc-langues',true); show('bloc-lieux',true); show('bloc-vehicule',true); show('bloc-distance',true); show('bloc-auj',true); show('bloc-maint',true); document.getElementById('texteReglages').textContent='Ce que le client voit dans ta fiche. Crée ta première annonce pour voir seulement tes réglages.'; return; }
+  show('bloc-portfolio', isPro || isEvent);
+  show('bloc-langues', isGuide || isPro || isEvent);
+  show('bloc-lieux', isGuide);
+  show('bloc-vehicule', isLivreur);
+  show('bloc-distance', isPro);
+  show('bloc-auj', isDomicile);
+  show('bloc-maint', isLivreur);
+  let txt = 'Ce que le client voit dans ta fiche : ';
+  if(isSejour) txt += 'Chambres, Dispo, Prix par nuit. ';
+  if(isManger) txt += 'Plats, Prix, Dispo. ';
+  if(isGuide) txt += 'Langues, Lieux connus. ';
+  if(isPro) txt += 'Portfolio, Travail à distance. ';
+  if(isDomicile) txt += 'Dispo aujourd\'hui. ';
+  if(isLivreur) txt += 'Véhicule, Dispo maintenant. ';
+  if(isImmo) txt += 'Annonces, Loué / Vendu. ';
+  if(isEvent) txt += 'Portfolio, Langues. ';
+  document.getElementById('texteReglages').textContent = txt;
+  document.getElementById('sectionLivreurDemandes').style.display = isLivreur ? '' : 'none';
+}
 async function sauvegarderReglages(){
   if(!uid) return;
-  const payload = {
-    portfolio_url: document.getElementById('regPortfolio').value.trim() || null,
-    langues: document.getElementById('regLangues').value.trim() || null,
-    lieux_connus: document.getElementById('regLieux').value.trim() || null,
-    vehicule: document.getElementById('regVehicule').value.trim() || null,
-    travaille_distance: reglages.distance,
-    disponible_aujourd_hui: reglages.auj,
-    disponible_maintenant: reglages.maint
-  };
+  const payload = {};
+  // On ne lit que les champs visibles, pour ne pas écraser les autres avec null
+  if(document.getElementById('bloc-portfolio').style.display!=='none') payload.portfolio_url = document.getElementById('regPortfolio').value.trim() || null;
+  if(document.getElementById('bloc-langues').style.display!=='none') payload.langues = document.getElementById('regLangues').value.trim() || null;
+  if(document.getElementById('bloc-lieux').style.display!=='none') payload.lieux_connus = document.getElementById('regLieux').value.trim() || null;
+  if(document.getElementById('bloc-vehicule').style.display!=='none') payload.vehicule = document.getElementById('regVehicule').value.trim() || null;
+  if(document.getElementById('bloc-distance').style.display!=='none') payload.travaille_distance = reglages.distance;
+  if(document.getElementById('bloc-auj').style.display!=='none') payload.disponible_aujourd_hui = reglages.auj;
+  if(document.getElementById('bloc-maint').style.display!=='none') payload.disponible_maintenant = reglages.maint;
   const {error} = await sb.from('profiles').update(payload).eq('id', uid);
   if(error){ alert('Erreur : '+error.message); return; }
   alert('✅ Réglages sauvegardés ! Ils apparaissent dans ta fiche.');
@@ -202,8 +236,13 @@ async function sauvegarderReglages(){
 async function majAnnonce(id, champ, valeur){
   const {error} = await sb.from('annonces').update({[champ]: valeur}).eq('id', id).eq('prestataire_id', uid);
   if(error){ alert('Erreur : '+error.message); return; }
-  alert('✅ Mis à jour !');
-  charger();
+  alert('✅ Mis à jour !'); charger();
+}
+async function marquerLoueVendu(id){
+  if(!confirm('Marquer comme Loué / Vendu ? L\'annonce sera masquée pour les clients.')) return;
+  const {error} = await sb.from('annonces').update({status:'vendu', disponible:false}).eq('id', id).eq('prestataire_id', uid);
+  if(error){ alert('Erreur : '+error.message); return; }
+  alert('✅ Annonce masquée - Loué / Vendu.'); charger();
 }
 async function supprimerAnnonce(id){
   if(!confirm('Supprimer cette annonce ?')) return;
@@ -212,73 +251,74 @@ async function supprimerAnnonce(id){
   charger();
 }
 async function changerStatut(id, action){
-  const user = await getUtilisateurSecurise();
-  if(!user) return;
+  const user = await getUtilisateurSecurise(); if(!user) return;
   if(action==='en_cours'){
     const {error} = await sb.from('commandes').update({status:'en_cours'}).eq('id', id).eq('prestataire_id', user.id).eq('status','paye');
     if(error) alert('Erreur : ' + error.message);
   } else if(action==='en_cours_termine'){
     const {data: cmd} = await sb.from('commandes').select('id, titre, conversation_id').eq('id', id).eq('prestataire_id', user.id).single();
     if(!cmd){ alert('Commande introuvable.'); return; }
-    if(cmd?.conversation_id){
-      await sb.from('messages').insert([{conversation_id: cmd.conversation_id, sender_id: user.id, contenu: `✅ J'ai terminé le service "${cmd.titre}". Peux-tu valider pour que l'argent soit libéré ?`}]);
-    }
+    if(cmd?.conversation_id){ await sb.from('messages').insert([{conversation_id: cmd.conversation_id, sender_id: user.id, contenu: `✅ J'ai terminé le service "${cmd.titre}". Peux-tu valider pour que l'argent soit libéré ?`}]); }
     alert('✅ Client prévenu dans le chat. Il doit valider pour libérer l’argent.');
   }
   charger();
 }
 async function voirConversation(convId, annonceId){
   if(!convId || convId==='null' || convId==='undefined'){ alert('Conversation introuvable.'); return; }
-  const user = await getUtilisateurSecurise();
-  if(!user) return;
+  const user = await getUtilisateurSecurise(); if(!user) return;
   const {data} = await sb.from('conversations').select('id, client_id, prestataire_id').eq('id', convId).eq('prestataire_id', user.id).single();
   if(!data){ alert('Conversation introuvable.'); return; }
   if(String(data.client_id)===String(data.prestataire_id)){ alert('Conversation invalide.'); return; }
   location.href = 'chat.html?conversation=' + encodeURIComponent(convId) + '&annonce=' + encodeURIComponent(annonceId || '');
 }
 async function charger(){
-  const user = await getUtilisateurSecurise();
-  if(!user){ location.href='connexion.html'; return; }
+  const user = await getUtilisateurSecurise(); if(!user){ location.href='connexion.html'; return; }
   uid = user.id;
   const {data: profil, error: errProfil} = await sb.from('profiles')
-    .select('id, nom, nom_entreprise, type_compte, type_fournisseur, quartier, ville, pays, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert, portfolio_url, langues, lieux_connus, vehicule, travaille_distance, disponible_aujourd_hui, disponible_maintenant, photo_profil_url')
+    .select('id, nom, nom_entreprise, type_compte, type_fournisseur, quartier, ville, pays, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert, portfolio_url, langues, lieux_connus, vehicule, travaille_distance, disponible_aujourd_hui, disponible_maintenant, photo_profil_url, quartier_verifie, verification_statut, statut, created_at')
     .eq('id', uid).maybeSingle();
-  if(errProfil){
-    document.getElementById('infoUser').textContent = 'Erreur chargement profil : ' + errProfil.message;
-    document.getElementById('bannerStatut').innerHTML = '<div class="banner attente">⚠️ Erreur : '+esc(errProfil.message)+'</div>';
-    return;
-  }
-  if(!profil){
-    document.getElementById('infoUser').textContent = 'Aucun profil trouvé pour ce compte. Va dans ton profil pour le compléter, ou contacte le support.';
-    document.getElementById('bannerStatut').innerHTML = '<div class="banner attente">⚠️ Ton compte existe mais ton profil est introuvable dans la table profiles. ID : '+uid+'</div>';
-    return;
-  }
+  if(errProfil){ document.getElementById('infoUser').textContent = 'Erreur chargement profil : ' + errProfil.message; document.getElementById('bannerStatut').innerHTML = '<div class="banner attente">⚠️ Erreur : '+esc(errProfil.message)+'</div>'; return; }
+  if(!profil){ document.getElementById('infoUser').textContent = 'Aucun profil trouvé pour ce compte.'; document.getElementById('bannerStatut').innerHTML = '<div class="banner attente">⚠️ Ton compte existe mais ton profil est introuvable. ID : '+uid+'</div>'; return; }
   let roleReel = String(profil.type_compte || profil.type_fournisseur || '').toLowerCase().trim();
   if(!roleReel && profil.nom_entreprise) roleReel = 'entreprise';
   const ROLES_FOURNISSEUR = ['prestataire','livreur','fournisseur','professionnel','entreprise','pro'];
   if(roleReel === 'client'){ location.href='dashboard-client.html'; return; }
   if(roleReel === 'admin'){ location.href='admin.html'; return; }
-  if(!ROLES_FOURNISSEUR.includes(roleReel)){
-    document.getElementById('infoUser').textContent = 'Rôle inconnu : ' + (roleReel || 'vide') + ' - Contacte le support.';
-    document.getElementById('bannerStatut').innerHTML = '<div class="banner attente">⚠️ Ton rôle est "'+esc(roleReel || 'vide')+'". Il doit être prestataire, entreprise ou livreur pour voir ce dashboard.</div>';
-    return;
-  }
+  if(!ROLES_FOURNISSEUR.includes(roleReel)){ document.getElementById('infoUser').textContent = 'Rôle inconnu : ' + (roleReel || 'vide'); document.getElementById('bannerStatut').innerHTML = '<div class="banner attente">⚠️ Ton rôle est "'+esc(roleReel || 'vide')+'".</div>'; return; }
   document.getElementById('nomUser').textContent = nomAffiche(profil);
   document.getElementById('badgeType').innerHTML = badgeTypeFournisseur(profil);
-  if(profil.nom_entreprise && profil.nom){
-    document.getElementById('infoUser').textContent = `Contact : ${profil.nom} • ${profil.quartier || ''} - ${profil.ville || ''} • ${profil.pays || ''}`;
-  } else {
-    document.getElementById('infoUser').textContent = `${profil.quartier || ''} - ${profil.ville || ''} • ${profil.pays || ''}`;
-  }
+  document.getElementById('infoUser').textContent = (profil.nom_entreprise && profil.nom) ? `Contact : ${profil.nom} • ${profil.quartier || ''} - ${profil.ville || ''} • ${profil.pays || ''}` : `${profil.quartier || ''} - ${profil.ville || ''} • ${profil.pays || ''}`;
   const quartier = profil.quartier || '';
   document.getElementById('profilNom').textContent = nomAffiche(profil);
   document.getElementById('profilQuartier').textContent = '📍 Quartier : ' + (quartier || 'Non rempli');
-  document.getElementById('profilBadge').textContent = quartier ? '📍 ' + quartier : '📍 Quartier non rempli';
   if(profil.photo_profil_url) document.getElementById('photoProfil').src = profil.photo_profil_url;
-  document.getElementById('btnVerif').style.display='none';
-  document.getElementById('btnVerifAttente').style.display='none';
+
+  // CORRIGÉ : Vérification quartier - logique réelle, plus jamais cachée en dur
+  const verifStatut = String(profil.verification_statut || profil.statut || '').toLowerCase();
+  const estVerifie = profil.quartier_verifie===true || verifStatut==='valide' || verifStatut==='verifie';
+  const enAttente = verifStatut==='en_attente' || verifStatut==='attente';
+  const estRejete = verifStatut==='rejete' || verifStatut==='refuse';
+  const btnVerif = document.getElementById('btnVerif');
+  const btnAttente = document.getElementById('btnVerifAttente');
   const banner = document.getElementById('bannerStatut');
-  banner.innerHTML = `<div class="banner valide">✅ <b>Compte validé</b> - Tu peux recevoir des commandes.</div>`;
+  if(estVerifie){
+    document.getElementById('profilBadge').textContent = '✅ Quartier vérifié';
+    btnVerif.style.display='none'; btnAttente.style.display='none';
+    banner.innerHTML = `<div class="banner valide">✅ <b>Compte validé</b> - Quartier vérifié - Tu peux recevoir des commandes.</div>`;
+  } else if(enAttente){
+    document.getElementById('profilBadge').textContent = '⏳ Vérification en attente';
+    btnVerif.style.display='none'; btnAttente.style.display='block';
+    banner.innerHTML = `<div class="banner attente">⏳ <b>Vérification en attente</b> - On vérifie ton quartier. Tu peux déjà publier, mais sans badge.</div>`;
+  } else if(estRejete){
+    document.getElementById('profilBadge').textContent = '❌ Vérification rejetée';
+    btnVerif.style.display='block'; btnVerif.textContent='🔁 Refaire ma vérification → Obtenir le badge ✅'; btnAttente.style.display='none';
+    banner.innerHTML = `<div class="banner rejete">❌ <b>Vérification rejetée</b> - Refais ta demande avec une meilleure preuve.</div>`;
+  } else {
+    document.getElementById('profilBadge').textContent = '⚪ Quartier non vérifié';
+    btnVerif.style.display='block'; btnAttente.style.display='none';
+    banner.innerHTML = `<div class="banner attente">⚠️ <b>Quartier non vérifié</b> - Fais vérifier ton quartier pour obtenir le badge ✅ et plus de clients.</div>`;
+  }
+
   document.getElementById('regPortfolio').value = profil.portfolio_url || '';
   document.getElementById('regLangues').value = profil.langues || '';
   document.getElementById('regLieux').value = profil.lieux_connus || '';
@@ -286,63 +326,49 @@ async function charger(){
   setToggle('distance', profil.travaille_distance===true);
   setToggle('auj', profil.disponible_aujourd_hui===true);
   setToggle('maint', profil.disponible_maintenant===true);
-  const resAbo = verifierAbonnement(profil||{});
+
+  const resAbo = await verifierAbonnement(profil||{});
   const boxAbo = document.getElementById('bandeauAbo');
   const btnCreer = document.getElementById('btnCreer');
-  if(resAbo.ok && resAbo.type==='offert'){
-    boxAbo.innerHTML = `<div class="bandeau-abo abo-offert">🎁 1er mois offert - Tu peux publier. Commissions dues dès la 1ère mission.</div>`;
-    btnCreer.disabled=false;
-  } else if(resAbo.ok){
-    boxAbo.innerHTML = `<div class="bandeau-abo abo-ok">✅ Abonnement à jour jusqu'au ${esc(resAbo.fin.toLocaleDateString('fr-FR'))} - Tu peux publier.</div>`;
-    btnCreer.disabled=false;
-  } else {
-    boxAbo.innerHTML = `<div class="bandeau-abo abo-expire">⛔ Abonnement expiré. Tu ne peux pas publier de nouvelle annonce tant que tu ne renouvelles pas.<br><button class="btn btn-dark" onclick="location.href='abonnement.html'">Renouveler maintenant →</button></div>`;
-    btnCreer.disabled=true; btnCreer.textContent='⛔ Publier bloqué - Abonnement expiré';
-  }
-  const {data: annonces, error: errAnnonces} = await sb.from('annonces')
-    .select('id, titre, categorie, univers, quartier, localite, ville, prix_indicatif, prix_fixe, devise, photo_url, status, chambres_restantes, disponible, created_at')
-    .eq('prestataire_id', uid).order('created_at',{ascending:false});
+  if(resAbo.ok && resAbo.type==='offert'){ boxAbo.innerHTML = `<div class="bandeau-abo abo-offert">🎁 1er mois offert (30 premiers comptes) - Tu peux publier. Commissions dues dès la 1ère mission.</div>`; btnCreer.disabled=false; btnCreer.textContent='➕ Créer une nouvelle annonce'; }
+  else if(resAbo.ok){ boxAbo.innerHTML = `<div class="bandeau-abo abo-ok">✅ Abonnement à jour jusqu'au ${esc(resAbo.fin.toLocaleDateString('fr-FR'))} - Tu peux publier.</div>`; btnCreer.disabled=false; btnCreer.textContent='➕ Créer une nouvelle annonce'; }
+  else { boxAbo.innerHTML = `<div class="bandeau-abo abo-expire">⛔ Abonnement expiré. Tu ne peux pas publier de nouvelle annonce tant que tu ne renouvelles pas.<br><button class="btn btn-dark" onclick="location.href='abonnement.html'">Renouveler maintenant →</button></div>`; btnCreer.disabled=true; btnCreer.textContent='⛔ Publier bloqué - Abonnement expiré'; }
+
+  const {data: annonces, error: errAnnonces} = await sb.from('annonces').select('id, titre, categorie, univers, quartier, localite, ville, prix_indicatif, prix_fixe, devise, photo_url, status, chambres_restantes, disponible, created_at').eq('prestataire_id', uid).order('created_at',{ascending:false});
   mesAnnonces = annonces||[];
+  // CORRIGÉ : On détecte les activités réelles à partir des annonces
+  const universSet = new Set((annonces||[]).map(a=>String(a.univers||'').toLowerCase()));
+  const categories = (annonces||[]).map(a=>a.categorie||'');
+  if(roleReel==='livreur') universSet.add('livreur');
+  afficherReglagesParActivite(universSet, categories);
+
   const boxA = document.getElementById('listeAnnonces');
   document.getElementById('nbAnnonces').textContent = annonces?.length || 0;
-  if(errAnnonces){
-    boxA.innerHTML = `<div class="empty">Erreur annonces : ${esc(errAnnonces.message)}</div>`;
-  } else if(!annonces || annonces.length===0){
-    boxA.innerHTML = `<div class="empty">Aucune annonce. Crée ta première annonce pour commencer à gagner.</div>`;
-  } else {
+  if(errAnnonces){ boxA.innerHTML = `<div class="empty">Erreur annonces : ${esc(errAnnonces.message)}</div>`; }
+  else if(!annonces || annonces.length===0){ boxA.innerHTML = `<div class="empty">Aucune annonce. Crée ta première annonce pour commencer à gagner.</div>`; }
+  else {
     boxA.innerHTML = annonces.map(a=>{
       const lieu = a.quartier || a.localite || '';
       const prixTxt = a.prix_fixe ? fmt(a.prix_indicatif||0)+' - Prix fixe' : (a.prix_indicatif ? 'À partir de '+fmt(a.prix_indicatif) : 'Prix à discuter');
       let gestion = '';
-      if(a.univers==='manger'){
-        gestion = `<div class="gestion"><label>🍽️ PLAT - PRIX (FCFA)</label><input id="prix-${a.id}" type="number" value="${a.prix_indicatif||''}"><label>DISPONIBLE ?</label><select id="dispo-${a.id}"><option value="true" ${a.disponible!==false?'selected':''}>Oui - Disponible</option><option value="false" ${a.disponible===false?'selected':''}>Non - Pas dispo</option></select><button class="btn btn-green" onclick="majAnnonce('${a.id}','prix_indicatif',Number(document.getElementById('prix-${a.id}').value)||0);majAnnonce('${a.id}','disponible',document.getElementById('dispo-${a.id}').value==='true')">💾 Sauvegarder le plat</button></div>`;
-      } else if(a.univers==='sejour'){
-        gestion = `<div class="gestion"><label>🛏️ CHAMBRES RESTANTES</label><input id="ch-${a.id}" type="number" value="${a.chambres_restantes ?? ''}" placeholder="Ex: 3"><button class="btn btn-green" onclick="majAnnonce('${a.id}','chambres_restantes',Number(document.getElementById('ch-${a.id}').value))">💾 Sauvegarder chambres</button><label>DISPONIBLE ?</label><select onchange="majAnnonce('${a.id}','disponible',this.value==='true')"><option value="true" ${a.disponible!==false?'selected':''}>Oui</option><option value="false" ${a.disponible===false?'selected':''}>Non</option></select></div>`;
-      } else {
-        gestion = `<div class="gestion"><label>💰 PRIX INDICATIF (FCFA)</label><input id="prix-${a.id}" type="number" value="${a.prix_indicatif||''}"><button class="btn btn-green" onclick="majAnnonce('${a.id}','prix_indicatif',Number(document.getElementById('prix-${a.id}').value)||0)">💾 Sauvegarder le prix</button></div>`;
-      }
+      if(a.univers==='manger'){ gestion = `<div class="gestion"><label>🍽️ PLAT - PRIX (FCFA)</label><input id="prix-${a.id}" type="number" value="${a.prix_indicatif||''}"><label>DISPONIBLE ?</label><select id="dispo-${a.id}"><option value="true" ${a.disponible!==false?'selected':''}>Oui - Disponible</option><option value="false" ${a.disponible===false?'selected':''}>Non - Pas dispo</option></select><button class="btn btn-green" onclick="majAnnonce('${a.id}','prix_indicatif',Number(document.getElementById('prix-${a.id}').value)||0);majAnnonce('${a.id}','disponible',document.getElementById('dispo-${a.id}').value==='true')">💾 Sauvegarder le plat</button></div>`; }
+      else if(a.univers==='sejour'){ gestion = `<div class="gestion"><label>🛏️ CHAMBRES RESTANTES</label><input id="ch-${a.id}" type="number" value="${a.chambres_restantes ?? ''}" placeholder="Ex: 3"><button class="btn btn-green" onclick="majAnnonce('${a.id}','chambres_restantes',Number(document.getElementById('ch-${a.id}').value))">💾 Sauvegarder chambres</button><label>DISPONIBLE ?</label><select onchange="majAnnonce('${a.id}','disponible',this.value==='true')"><option value="true" ${a.disponible!==false?'selected':''}>Oui</option><option value="false" ${a.disponible===false?'selected':''}>Non</option></select></div>`; }
+      else if(a.univers==='immobilier'){ gestion = `<div class="gestion"><label>💰 PRIX INDICATIF (FCFA)</label><input id="prix-${a.id}" type="number" value="${a.prix_indicatif||''}"><button class="btn btn-green" onclick="majAnnonce('${a.id}','prix_indicatif',Number(document.getElementById('prix-${a.id}').value)||0)">💾 Sauvegarder le prix</button><button class="btn" style="background:#fee2e2;color:#991b1b" onclick="marquerLoueVendu('${a.id}')">🏁 Marquer comme Loué / Vendu - Masquer</button></div>`; }
+      else { gestion = `<div class="gestion"><label>💰 PRIX INDICATIF (FCFA)</label><input id="prix-${a.id}" type="number" value="${a.prix_indicatif||''}"><button class="btn btn-green" onclick="majAnnonce('${a.id}','prix_indicatif',Number(document.getElementById('prix-${a.id}').value)||0)">💾 Sauvegarder le prix</button></div>`; }
       return `<div class="card">${badgeAnnonce(a)}<h3 style="margin-top:8px">${esc(a.titre)}</h3><p>${esc(a.categorie)} • ${esc(a.univers)} • ${esc(lieu)} - ${esc(a.ville)}<br>${prixTxt}</p>${gestion}<button class="btn btn-dark" onclick="location.href='creer-annonce.html'">✏️ Modifier / Voir</button><button class="btn" style="background:#fee2e2;color:#991b1b" onclick="supprimerAnnonce('${a.id}')">🗑️ Supprimer</button></div>`;
     }).join('');
   }
-  const {data: cmds, error: errCmds} = await sb.from('commandes')
-    .select('id, titre, client_id, conversation_id, annonce_id, status, univers, commission, montant_total, montant_prestataire, localite, ville, litige_raison, created_at')
-    .eq('prestataire_id', uid).order('created_at',{ascending:false});
+  const {data: cmds, error: errCmds} = await sb.from('commandes').select('id, titre, client_id, conversation_id, annonce_id, status, univers, commission, montant_total, montant_prestataire, localite, ville, litige_raison, created_at').eq('prestataire_id', uid).order('created_at',{ascending:false});
   const boxC = document.getElementById('listeCommandes');
   document.getElementById('nbCommandes').textContent = cmds?.length || 0;
-  let total = 0;
-  (cmds||[]).forEach(c=>{ if(['paye','en_cours','valide','libere'].includes(c.status)) total += Number(c.montant_prestataire||0); });
+  let total = 0; (cmds||[]).forEach(c=>{ if(['paye','en_cours','valide','libere'].includes(c.status)) total += Number(c.montant_prestataire||0); });
   document.getElementById('totalGagne').textContent = fmt(total);
-  if(errCmds){
-    boxC.innerHTML = `<div class="empty">Erreur commandes : ${esc(errCmds.message)}</div>`;
-  } else if(!cmds || cmds.length===0){
-    boxC.innerHTML = `<div class="empty">Aucune commande pour l'instant. Quand un client te parlera dans le chat et créera une commande, elle apparaîtra ici.</div>`;
-  } else {
+  if(errCmds){ boxC.innerHTML = `<div class="empty">Erreur commandes : ${esc(errCmds.message)}</div>`; }
+  else if(!cmds || cmds.length===0){ boxC.innerHTML = `<div class="empty">Aucune commande pour l'instant. Quand un client te parlera dans le chat et créera une commande, elle apparaîtra ici.</div>`; }
+  else {
     const clientIds = [...new Set(cmds.map(c=>c.client_id).filter(Boolean))];
     let nomsClients = {};
-    if(clientIds.length){
-      const {data: profs} = await sb.from('profiles').select('id,nom').in('id', clientIds);
-      (profs||[]).forEach(p=> nomsClients[p.id]=p.nom);
-    }
+    if(clientIds.length){ const {data: profs} = await sb.from('profiles').select('id,nom').in('id', clientIds); (profs||[]).forEach(p=> nomsClients[p.id]=p.nom); }
     boxC.innerHTML = cmds.map(c=>{
       let action = '';
       if(c.status==='paye') action = `<button class="btn btn-green" onclick="changerStatut('${esc(c.id)}','en_cours')">🔧 Commencer le service</button>`;
@@ -352,23 +378,20 @@ async function charger(){
       if(c.status==='libere') action = `<p style="color:#166534">💰 Argent libéré - Vérifie ton Mobile Money / compte.</p>`;
       return `<div class="card">${badgeCommande(c.status)}<h3 style="margin-top:8px">${esc(c.titre)}</h3><p>Client : ${esc(nomsClients[c.client_id] || 'Client')}<br>Total : ${fmt(c.montant_total)} • ${esc(texteCommission(c))} • Tu reçois : <b>${fmt(c.montant_prestataire)}</b><br>📍 ${esc(c.localite||'')} - ${esc(c.ville||'')}<br><span style="color:#16a34a">🔒 Escrow : argent bloqué chez Rocyinter jusqu'à validation client</span></p>${action}<button class="btn btn-dark" onclick="voirConversation('${esc(c.conversation_id)}','${esc(c.annonce_id)}')">Ouvrir le chat</button></div>`;
     }).join('');
+    // Demandes livreur : commandes livreur en attente
+    if(universSet.has('livreur')){
+      const dem = (cmds||[]).filter(c=>c.univers==='livreur' && c.status==='en_attente');
+      document.getElementById('listeDemandesLivreur').innerHTML = dem.length ? dem.map(c=>`<div class="card"><b>${esc(c.titre)}</b><p>📍 ${esc(c.localite||'')} - ${esc(c.ville||'')} • ${fmt(c.montant_total)}</p><button class="btn btn-green" onclick="voirConversation('${esc(c.conversation_id)}','${esc(c.annonce_id)}')">Voir / Accepter</button></div>`).join('') : `<div class="empty">Aucune demande de livraison en attente pour l'instant.</div>`;
+    }
   }
-  const {data: convsBrutes, error: errConvs} = await sb.from('conversations')
-    .select('id, client_id, prestataire_id, annonce_id, created_at')
-    .eq('prestataire_id', uid).order('created_at',{ascending:false});
+  const {data: convsBrutes, error: errConvs} = await sb.from('conversations').select('id, client_id, prestataire_id, annonce_id, created_at').eq('prestataire_id', uid).order('created_at',{ascending:false});
   const convs = (convsBrutes||[]).filter(cv => String(cv.client_id)!==String(cv.prestataire_id));
   const boxV = document.getElementById('listeConvs');
-  if(errConvs){
-    boxV.innerHTML = `<div class="empty">Erreur conversations : ${esc(errConvs.message)}</div>`;
-  } else if(!convs || convs.length===0){
-    boxV.innerHTML = `<div class="empty">Aucune conversation pour l'instant.</div>`;
-  } else {
-    let titres = {};
-    const annonceIds = [...new Set(convs.map(cv=>cv.annonce_id).filter(Boolean))];
-    if(annonceIds.length){
-      const {data: anns} = await sb.from('annonces').select('id, titre').in('id', annonceIds);
-      (anns||[]).forEach(a=> titres[a.id]=a.titre);
-    }
+  if(errConvs){ boxV.innerHTML = `<div class="empty">Erreur conversations : ${esc(errConvs.message)}</div>`; }
+  else if(!convs || convs.length===0){ boxV.innerHTML = `<div class="empty">Aucune conversation pour l'instant.</div>`; }
+  else {
+    let titres = {}; const annonceIds = [...new Set(convs.map(cv=>cv.annonce_id).filter(Boolean))];
+    if(annonceIds.length){ const {data: anns} = await sb.from('annonces').select('id, titre').in('id', annonceIds); (anns||[]).forEach(a=> titres[a.id]=a.titre); }
     boxV.innerHTML = convs.map(cv=>`<div class="card"><b>${esc(titres[cv.annonce_id] || 'Discussion')}</b><p>Conversation • ${esc(new Date(cv.created_at).toLocaleDateString('fr-FR'))}</p><button class="btn btn-green" onclick="voirConversation('${esc(cv.id)}','${esc(cv.annonce_id)}')">Répondre</button></div>`).join('');
   }
   if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
