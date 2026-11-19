@@ -33,7 +33,7 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:12px;line-height:1.5}
 
 <div id="bandeauAbo"></div>
 <div class="info" id="compteur">Chargement...</div>
-<div class="rouge">⚠️ <b data-i18n="important">Important :</b> <span data-i18n="abonnementImportant">Le mois offert, c'est <b>seulement l'abonnement</b>. Les commissions Rocyinter s'appliquent <b>dès la 1ère mission</b> : Manger 12%, Domicile 8%, Pro 5 000 FCFA, Séjour 12%, Immobilier : Parcelle 10 000 FCFA + 2%, Location 50% d'un mois.</span></div>
+<div class="rouge">⚠️ <b data-i18n="important">Important :</b> <span data-i18n="abonnementImportant">Le mois offert, c'est <b>seulement l'abonnement</b>. Les commissions Rocyinter s'appliquent <b>dès la 1ère mission</b> : Manger 12%, Domicile 8%, Pro 5 000 FCFA, Séjour 12%, Évènement 12%, Livreur 20%, Immobilier : Parcelle 2% plafonné 200 000, Location 50% d'un mois.</span></div>
 
 <div id="blocClient" style="display:none">
   <div class="card"><h3>💼 Tu es Client</h3><p>L'abonnement, c'est pour les Fournisseurs / Livreurs qui publient. Crée un compte Fournisseur pour publier et prendre un abonnement.</p><button class="btn btn-dark" onclick="location.href='inscription.html?type=prestataire'">Devenir Fournisseur →</button></div>
@@ -42,7 +42,7 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:12px;line-height:1.5}
 <div id="blocPlans">
   <div class="card"><h3>Pro - <span id="prixPro">10 000 FCFA / mois</span></h3><p id="descPro">3 annonces, mise en avant, badge Pro.<br><b>1er mois offert</b> si tu es parmi les 30 premiers validés.</p><button class="btn" id="btnPro" onclick="choisir('Pro')">Choisir Pro</button></div>
   <div class="card"><h3>Premium - <span id="prixPremium">25 000 FCFA / mois</span></h3><p id="descPremium">Annonces illimitées, en haut des listes, badge Premium.<br><b>1er mois offert</b> si tu es parmi les 30 premiers validés.</p><button class="btn btn-dark" id="btnPremium" onclick="choisir('Premium')">Choisir Premium</button></div>
-  <p style="font-size:12px;color:#64748b;text-align:center;margin-top:8px" data-i18n="abonnementFooter">Réduction annuelle : 10 mois payés = 12 mois. Le prix ne change jamais, même après 6 mois. À partir du 2ème mois, l'abonnement est payant pour tout le monde. Sans abonnement à jour, tu ne peux pas publier de nouvelle annonce.</p>
+  <p style="font-size:12px;color:#64748b;text-align:center;margin-top:8px" data-i18n="abonnementFooter">Réduction annuelle : 10 mois payés = 12 mois. Après 6 mois : Pro 15 000 / 35 000 FCFA, Premium 35 000 / 75 000 FCFA. À partir du 2ème mois, l'abonnement est payant pour tout le monde. Sans abonnement à jour, tu ne peux pas publier de nouvelle annonce.</p>
 </div>
 </div>
 <script>
@@ -71,18 +71,22 @@ function verifierAbonnement(p){
   return {ok:false,type:'expire',fin};
 }
 function prixPourUnivers(univers){
-  if(['pro','sejour','immobilier'].includes(univers)) return {pro:25000, premium:50000, label:'Pro / Hôtel / Immobilier'};
-  return {pro:10000, premium:25000, label:'Manger / Domicile'};
+  if(['pro','sejour','immobilier','evenement'].includes(univers)) return {pro:25000, premium:50000, label:'Pro / Hôtel / Immobilier / Évènement'};
+  return {pro:10000, premium:25000, label:'Manger / Domicile / Livreur'};
 }
 function universPourCategorie(cat){
   if(!cat) return 'domicile';
   const manger=['Traiteur','Restaurant','Restaurant / Maquis','Livraison repas','Pâtisserie','Jus / Boissons'];
   const pro=['Design','Design / Graphisme','Développement','Développement Web','Marketing','Marketing / Réseaux sociaux','Comptabilité','Traduction','Cours','Cours / Coaching','Montage vidéo','Rédaction / CV'];
   const sejour=['Hôtel','Hôtel / Appartement','Location voiture','Guide touristique','Transport','Transport / Moto','Location salle','Excursion / Visite'];
-  const immo=['Location maison / Appartement','Maison à louer','Chambre à louer','Appartement à louer','Parcelle à vendre','Terrain à vendre','Maison à vendre','Vente maison / Terrain','Location chambre / Studio','Gestion locative','Visite / Courtage'];
+  const evenement=['DJ','DJ / Animation','Décorateur','Décorateur Évènement','Photographe','Photographe / Vidéaste','Location matériel','Location matériel fête','Traiteur Évènement','Location salle fête'];
+  const livreur=['Livreur moto','Livreur voiture','Coursier','Coursier / Courses','Livreur'];
+  const immo=['Location maison / Appartement','Maison à louer','Chambre à louer','Appartement à louer','Parcelle à vendre','Terrain à vendre','Maison à vendre','Vente maison / Terrain','Location chambre / Studio','Gestion locative','Visite / Courtage','Parcelle','Parcelle / Terrain'];
   if(manger.includes(cat)) return 'manger';
   if(pro.includes(cat)) return 'pro';
   if(sejour.includes(cat)) return 'sejour';
+  if(evenement.includes(cat)) return 'evenement';
+  if(livreur.includes(cat)) return 'livreur';
   if(immo.includes(cat)) return 'immobilier';
   return 'domicile';
 }
