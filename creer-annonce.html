@@ -55,10 +55,7 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:8p
   </div>
   <div id="blocUnivers" class="info-univers" style="display:none"></div>
   <div id="infoCommission" class="info-commission"></div>
-
-  <!-- CORRIGÉ MONDIAL : TOUT est caché tant que la catégorie n'est pas choisie -->
   <div id="blocFormulaire" style="display:none;gap:12px">
-
   <div id="blocImmo" class="bloc-immo">
     <div><label>🏠 TU ES QUOI ? *</label>
       <select id="typeVendeur">
@@ -78,7 +75,6 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:8p
       <input id="titreDoc" placeholder="Lien du titre, ou tu l'envoies à l'Admin sur WhatsApp">
     </div>
   </div>
-
   <div id="blocComp" class="bloc-comp">
     <div id="compEvenement" style="display:none">
       <div><label>📅 DATE DE L'ÉVÈNEMENT</label><input id="dateEvenement" type="date"></div>
@@ -113,7 +109,6 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:8p
       <div><label>⏱️ DURÉE DE LA VISITE (heures)</label><input id="dureeGuide" type="number" placeholder="Ex: 4"></div>
     </div>
   </div>
-
   <div><label data-i18n="titreAnnonce">TITRE DE VOTRE ANNONCE *</label><input id="titre" placeholder="Ex: Décrivez votre service en quelques mots" maxlength="80"></div>
   <div><label data-i18n="description">DESCRIPTION DÉTAILLÉE *</label><textarea id="description" placeholder="Ex: Décrivez votre service..." maxlength="2000"></textarea></div>
   <div id="blocTypePrix"><label data-i18n="typePrix">TYPE DE PRIX *</label>
@@ -132,9 +127,7 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:8p
     <img id="previewPhoto" style="display:none;width:100%;border-radius:10px;margin-top:8px;max-height:200px;object-fit:cover">
     <small style="text-align:left">Choisis une photo dans ta galerie. Elle sera envoyée automatiquement.</small>
   </div>
-
-  </div><!-- fin blocFormulaire -->
-
+  </div>
   <div id="msg" class="msg"></div>
   <button class="btn" id="btnPublier" onclick="publier()" style="display:none">Publier mon annonce →</button>
   <small>⚠️ Annonce en attente de validation. Abonnement à jour obligatoire pour publier. Commissions dues dès la 1ère mission.</small>
@@ -173,36 +166,15 @@ function majExemples(){
   const desc=document.getElementById('description');
   const cat=(document.getElementById('categorie').value||'').toLowerCase();
   const u=universChoisi;
-  if(!u && !cat){
-    titre.placeholder='Ex: Décrivez votre service en quelques mots';
-    desc.placeholder='Ex: Décrivez votre service...';
-    return;
-  }
-  if(u==='manger' || cat.includes('restaurant')){
-    titre.placeholder='Ex: Poulet braisé + Attiéké à Cotonou';
-    desc.placeholder='Ex: Restaurant à Fidjrossè depuis 3 ans. Poulet braisé, poisson, attiéké. Ouvert 11h à 23h. Livraison disponible...';
-  } else if(u==='sejour' && cat.includes('guide')){
-    titre.placeholder='Ex: Guide Ouidah - Visite historique 4h';
-    desc.placeholder='Ex: Guide à Ouidah depuis 5 ans. Je parle Français, Fon, Anglais. Visite de la Route des Esclaves...';
-  } else if(u==='sejour'){
-    titre.placeholder='Ex: Chambre climatisée à Cotonou - 15 000 FCFA / nuit';
-    desc.placeholder='Ex: Hôtel à Fidjrossè, 10 chambres climatisées, wifi, petit-déjeuner inclus...';
-  } else if(u==='livreur'){
-    titre.placeholder='Ex: Livraison rapide Moto à Cotonou';
-    desc.placeholder='Ex: Livreur moto à Cotonou depuis 2 ans, disponible 7j/7, livraison en 30 min...';
-  } else if(u==='immobilier'){
-    titre.placeholder='Ex: Appartement 2 chambres à Calavi';
-    desc.placeholder='Ex: Appartement neuf à Calavi, 2 chambres, salon, cuisine, proche goudron...';
-  } else if(u==='pro'){
-    titre.placeholder='Ex: Développeur Web - Site vitrine en 7 jours';
-    desc.placeholder='Ex: Développeur depuis 4 ans. Sites web, boutiques en ligne. Travail à distance possible...';
-  } else if(u==='evenement'){
-    titre.placeholder='Ex: DJ + Sonorisation Mariage à Cotonou';
-    desc.placeholder='Ex: DJ depuis 6 ans, mariages, anniversaires, 100 personnes max...';
-  } else if(u==='domicile' || cat){
-    titre.placeholder='Ex: Plombier rapide à Calavi';
-    desc.placeholder='Ex: Je suis plombier à Godomey depuis 5 ans...';
-  }
+  if(!u && !cat){ titre.placeholder='Ex: Décrivez votre service en quelques mots'; desc.placeholder='Ex: Décrivez votre service...'; return; }
+  if(u==='manger' || cat.includes('restaurant')){ titre.placeholder='Ex: Poulet braisé + Attiéké à Cotonou'; desc.placeholder='Ex: Restaurant à Fidjrossè depuis 3 ans. Poulet braisé, poisson, attiéké. Ouvert 11h à 23h. Livraison disponible...'; }
+  else if(u==='sejour' && cat.includes('guide')){ titre.placeholder='Ex: Guide Ouidah - Visite historique 4h'; desc.placeholder='Ex: Guide à Ouidah depuis 5 ans. Je parle Français, Fon, Anglais. Visite de la Route des Esclaves...'; }
+  else if(u==='sejour'){ titre.placeholder='Ex: Chambre climatisée à Cotonou - 15 000 FCFA / nuit'; desc.placeholder='Ex: Hôtel à Fidjrossè, 10 chambres climatisées, wifi, petit-déjeuner inclus...'; }
+  else if(u==='livreur'){ titre.placeholder='Ex: Livraison rapide Moto à Cotonou'; desc.placeholder='Ex: Livreur moto à Cotonou depuis 2 ans, disponible 7j/7, livraison en 30 min...'; }
+  else if(u==='immobilier'){ titre.placeholder='Ex: Appartement 2 chambres à Calavi'; desc.placeholder='Ex: Appartement neuf à Calavi, 2 chambres, salon, cuisine, proche goudron...'; }
+  else if(u==='pro'){ titre.placeholder='Ex: Développeur Web - Site vitrine en 7 jours'; desc.placeholder='Ex: Développeur depuis 4 ans. Sites web, boutiques en ligne. Travail à distance possible...'; }
+  else if(u==='evenement'){ titre.placeholder='Ex: DJ + Sonorisation Mariage à Cotonou'; desc.placeholder='Ex: DJ depuis 6 ans, mariages, anniversaires, 100 personnes max...'; }
+  else if(u==='domicile' || cat){ titre.placeholder='Ex: Plombier rapide à Calavi'; desc.placeholder='Ex: Je suis plombier à Godomey depuis 5 ans...'; }
 }
 function verifierAbonnement(profil){
   const auj = new Date();
@@ -219,17 +191,9 @@ function verifierAbonnement(profil){
 function afficherBandeauAbo(res){
   const box=document.getElementById('bandeauAbo');
   const btn=document.getElementById('btnPublier');
-  if(res.ok && res.type==='offert'){
-    box.innerHTML=`<div class="bandeau-abo abo-offert">🎁 1er mois offert - Tu peux publier. Commissions dues dès la 1ère mission.</div>`;
-    btn.disabled=false; btn.textContent='Publier mon annonce →';
-  } else if(res.ok){
-    const dateFin = res.fin ? res.fin.toLocaleDateString('fr-FR') : '';
-    box.innerHTML=`<div class="bandeau-abo abo-ok">✅ Abonnement à jour ${dateFin ? 'jusqu\'au '+dateFin : ''} - Tu peux publier.</div>`;
-    btn.disabled=false; btn.textContent='Publier mon annonce →';
-  } else {
-    box.innerHTML=`<div class="bandeau-abo abo-expire">⛔ Ton abonnement est expiré. Renouvelle pour publier une nouvelle annonce.<br><br><button class="btn btn-dark" onclick="location.href='abonnement.html'">Renouveler mon abonnement →</button></div>`;
-    btn.disabled=true; btn.textContent='⛔ Abonnement expiré - Publier bloqué';
-  }
+  if(res.ok && res.type==='offert'){ box.innerHTML=`<div class="bandeau-abo abo-offert">🎁 1er mois offert - Tu peux publier. Commissions dues dès la 1ère mission.</div>`; btn.disabled=false; btn.textContent='Publier mon annonce →'; }
+  else if(res.ok){ const dateFin = res.fin ? res.fin.toLocaleDateString('fr-FR') : ''; box.innerHTML=`<div class="bandeau-abo abo-ok">✅ Abonnement à jour ${dateFin ? 'jusqu\'au '+dateFin : ''} - Tu peux publier.</div>`; btn.disabled=false; btn.textContent='Publier mon annonce →'; }
+  else { box.innerHTML=`<div class="bandeau-abo abo-expire">⛔ Ton abonnement est expiré. Renouvelle pour publier une nouvelle annonce.<br><br><button class="btn btn-dark" onclick="location.href='abonnement.html'">Renouveler mon abonnement →</button></div>`; btn.disabled=true; btn.textContent='⛔ Abonnement expiré - Publier bloqué'; }
 }
 function resetAffichageNeutre(){
   universChoisi="";
@@ -249,11 +213,7 @@ function onCategorieChange(){
   const sel=document.getElementById('categorie');
   const isAutre=sel.value==='__AJOUTER__';
   document.getElementById('blocAutreCategorie').style.display=isAutre?'block':'none';
-  if(isAutre){
-    document.getElementById('blocFormulaire').style.display='grid';
-    document.getElementById('btnPublier').style.display='block';
-    return;
-  }
+  if(isAutre){ document.getElementById('blocFormulaire').style.display='grid'; document.getElementById('btnPublier').style.display='block'; return; }
   if(!sel.value){ resetAffichageNeutre(); return; }
   document.getElementById('blocFormulaire').style.display='grid';
   document.getElementById('btnPublier').style.display='block';
@@ -261,11 +221,7 @@ function onCategorieChange(){
   const bloc=document.getElementById('blocUnivers'); bloc.style.display='block'; bloc.textContent='🌍 Univers automatique : '+universChoisi+' - activité '+sel.value;
   const info=document.getElementById('infoCommission'); info.innerHTML=infosCommission[universChoisi]||''; info.style.display='block';
   document.getElementById('blocImmo').style.display = universChoisi==='immobilier' ? 'grid' : 'none';
-  if(universChoisi==='immobilier'){
-    const catLow = sel.value.toLowerCase();
-    const estParcelle = catLow.includes('parcelle') || catLow.includes('terrain');
-    document.getElementById('blocParcelle').style.display = estParcelle ? '' : 'none';
-  }
+  if(universChoisi==='immobilier'){ const catLow = sel.value.toLowerCase(); const estParcelle = catLow.includes('parcelle') || catLow.includes('terrain'); document.getElementById('blocParcelle').style.display = estParcelle ? '' : 'none'; }
   const blocComp=document.getElementById('blocComp');
   const isGuide = sel.value.toLowerCase().includes('guide') || sel.value.toLowerCase().includes('touristique');
   const showComp = ['evenement','manger','sejour','domicile','livreur','pro'].includes(universChoisi) || isGuide;
@@ -280,15 +236,8 @@ function onCategorieChange(){
   else if(universChoisi==='pro') document.getElementById('compPro').style.display='block';
   const btnDisc=document.getElementById('btnDiscuter');
   const note=document.getElementById('notePrixManger');
-  if(universChoisi==='manger'){
-    setPrixType(true);
-    btnDisc.style.display='none';
-    note.style.display='block';
-  } else {
-    btnDisc.style.display='';
-    note.style.display='none';
-    if(universChoisi==='livreur') setPrixType(false);
-  }
+  if(universChoisi==='manger'){ setPrixType(true); btnDisc.style.display='none'; note.style.display='block'; }
+  else { btnDisc.style.display=''; note.style.display='none'; if(universChoisi==='livreur') setPrixType(false); }
   majExemples();
 }
 function setPrixType(fixe){
@@ -337,17 +286,13 @@ async function init(){
   const user = await getUtilisateurSecurise();
   if(!user){ location.href='connexion.html'; return; }
   uidActuel = user.id;
-  const {data: profil, error: errProfil} = await sb.from('profiles')
-    .select('id, type_compte, type_fournisseur, nom_entreprise, activites, categorie_prestataire, ville, quartier, pays, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert')
-    .eq('id', uidActuel).single();
+  const {data: profil, error: errProfil} = await sb.from('profiles').select('id, type_compte, type_fournisseur, nom_entreprise, activites, categorie_prestataire, ville, quartier, pays, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert').eq('id', uidActuel).single();
   if(errProfil || !profil){ showMsg('Profil introuvable. Reconnecte-toi.', false); await sb.auth.signOut(); setTimeout(()=> location.href='connexion.html', 1200); return; }
   profilFournisseur = profil;
   const roleReel = (profil.type_compte || profil.type_fournisseur || '').toLowerCase();
   if(roleReel === 'client'){ showMsg('Client : crée un compte Prestataire pour publier.', false); setTimeout(()=> location.href='inscription.html?type=prestataire', 1500); return; }
   if(roleReel === 'admin'){ location.href='admin.html'; return; }
-  if(!['prestataire','livreur','fournisseur','professionnel','entreprise','pro'].includes(roleReel)){
-    showMsg('Compte non autorisé à publier.', false); return;
-  }
+  if(!['prestataire','livreur','fournisseur','professionnel','entreprise','pro'].includes(roleReel)){ showMsg('Compte non autorisé à publier.', false); return; }
   remplirPays(profil.pays);
   document.getElementById('ville').value = profil.ville || '';
   document.getElementById('localite').value = profil.quartier || '';
@@ -360,13 +305,8 @@ async function init(){
   if(roleReel === 'livreur' && !acts.length) acts = ['Livraison moto'];
   mesActivites = acts;
   const sel = document.getElementById('categorie');
-  if(!mesActivites.length){
-    sel.innerHTML = `<option value="">Aucune activité</option><option value="__AJOUTER__">➕ + Ajouter une autre activité</option>`;
-    document.getElementById('blocAutreCategorie').style.display = 'block';
-  } else {
-    const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    sel.innerHTML = `<option value="">Choisir parmi tes activités...</option>` + mesActivites.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('') + `<option value="__AJOUTER__">➕ + Ajouter une autre activité</option>`;
-  }
+  if(!mesActivites.length){ sel.innerHTML = `<option value="">Aucune activité</option><option value="__AJOUTER__">➕ + Ajouter une autre activité</option>`; document.getElementById('blocAutreCategorie').style.display = 'block'; }
+  else { const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); sel.innerHTML = `<option value="">Choisir parmi tes activités...</option>` + mesActivites.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('') + `<option value="__AJOUTER__">➕ + Ajouter une autre activité</option>`; }
   resetAffichageNeutre();
 }
 async function publier(){
@@ -455,13 +395,9 @@ async function publier(){
     comp.disponible = true;
   }
   btn.disabled = true; btn.textContent = 'Publication...';
-  try{
-    if(photoFileChoisi) photo = await uploadPhoto(photoFileChoisi, uid);
-  }catch(e){
-    showMsg('Erreur photo : ' + e.message + ' - Vérifie le bucket annonces en public.', false);
-    btn.disabled = false; btn.textContent = 'Publier mon annonce →';
-    return;
-  }
+  try{ if(photoFileChoisi) photo = await uploadPhoto(photoFileChoisi, uid); }
+  catch(e){ showMsg('Erreur photo : ' + e.message + ' - Vérifie le bucket annonces en public.', false); btn.disabled = false; btn.textContent = 'Publier mon annonce →'; return; }
+  // CORRIGÉ : vehicule / langues / lieux_connus / capacite ne sont PAS dans annonces, ils sont dans profiles
   const {error} = await sb.from('annonces').insert([{
     prestataire_id: uid,
     univers: universChoisi,
@@ -488,14 +424,18 @@ async function publier(){
     temps_preparation_minutes: comp.temps_preparation_minutes ?? null,
     livraison_disponible: comp.livraison_disponible ?? null,
     delai_livraison: comp.delai_livraison ?? null,
-    vehicule: comp.vehicule || null,
     travaille_distance: comp.travaille_distance ?? null,
-    portfolio_url: comp.portfolio_url || null,
-    langues: comp.langues || null,
-    lieux_connus: comp.lieux_connus || null,
-    capacite: comp.nb_personnes ?? null
+    portfolio_url: comp.portfolio_url || null
   }]).select('id').single();
   if(error){ showMsg('Erreur : ' + error.message, false); btn.disabled = false; btn.textContent = 'Publier mon annonce →'; return; }
+  // Sauvegarde les infos profil dans profiles (pas dans annonces)
+  const majProfil = {};
+  if(comp.vehicule) majProfil.vehicule = comp.vehicule;
+  if(comp.langues) majProfil.langues = comp.langues;
+  if(comp.lieux_connus) majProfil.lieux_connus = comp.lieux_connus;
+  if(comp.travaille_distance !== undefined && comp.travaille_distance !== null) majProfil.travaille_distance = comp.travaille_distance;
+  if(comp.portfolio_url) majProfil.portfolio_url = comp.portfolio_url;
+  if(Object.keys(majProfil).length) await sb.from('profiles').update(majProfil).eq('id', uid);
   showMsg('✅ Annonce envoyée ! En attente de validation.', true);
   setTimeout(()=> location.href='dashboard-prestataire.html', 1500);
 }
