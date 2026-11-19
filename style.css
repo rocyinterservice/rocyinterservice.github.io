@@ -1,50 +1,62 @@
 /* ============================================
-   ROCYINTER SERVICES - style.css V4 FINAL CORRIGÉ
-   Aligné sur rocy-layout.js - 1 seule charte
-   Bleu Nuit #0f172a + Jaune #f59e0b + Fond #f6f7f9
+   ROCYINTER SERVICES - style.css V5 MONDIAL
+   Aligné à 100% sur rocy-layout.js - 1 seule charte
+   Bleu Nuit #0f172a + Jaune #fbbf24 + Fond #f7f8fa
+   Police : Inter + Plus Jakarta Sans
    Base commune pour les 46 pages
    ============================================ */
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
+
 :root{
   --bleu:#0f172a;
-  --bleu-fonce:#0b1120;
+  --bleu-fonce:#0b1220;
   --bleu-clair:#1e293b;
-  --jaune:#f59e0b;
+  --jaune:#fbbf24;
   --jaune-fonce:#d97706;
   --blanc:#FFFFFF;
-  --fond:#f6f7f9;
+  --fond:#f7f8fa;
   --bordure:#e2e8f0;
   --gris:#64748b;
+  --gris-clair:#94a3b8;
   --vert:#25D366;
   --vert-fonce:#1A7A3A;
   --rouge:#E53935;
   --radius:16px;
+  --radius-lg:18px;
   --ombre:0 2px 10px rgba(0,0,0,.05);
+  --ombre-card:0 2px 12px rgba(15,23,42,.05);
 }
 
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{overflow-x:hidden;width:100%}
-body{font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;background:var(--fond);color:#111;line-height:1.6;padding-top:92px !important}
+body{font-family:'Inter',system-ui,-apple-system,Arial,sans-serif;background:var(--fond);color:#0f172a;line-height:1.6;padding-top:92px !important;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:'Plus Jakarta Sans','Inter',sans-serif;letter-spacing:-0.02em}
 a{text-decoration:none;color:inherit}
-button{cursor:pointer;font-family:inherit;border:0}
+button{cursor:pointer;font-family:'Inter',sans-serif;border:0}
 button:disabled{opacity:.55;cursor:not-allowed}
 img{max-width:100%}
 :focus-visible{outline:3px solid var(--jaune);outline-offset:2px}
 
 /* --- EN-TETE - NE PAS RECREER, c'est rocy-layout.js qui le fait --- */
-/* On garde ces classes pour compatibilité si une vieille page les utilise, */
-/* mais elles reprennent les mêmes couleurs que .rocy-header */
 .site-header,.rocy-header{background:var(--bleu);color:#fff}
 .header-inner{max-width:1200px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:space-between}
-.logo{font-size:26px;font-weight:900;letter-spacing:.5px;line-height:1;color:#fff}
+.logo{font-size:26px;font-weight:800;letter-spacing:.5px;line-height:1;color:#fff;font-family:'Plus Jakarta Sans',sans-serif}
 .logo span{color:var(--jaune)}
 .logo small{display:block;font-size:9px;letter-spacing:3px;font-weight:700;color:#fff;margin-top:2px}
 .main-nav{display:flex;gap:18px;flex-wrap:wrap}
 .main-nav a{font-size:14px;font-weight:600;color:#DCE6F5}
 .main-nav a:hover{color:var(--jaune)}
 .header-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.pill{background:rgba(255,255,255,.12);color:#fff;padding:8px 12px;border-radius:999px;font-size:13px;font-weight:700}
+.pill{background:rgba(255,255,255,.12);color:#fff;padding:8px 12px;border-radius:999px;font-size:13px;font-weight:600}
 .pill-jaune{background:var(--jaune);color:#000}
+
+/* --- HERO - Même que index.html, pour manger, sejour, immo, etc. --- */
+.hero{background:linear-gradient(180deg,#0b1220 0%,#111c33 100%);color:#fff;padding:34px 20px 26px;text-align:center}
+.hero h1{font-size:28px;line-height:1.25;font-weight:800;max-width:520px;margin:0 auto;color:#fff}
+.hero h1 span{color:var(--jaune)}
+.hero p{color:#cbd5e1;font-size:14.5px;line-height:1.6;max-width:480px;margin:10px auto 0}
+.hero-decouvrir{margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,.12);font-size:13px;color:#94a3b8;max-width:480px;margin-left:auto;margin-right:auto}
 
 /* --- CONTENEUR + TITRES --- */
 .container{max-width:1200px;margin:0 auto;padding:20px 16px 40px}
@@ -55,13 +67,22 @@ img{max-width:100%}
 .section h2{color:var(--bleu);font-size:20px;margin-bottom:10px}
 .section p{text-align:justify;color:#333}
 
-/* --- BOUTONS --- */
-.btn{display:inline-block;background:var(--jaune);color:#000;padding:13px 22px;border-radius:12px;font-weight:900;font-size:15px;text-align:center}
+/* --- BOUTONS - Alignés sur rocy-layout.js --- */
+.btn{display:inline-block;background:var(--jaune);color:#000;padding:13px 22px;border-radius:12px;font-weight:600;font-size:15px;text-align:center}
 .btn:hover{background:var(--jaune-fonce);color:#fff}
 .btn-bleu{background:var(--bleu);color:#fff}
 .btn-vert{background:var(--vert);color:#fff}
+.btn-blanc{background:#fff;color:#0f172a;border:1px solid var(--bordure)}
+.btn-jaune{background:var(--jaune);color:#111;box-shadow:0 4px 14px rgba(251,191,36,.25)}
 .btn-centre{text-align:center;margin-top:16px}
 .btn-centre .btn{margin:4px}
+
+/* --- CTA BAS - Pour toutes les pages catégories --- */
+.cta-bas{text-align:center;padding:18px 16px 6px}
+.cta-bas-cta{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.cta-bas-cta button{padding:10px 18px;border-radius:999px;font-weight:600;font-size:13px;border:none}
+.cta-bas-cta .btn-jaune{background:var(--jaune);color:#111;box-shadow:0 4px 14px rgba(251,191,36,.25)}
+.cta-bas-cta .btn-noir{background:#fff;color:#0f172a;border:1px solid var(--bordure)}
 
 /* --- CARTES UNIVERS --- */
 .univers-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;max-width:860px;margin:0 auto 20px}
@@ -71,6 +92,12 @@ img{max-width:100%}
 .univers-card h3{color:var(--bleu);font-size:18px;margin:10px 0 6px}
 .univers-card p{color:var(--gris);font-size:14px;text-align:center}
 
+/* --- CARTES ANNONCES - index, manger, sejour, domicile, pro, immo, livreurs --- */
+.card{background:#fff;border:1px solid #f1f5f9;border-radius:18px;box-shadow:var(--ombre-card);padding:16px}
+.card-u{border-radius:999px;padding:9px 13px;font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.04);background:#fff;border:1px solid var(--bordure)}
+.card-actions{display:flex;gap:8px;margin-top:12px}
+.card-actions button{border-radius:12px;font-weight:600;flex:1;padding:10px}
+
 /* --- LISTES --- */
 .services-liste{display:flex;flex-direction:column;gap:14px;max-width:860px;margin:0 auto}
 .service-item{display:flex;gap:14px;align-items:flex-start;background:#fff;border:1px solid var(--bordure);border-radius:var(--radius);padding:16px;box-shadow:var(--ombre)}
@@ -78,7 +105,7 @@ img{max-width:100%}
 .service-texte{flex:1}
 .service-texte h3{font-size:16px;color:var(--bleu)}
 .service-texte p{font-size:13px;color:var(--gris);text-align:justify;margin-top:4px}
-.service-fleche{font-size:22px;color:var(--bleu);font-weight:900}
+.service-fleche{font-size:22px;color:var(--bleu);font-weight:800}
 
 /* --- ESCROW --- */
 .escrow-box{background:var(--bleu);color:#fff;border-radius:var(--radius);padding:22px;max-width:860px;margin:20px auto;text-align:center}
@@ -93,10 +120,10 @@ img{max-width:100%}
 .site-footer a{display:block;color:#DCE6F5;font-size:14px;margin:6px 0}
 .footer-bottom{text-align:center;padding:14px;border-top:1px solid rgba(255,255,255,.15);font-size:13px;color:#DCE6F5}
 
-/* --- FORMULAIRES --- */
+/* --- FORMULAIRES - connexion, inscription, creer-annonce, contact, profil --- */
 .form-box{background:#fff;border:1px solid var(--bordure);border-radius:var(--radius);padding:20px;max-width:860px;margin:16px auto;box-shadow:var(--ombre)}
 .form-box label{display:block;font-weight:700;font-size:14px;margin:12px 0 6px;color:var(--bleu)}
-.form-box input,.form-box textarea,.form-box select{width:100%;padding:12px;border:1px solid var(--bordure);border-radius:10px;font-size:15px;font-family:inherit}
+.form-box input,.form-box textarea,.form-box select{width:100%;padding:12px;border:1px solid var(--bordure);border-radius:12px;font-size:15px;font-family:inherit}
 .form-box input:focus,.form-box textarea:focus,.form-box select:focus{border-color:var(--jaune);outline:none}
 .form-box textarea{min-height:90px;resize:vertical}
 
@@ -111,6 +138,6 @@ img{max-width:100%}
 .message-vide{text-align:center;background:#fff;padding:22px;border-radius:16px;max-width:860px;margin:0 auto;border:1px dashed var(--bordure)}
 
 /* --- FILTRES - Même style que index.html --- */
-.filters{background:#fff;margin:0 16px 16px;padding:14px;border-radius:16px;box-shadow:var(--ombre);display:grid;gap:10px}
-.filters label{font-size:12px;font-weight:700;color:#475569}
-.filters select,.filters input{width:100%;padding:11px;border:1px solid var(--bordure);border-radius:10px;font-size:14px;background:#fff}
+.filters{background:#fff;margin:0 16px 16px;padding:14px;border-radius:18px;box-shadow:0 4px 24px rgba(15,23,42,.06);display:grid;gap:10px}
+.filters label{font-size:11px;letter-spacing:.06em;font-weight:700;color:#64748b;text-transform:uppercase}
+.filters select,.filters input{width:100%;padding:11px;border:1px solid var(--bordure);border-radius:12px;font-size:14px;background:#fff;font-family:'Inter',sans-serif}
