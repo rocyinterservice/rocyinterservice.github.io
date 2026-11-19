@@ -84,7 +84,6 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px}
 <p style="font-size:11px;color:#64748b;margin:-10px 0 14px">* Seulement les commandes payées / en cours / validées. Les commandes en attente ne comptent pas.</p>
 <button class="btn" id="btnCreer" onclick="location.href='creer-annonce.html'">➕ Créer une nouvelle annonce</button>
 <button class="btn btn-dark" onclick="location.href='abonnement.html'">💳 Voir / Renouveler mon abonnement</button>
-
 <div class="section" id="sectionReglages"><h2>⚙️ Mes réglages rapides</h2>
 <div class="card">
   <p id="texteReglages">Ce que le client voit dans ta fiche.</p>
@@ -102,7 +101,6 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px}
   </div>
 </div>
 </div>
-
 <div class="section" id="sectionLivreurDemandes" style="display:none"><h2>🛵 Demandes de livraison en attente</h2><div id="listeDemandesLivreur"></div></div>
 <div class="section"><h2>📋 Mes annonces</h2><div id="listeAnnonces"></div></div>
 <div class="section"><h2>💰 Mes commandes</h2><div id="listeCommandes"></div></div>
@@ -118,15 +116,12 @@ let uid = null;
 let reglages = {distance:false, auj:false, maint:false};
 let mesAnnonces = [];
 function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-// CORRIGÉ : 0 doit afficher 0 FCFA, pas "Prix à discuter"
 function fmt(n){ const v=Number(n||0); if(!v) return '0 FCFA'; if(window.rocyFormatPrix){ const r=window.rocyFormatPrix(v); if(r && !String(r).toLowerCase().includes('discuter')) return r; } return v.toLocaleString('fr-FR')+' FCFA'; }
 async function getUtilisateurSecurise(){
   for(let i=0;i<5;i++){ const {data:{user}} = await sb.auth.getUser(); if(user) return user; await new Promise(r=>setTimeout(r,300)); }
   const {data:{user}} = await sb.auth.getUser(); return user || null;
 }
 async function deconnecter(){ await sb.auth.signOut(); const langue=localStorage.getItem('rocy_langue'); localStorage.clear(); if(langue) localStorage.setItem('rocy_langue',langue); location.href='index.html'; }
-
-// CORRIGÉ : 30 premiers prestataires = 1 mois offert auto
 async function estDans30Premiers(profil){
   if(!profil.created_at) return false;
   const {count} = await sb.from('profiles').select('id',{count:'exact',head:true}).neq('type_compte','client').neq('type_compte','admin').lte('created_at', profil.created_at);
@@ -184,7 +179,6 @@ function setToggle(key, val){
   if(key==='auj'){ document.getElementById('tgAujOui').classList.toggle('on', val); document.getElementById('tgAujNon').classList.toggle('on', !val); }
   if(key==='maint'){ document.getElementById('tgMaintOui').classList.toggle('on', val); document.getElementById('tgMaintNon').classList.toggle('on', !val); }
 }
-// CORRIGÉ : On ne sauvegarde que les champs visibles pour cette activité
 function afficherReglagesParActivite(universSet, categories){
   const has = (...u) => u.some(x => universSet.has(x));
   const cat = (categories||[]).join(' ').toLowerCase();
@@ -197,8 +191,7 @@ function afficherReglagesParActivite(universSet, categories){
   const isImmo = has('immobilier');
   const isEvent = has('evenement');
   const show = (id, ok) => { const el=document.getElementById(id); if(el) el.style.display = ok ? '' : 'none'; };
-  // Si aucune annonce encore : on montre tout (1ère création) pour ne pas bloquer
-  if(universSet.size===0){ show('bloc-portfolio',true); show('bloc-langues',true); show('bloc-lieux',true); show('bloc-vehicule',true); show('bloc-distance',true); show('bloc-auj',true); show('bloc-maint',true); document.getElementById('texteReglages').textContent='Ce que le client voit dans ta fiche. Crée ta première annonce pour voir seulement tes réglages.'; return; }
+  if(universSet.size===0){ document.getElementById('sectionReglages').style.display=''; show('bloc-portfolio',true); show('bloc-langues',true); show('bloc-lieux',true); show('bloc-vehicule',true); show('bloc-distance',true); show('bloc-auj',true); show('bloc-maint',true); document.getElementById('texteReglages').textContent='Ce que le client voit dans ta fiche. Crée ta première annonce pour voir seulement tes réglages.'; return; }
   show('bloc-portfolio', isPro || isEvent);
   show('bloc-langues', isGuide || isPro || isEvent);
   show('bloc-lieux', isGuide);
@@ -206,6 +199,9 @@ function afficherReglagesParActivite(universSet, categories){
   show('bloc-distance', isPro);
   show('bloc-auj', isDomicile);
   show('bloc-maint', isLivreur);
+  // CORRIGÉ HÔTEL : si Séjour / Manger / Immo seul, aucun réglage rapide n'a de sens -> on cache la section, les réglages sont dans l'annonce
+  const aucunReglage = !isGuide && !isPro && !isDomicile && !isLivreur && !isEvent;
+  document.getElementById('sectionReglages').style.display = aucunReglage ? 'none' : '';
   let txt = 'Ce que le client voit dans ta fiche : ';
   if(isSejour) txt += 'Chambres, Dispo, Prix par nuit. ';
   if(isManger) txt += 'Plats, Prix, Dispo. ';
@@ -221,7 +217,6 @@ function afficherReglagesParActivite(universSet, categories){
 async function sauvegarderReglages(){
   if(!uid) return;
   const payload = {};
-  // On ne lit que les champs visibles, pour ne pas écraser les autres avec null
   if(document.getElementById('bloc-portfolio').style.display!=='none') payload.portfolio_url = document.getElementById('regPortfolio').value.trim() || null;
   if(document.getElementById('bloc-langues').style.display!=='none') payload.langues = document.getElementById('regLangues').value.trim() || null;
   if(document.getElementById('bloc-lieux').style.display!=='none') payload.lieux_connus = document.getElementById('regLieux').value.trim() || null;
@@ -275,7 +270,7 @@ async function charger(){
   const user = await getUtilisateurSecurise(); if(!user){ location.href='connexion.html'; return; }
   uid = user.id;
   const {data: profil, error: errProfil} = await sb.from('profiles')
-    .select('id, nom, nom_entreprise, type_compte, type_fournisseur, quartier, ville, pays, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert, portfolio_url, langues, lieux_connus, vehicule, travaille_distance, disponible_aujourd_hui, disponible_maintenant, photo_profil_url, quartier_verifie, verification_statut, statut, created_at')
+    .select('id, nom, nom_entreprise, type_compte, type_fournisseur, quartier, ville, pays, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert, portfolio_url, langues, lieux_connus, vehicule, travaille_distance, disponible_aujourd_hui, disponible_maintenant, photo_profil_url, quartier_verifie, verification_statut, created_at')
     .eq('id', uid).maybeSingle();
   if(errProfil){ document.getElementById('infoUser').textContent = 'Erreur chargement profil : ' + errProfil.message; document.getElementById('bannerStatut').innerHTML = '<div class="banner attente">⚠️ Erreur : '+esc(errProfil.message)+'</div>'; return; }
   if(!profil){ document.getElementById('infoUser').textContent = 'Aucun profil trouvé pour ce compte.'; document.getElementById('bannerStatut').innerHTML = '<div class="banner attente">⚠️ Ton compte existe mais ton profil est introuvable. ID : '+uid+'</div>'; return; }
@@ -292,9 +287,8 @@ async function charger(){
   document.getElementById('profilNom').textContent = nomAffiche(profil);
   document.getElementById('profilQuartier').textContent = '📍 Quartier : ' + (quartier || 'Non rempli');
   if(profil.photo_profil_url) document.getElementById('photoProfil').src = profil.photo_profil_url;
-
-  // CORRIGÉ : Vérification quartier - logique réelle, plus jamais cachée en dur
-  const verifStatut = String(profil.verification_statut || profil.statut || '').toLowerCase();
+  // CORRIGÉ : plus de profil.statut, seulement verification_statut
+  const verifStatut = String(profil.verification_statut || '').toLowerCase();
   const estVerifie = profil.quartier_verifie===true || verifStatut==='valide' || verifStatut==='verifie';
   const enAttente = verifStatut==='en_attente' || verifStatut==='attente';
   const estRejete = verifStatut==='rejete' || verifStatut==='refuse';
@@ -318,7 +312,6 @@ async function charger(){
     btnVerif.style.display='block'; btnAttente.style.display='none';
     banner.innerHTML = `<div class="banner attente">⚠️ <b>Quartier non vérifié</b> - Fais vérifier ton quartier pour obtenir le badge ✅ et plus de clients.</div>`;
   }
-
   document.getElementById('regPortfolio').value = profil.portfolio_url || '';
   document.getElementById('regLangues').value = profil.langues || '';
   document.getElementById('regLieux').value = profil.lieux_connus || '';
@@ -326,22 +319,18 @@ async function charger(){
   setToggle('distance', profil.travaille_distance===true);
   setToggle('auj', profil.disponible_aujourd_hui===true);
   setToggle('maint', profil.disponible_maintenant===true);
-
   const resAbo = await verifierAbonnement(profil||{});
   const boxAbo = document.getElementById('bandeauAbo');
   const btnCreer = document.getElementById('btnCreer');
   if(resAbo.ok && resAbo.type==='offert'){ boxAbo.innerHTML = `<div class="bandeau-abo abo-offert">🎁 1er mois offert (30 premiers comptes) - Tu peux publier. Commissions dues dès la 1ère mission.</div>`; btnCreer.disabled=false; btnCreer.textContent='➕ Créer une nouvelle annonce'; }
   else if(resAbo.ok){ boxAbo.innerHTML = `<div class="bandeau-abo abo-ok">✅ Abonnement à jour jusqu'au ${esc(resAbo.fin.toLocaleDateString('fr-FR'))} - Tu peux publier.</div>`; btnCreer.disabled=false; btnCreer.textContent='➕ Créer une nouvelle annonce'; }
   else { boxAbo.innerHTML = `<div class="bandeau-abo abo-expire">⛔ Abonnement expiré. Tu ne peux pas publier de nouvelle annonce tant que tu ne renouvelles pas.<br><button class="btn btn-dark" onclick="location.href='abonnement.html'">Renouveler maintenant →</button></div>`; btnCreer.disabled=true; btnCreer.textContent='⛔ Publier bloqué - Abonnement expiré'; }
-
   const {data: annonces, error: errAnnonces} = await sb.from('annonces').select('id, titre, categorie, univers, quartier, localite, ville, prix_indicatif, prix_fixe, devise, photo_url, status, chambres_restantes, disponible, created_at').eq('prestataire_id', uid).order('created_at',{ascending:false});
   mesAnnonces = annonces||[];
-  // CORRIGÉ : On détecte les activités réelles à partir des annonces
   const universSet = new Set((annonces||[]).map(a=>String(a.univers||'').toLowerCase()));
   const categories = (annonces||[]).map(a=>a.categorie||'');
   if(roleReel==='livreur') universSet.add('livreur');
   afficherReglagesParActivite(universSet, categories);
-
   const boxA = document.getElementById('listeAnnonces');
   document.getElementById('nbAnnonces').textContent = annonces?.length || 0;
   if(errAnnonces){ boxA.innerHTML = `<div class="empty">Erreur annonces : ${esc(errAnnonces.message)}</div>`; }
@@ -378,7 +367,6 @@ async function charger(){
       if(c.status==='libere') action = `<p style="color:#166534">💰 Argent libéré - Vérifie ton Mobile Money / compte.</p>`;
       return `<div class="card">${badgeCommande(c.status)}<h3 style="margin-top:8px">${esc(c.titre)}</h3><p>Client : ${esc(nomsClients[c.client_id] || 'Client')}<br>Total : ${fmt(c.montant_total)} • ${esc(texteCommission(c))} • Tu reçois : <b>${fmt(c.montant_prestataire)}</b><br>📍 ${esc(c.localite||'')} - ${esc(c.ville||'')}<br><span style="color:#16a34a">🔒 Escrow : argent bloqué chez Rocyinter jusqu'à validation client</span></p>${action}<button class="btn btn-dark" onclick="voirConversation('${esc(c.conversation_id)}','${esc(c.annonce_id)}')">Ouvrir le chat</button></div>`;
     }).join('');
-    // Demandes livreur : commandes livreur en attente
     if(universSet.has('livreur')){
       const dem = (cmds||[]).filter(c=>c.univers==='livreur' && c.status==='en_attente');
       document.getElementById('listeDemandesLivreur').innerHTML = dem.length ? dem.map(c=>`<div class="card"><b>${esc(c.titre)}</b><p>📍 ${esc(c.localite||'')} - ${esc(c.ville||'')} • ${fmt(c.montant_total)}</p><button class="btn btn-green" onclick="voirConversation('${esc(c.conversation_id)}','${esc(c.annonce_id)}')">Voir / Accepter</button></div>`).join('') : `<div class="empty">Aucune demande de livraison en attente pour l'instant.</div>`;
