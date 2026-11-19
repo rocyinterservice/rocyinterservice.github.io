@@ -2,6 +2,7 @@
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title data-i18n="inscriptionTitre">Inscription - Rocyinter</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="rocy-layout.js"></script>
+<script src="app.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
 body{background:#f6f7f9;color:#111}
@@ -426,21 +427,17 @@ async function inscrire(){
     if(!sb){ showMsg('Connexion en cours, réessaie dans 2 secondes...', false); btn.disabled=false; btn.textContent='Créer mon compte →'; return; }
     const chiffres = whatsapp.replace(/[^0-9]/g,'');
     const emailFinal=(emailRaw||(chiffres+'@rocyinter.com')).toLowerCase();
+    // SÉCURITÉ : On vérifie si le WhatsApp existe déjà, mais on ne connecte JAMAIS.
+    // Si ça existe, on bloque et on renvoie vers Connexion.
     try{
-      const {data: emailExistant} = await sb.rpc('get_email_by_whatsapp', { p_whatsapp: chiffres });
-      if(emailExistant){
-        const {data: login, error: errLogin} = await sb.auth.signInWithPassword({email: String(emailExistant).toLowerCase(), password});
-        if(!errLogin && login?.user){
-          const {data: prof} = await sb.from('profiles').select('id,nom,type_compte,type_fournisseur,pays,ville,quartier').eq('id', login.user.id).maybeSingle();
-          const typeExiste = prof ? (prof.type_compte||prof.type_fournisseur||typeFinal) : typeFinal;
-          localStorage.setItem('rocy_user_id', login.user.id); localStorage.setItem('rocy_user_nom', prof?.nom||nom); localStorage.setItem('rocy_user_type', typeExiste); localStorage.setItem('rocy_role', typeExiste); localStorage.setItem('rocy_user_email', String(emailExistant).toLowerCase()); localStorage.setItem('rocy_email', String(emailExistant).toLowerCase()); localStorage.setItem('rocy_user_whatsapp', whatsapp); localStorage.setItem('rocy_user_pays', prof?.pays||pays); localStorage.setItem('rocy_user_ville', prof?.ville||ville); localStorage.setItem('rocy_user_localite', prof?.quartier||localite);
-          showMsg('✅ Ce compte existe déjà, on te connecte...', true);
-          setTimeout(()=>{ if(typeExiste==='admin') location.href='admin.html'; else if(['prestataire','livreur','professionnel','entreprise'].includes(String(typeExiste).toLowerCase())) location.href='dashboard-prestataire.html'; else location.href='dashboard-client.html'; },1000); return;
-        } else {
-          showMsg('Ce WhatsApp existe déjà. Va sur Connexion, mot de passe incorrect.', false); btn.disabled=false; btn.textContent='Créer mon compte →'; return;
-        }
+      const {data: doublon} = await sb.from('profiles').select('id').eq('whatsapp', whatsapp).maybeSingle();
+      if(doublon){
+        showMsg('⛔ Ce WhatsApp existe déjà. Connecte-toi avec ton mot de passe, ou utilise un autre numéro.', false);
+        btn.disabled=false; btn.textContent='Créer mon compte →';
+        setTimeout(()=> location.href='connexion.html', 2000);
+        return;
       }
-    }catch(e){}
+    }catch(e){ /* Si RLS bloque la lecture, on laisse Supabase Auth trancher sur l'email */ }
     const {data: authData, error: authErr} = await sb.auth.signUp({
       email: emailFinal,
       password,
@@ -457,8 +454,9 @@ async function inscrire(){
       }
     });
     if(authErr){
-      if(authErr.message.toLowerCase().includes('already') || authErr.message.toLowerCase().includes('exists')){
-        showMsg('Ce email existe déjà, connecte-toi.', false);
+      if(authErr.message.toLowerCase().includes('already') || authErr.message.toLowerCase().includes('exists') || authErr.message.toLowerCase().includes('already registered')){
+        showMsg('⛔ Cet email existe déjà. Connecte-toi, ne crée pas un 2ème compte.', false);
+        setTimeout(()=> location.href='connexion.html', 2000);
       } else {
         showMsg(authErr.message, false);
       }
