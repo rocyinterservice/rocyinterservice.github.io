@@ -129,7 +129,7 @@ async function chargerAnnonces(){
     const quartier = document.getElementById('filtreQuartier').value.trim().toLowerCase();
     const search = document.getElementById('filtreSearch').value.trim().toLowerCase();
     if(!sb){ box.innerHTML = `<div class="empty"><b>${esc(t('pasConnexion'))}</b><br><button type="button" class="btn" onclick="chargerAnnonces()">${esc(t('reessayer'))}</button></div>`; return; }
-    let q = sb.from('annonces').select('id, titre, categorie, univers, description, prix_fixe, prix_indicatif, prix, devise, photo_url, localite, ville, pays, status, prestataire_id, quartier').order('created_at',{ascending:false});
+    let q = sb.from('annonces').select('id, titre, categorie, univers, description, prix_fixe, prix_indicatif, devise, photo_url, localite, ville, pays, status, prestataire_id, quartier').order('created_at',{ascending:false});
     if(pays) q = q.eq('pays', pays);
     const {data, error} = await q;
     if(error) throw error;
@@ -157,8 +157,8 @@ async function chargerAnnonces(){
       const prestaId = a.prestataire_id || '';
       const nom = noms[prestaId] || 'Prestataire';
       const lieu = [a.localite || a.quartier, a.ville, a.pays].filter(Boolean).join(' - ');
-      const prixVal = Number(a.prix ?? a.prix_indicatif ?? 0) || 0;
-      const isFixe = a.prix_fixe === true || a.prix_fixe === 'true' || Number(a.prix) > 0;
+      const prixVal = Number(a.prix_indicatif ?? 0) || 0;
+      const isFixe = a.prix_fixe === true || a.prix_fixe === 'true';
       const prixTxt = isFixe ? `${window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal+' '+(a.devise||'FCFA')} - ${t('prixFixe')}` : (prixVal>0 ? `${t('aPartir')} ${window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal+' '+(a.devise||'FCFA')}` : t('prixDiscuter'));
       const cestMoi = prestaId && moiId && String(prestaId)===String(moiId);
       const btnChat = cestMoi
