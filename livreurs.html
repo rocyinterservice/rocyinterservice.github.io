@@ -6,6 +6,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="pays.js"></script>
 <script src="rocy-layout.js"></script>
+<script src="app.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
 body{background:#f6f7f9;color:#111}
@@ -150,7 +151,6 @@ async function charger(){
   }catch(e){ console.log('ROCY livreurs erreur:',e); box.innerHTML=`<div class="empty"><b>Erreur de connexion</b><br><button class="btn" onclick="charger()">Réessayer</button></div>`; }
 }
 function ouvrirDemande(){
-  const {data:{user}} = {data:{user:null}};
   document.getElementById('modalDemande').classList.add('show');
   document.getElementById('demQuand').onchange = ()=>{
     document.getElementById('demHeureBox').style.display = document.getElementById('demQuand').value==='heure' ? 'block' : 'none';
@@ -185,22 +185,21 @@ async function chargerDemandes(){
       const dejaPris = d.status !== 'en_attente';
       const estMien = String(d.client_id)===String(moiId);
       const estLivreur = monRole==='livreur';
+      const prixTxt = Number(d.prix_propose||0)>0 ? (window.rocyFormatPrix ? window.rocyFormatPrix(Number(d.prix_propose)) : Number(d.prix_propose).toLocaleString()+' FCFA') : 'À discuter';
       let btn = '';
       if(d.status==='en_attente' && estLivreur && !estMien) btn = `<button class="btn btn-green" onclick="accepterDemande('${esc(d.id)}')">✅ Accepter - Je prends</button>`;
       else if(d.status==='en_attente') btn = `<button class="btn btn-gris" disabled>⏳ En attente d'un livreur...</button>`;
       else if(dejaPris) btn = `<button class="btn btn-gris" disabled>${d.status==='accepte' ? '✅ Déjà pris' : d.status==='en_route' ? '🛵 En route pour ramasser' : '📦 En livraison'} - Suivi dans Mes commandes</button>`;
-      return `<div class="card"><span class="badge-orange">${esc(d.status)}</span><h3 style="margin-top:8px">${esc(d.de_localite)} → ${esc(d.a_localite)}</h3><p>📦 ${esc(d.type_colis)} - ${esc(d.detail||'')}<br>⏰ ${esc(d.quand)}<br>💰 Proposé : ${Number(d.prix_propose||0)>0 ? Number(d.prix_propose).toLocaleString()+' FCFA' : 'À discuter'}</p>${btn}</div>`;
+      return `<div class="card"><span class="badge-orange">${esc(d.status)}</span><h3 style="margin-top:8px">${esc(d.de_localite)} → ${esc(d.a_localite)}</h3><p>📦 ${esc(d.type_colis)} - ${esc(d.detail||'')}<br>⏰ ${esc(d.quand)}<br>💰 Proposé : ${esc(prixTxt)}</p>${btn}</div>`;
     }).join('');
   }catch(e){ box.innerHTML = `<div class="empty">Erreur : ${esc(e.message)}</div>`; }
 }
 async function accepterDemande(id){
   const {data:{user}} = await sb.auth.getUser();
   if(!user || monRole!=='livreur'){ alert('Seul un livreur peut accepter.'); return; }
-  // Premier qui accepte prend : on ne met à jour que si status est encore en_attente
   const {data, error} = await sb.from('demandes_livraison').update({status:'accepte', livreur_id: user.id, accepte_at: new Date().toISOString()}).eq('id', id).eq('status','en_attente').select().maybeSingle();
   if(error){ alert('Erreur : '+error.message); return; }
   if(!data){ alert('Déjà pris par un autre livreur. Essaie une autre demande.'); chargerDemandes(); return; }
-  // Créer la commande livreur : 80% livreur / 20% Rocyinter
   const prix = Number(data.prix_propose||0);
   const commission = Math.round(prix * 0.20);
   await sb.from('commandes').insert([{client_id: data.client_id, prestataire_id: user.id, univers: 'livreur', titre: `Livraison : ${data.de_localite} -> ${data.a_localite}`, montant: prix, montant_total: prix, commission, montant_prestataire: prix - commission, status: 'accepte', ville: data.de_localite, localite: data.de_localite, demande_livraison_id: data.id}]);
