@@ -70,6 +70,7 @@ body{background:#f6f7f9;color:#111}
   <div class="card-u" onclick="location.href='services-domicile.html'"><div class="ico">🏠</div><b data-i18n="domicile">Domicile</b></div>
   <div class="card-u" onclick="location.href='services-pro.html'"><div class="ico">💼</div><b data-i18n="pro">Services professionnels</b></div>
   <div class="card-u" onclick="location.href='sejour.html'"><div class="ico">✈️</div><b data-i18n="sejour">Séjour</b></div>
+  <div class="card-u" onclick="location.href='evenement.html'"><div class="ico">🎉</div><b>Évènement</b></div>
   <div class="card-u" onclick="location.href='immobilier.html'"><div class="ico">🏘️</div><b data-i18n="immo">Immobilier</b></div>
   <div class="card-u" onclick="location.href='livreurs.html'"><div class="ico">🛵</div><b data-i18n="livreursTitre">Livreurs</b></div>
   <div class="card-u proposer" onclick="rocyProposerService()"><div class="ico">➕</div><b data-i18n="proposerTitre">Proposer un service</b></div>
@@ -135,7 +136,6 @@ async function chargerAnnonces(){
     const loc = document.getElementById('filtreLocalite').value.trim().toLowerCase();
     const search = document.getElementById('filtreSearch').value.trim().toLowerCase();
     if(!sb){ box.innerHTML = `<div class="empty"><b>${esc(t('pasConnexion'))}</b><br><button type="button" class="btn" onclick="chargerAnnonces()">${esc(t('reessayer'))}</button></div>`; return; }
-    // ✅ CORRIGÉ : seulement les colonnes qui existent vraiment dans annonces
     let q = sb.from('annonces').select('id, titre, categorie, univers, description, prix_fixe, prix_indicatif, devise, photo_url, localite, ville, pays, status, prestataire_id').order('created_at',{ascending:false});
     if(pays) q = q.eq('pays', pays);
     const {data, error} = await q;
