@@ -6,6 +6,7 @@
 <title data-i18n="connexionTitre">Connexion - Rocyinter service</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="rocy-layout.js"></script>
+<script src="app.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
 body{background:#f6f7f9;color:#111}
@@ -88,6 +89,30 @@ if(!sb && window.supabase && window.supabase.createClient){
   }catch(e){ console.log('Supabase pas encore chargé', e); }
 }
 let modeConnexion='whatsapp';
+// SÉCURITÉ PRO : 5 essais ratés = blocage 15 min pour cet identifiant
+const MAX_ESSAIS = 5, DUREE_BLOCAGE_MS = 15 * 60 * 1000;
+function cleBlocage(identifiant){ return 'rocy_lock_' + String(identifiant||'').toLowerCase().replace(/[^a-z0-9@.]/g,'_'); }
+function lireBlocage(identifiant){
+  try{ return JSON.parse(localStorage.getItem(cleBlocage(identifiant)) || '{"essais":0,"bloqueJusqua":0}'); }catch(e){ return {essais:0, bloqueJusqua:0}; }
+}
+function ecrireBlocage(identifiant, data){ try{ localStorage.setItem(cleBlocage(identifiant), JSON.stringify(data)); }catch(e){} }
+function estBloque(identifiant){
+  const d = lireBlocage(identifiant);
+  if(d.bloqueJusqua && Date.now() < d.bloqueJusqua){
+    const minRest = Math.ceil((d.bloqueJusqua - Date.now())/60000);
+    return minRest;
+  }
+  if(d.bloqueJusqua && Date.now() >= d.bloqueJusqua){ ecrireBlocage(identifiant, {essais:0, bloqueJusqua:0}); }
+  return 0;
+}
+function enregistrerEchec(identifiant){
+  const d = lireBlocage(identifiant);
+  d.essais = (d.essais||0) + 1;
+  if(d.essais >= MAX_ESSAIS){ d.bloqueJusqua = Date.now() + DUREE_BLOCAGE_MS; }
+  ecrireBlocage(identifiant, d);
+  return d;
+}
+function resetBlocage(identifiant){ ecrireBlocage(identifiant, {essais:0, bloqueJusqua:0}); }
 function setMode(m){
   modeConnexion=m;
   document.getElementById('tabWhats').classList.toggle('active', m==='whatsapp');
@@ -180,10 +205,12 @@ async function connecter(){
   const btn = document.getElementById('btnCo');
   if(!sb){ showMsg('Connexion en cours, réessaie dans 2 secondes...', false); return; }
   let emailCherche = '';
+  let identifiantBlocage = '';
   if(modeConnexion==='whatsapp'){
     const r = normaliseWhatsApp();
     if(!r.num || !password){ showMsg('Remplis WhatsApp + Mot de passe', false); return; }
     if(!verifTelConnexion()){ const indic=document.getElementById('indicatif').value; const p=paysDepuisIndicatifCo(indic); showMsg('❌ Numéro incorrect. ' + texteLongueurCo(p), false); return; }
+    identifiantBlocage = r.chiffres;
     const {data: emailViaWhats, error: errRpc} = await sb.rpc('get_email_by_whatsapp', { p_whatsapp: r.chiffres });
     if(errRpc || !emailViaWhats){
       emailCherche = r.chiffres + '@rocyinter.com';
@@ -192,14 +219,32 @@ async function connecter(){
     }
   } else {
     emailCherche = (document.getElementById('emailInput').value||'').trim().toLowerCase();
+    identifiantBlocage = emailCherche;
     if(!emailCherche || !password){ showMsg('Remplis Email + Mot de passe', false); return; }
     if(!emailCherche.includes('@')){ showMsg('Email invalide', false); return; }
+  }
+  // Blocage anti brute-force : on vérifie AVANT d'essayer
+  const minBloque = estBloque(identifiantBlocage);
+  if(minBloque > 0){
+    showMsg(`⛔ Trop d'essais ratés. Réessaie dans ${minBloque} min, ou clique sur Mot de passe oublié.`, false);
+    return;
   }
   btn.disabled = true; btn.textContent = 'Vérification...';
   try{
     const {data: login, error: errLogin} = await sb.auth.signInWithPassword({email: emailCherche, password});
-    if(errLogin || !login?.user){ showMsg('Email / WhatsApp ou mot de passe incorrect.', false); btn.disabled = false; btn.textContent = 'Se connecter →'; return; }
-    // CORRIGÉ : seulement les colonnes qui existent vraiment dans profiles
+    if(errLogin || !login?.user){
+      // Message GÉNÉRIQUE : on ne dit jamais si c'est l'email ou le mot de passe qui est faux
+      const d = enregistrerEchec(identifiantBlocage);
+      const restants = Math.max(0, MAX_ESSAIS - d.essais);
+      if(d.bloqueJusqua && Date.now() < d.bloqueJusqua){
+        showMsg('⛔ Trop d\'essais ratés. Compte bloqué 15 min. Clique sur Mot de passe oublié.', false);
+      } else {
+        showMsg(`Email / WhatsApp ou mot de passe incorrect. Il te reste ${restants} essai(s).`, false);
+      }
+      btn.disabled = false; btn.textContent = 'Se connecter →'; return;
+    }
+    // Succès : on remet le compteur à zéro
+    resetBlocage(identifiantBlocage);
     const {data: prof, error: perr} = await sb.from('profiles').select('id,nom,email,whatsapp,phone,type_compte,type_fournisseur,pays,ville,quartier').eq('id', login.user.id).single();
     if(perr || !prof){ console.log('Erreur profil:', perr); showMsg('Profil introuvable. Réinscris-toi.', false); btn.disabled = false; btn.textContent = 'Se connecter →'; return; }
     const emailFinal = String(prof.email || emailCherche || '').toLowerCase().trim();
