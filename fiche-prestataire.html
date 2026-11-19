@@ -156,7 +156,7 @@ async function charger(){
   document.getElementById('annonces').innerHTML = `<h3 style="margin:10px 0">📋 Ses services</h3>` + (annonces && annonces.length ? annonces.map(a=>{
     const prixTxt = (a.prix_indicatif > 0) ? (a.prix_fixe ? Number(a.prix_indicatif).toLocaleString()+' FCFA' : 'À partir de '+Number(a.prix_indicatif).toLocaleString()+' FCFA') : 'Prix à discuter';
     const btnAnnonce = cestMoi ? `<button class="btn btn-mine" disabled>C'est ton annonce</button>` : `<button class="btn" onclick="contacter('${esc(a.id)}')">Discuter pour cette annonce</button>`;
-    return `<div class="card"><h3>${esc(a.titre)}</h3><p>${esc(a.categorie)} • ${esc(a.univers||'')} • ${esc([a.localite,a.ville].filter(Boolean).join(' - '))}<br>${esc(prixTxt)}<br>${esc(a.description)}</p>${btnAnnonce}</div>`;
+    return `<div class="card">${a.photo_url ? `<img src="${esc(a.photo_url)}" style="width:100%;height:150px;object-fit:cover;border-radius:12px;margin-bottom:10px" onerror="this.remove()">` : ''}<h3>${esc(a.titre)}</h3><p>${esc(a.categorie)} • ${esc(a.univers||'')} • ${esc([a.localite,a.ville].filter(Boolean).join(' - '))}<br>${esc(prixTxt)}<br>${esc(a.description)}</p>${btnAnnonce}</div>`;
   }).join('') : '<p style="color:#64748b;font-size:13px">Aucune annonce validée pour l’instant.</p>');
   document.getElementById('avis').innerHTML = `<h3 style="margin:14px 0 10px">⭐ Avis clients (${avis?.length||0})</h3>` + (avis && avis.length ? avis.map(a=>`<div class="avis">${'⭐'.repeat(Math.min(5,Number(a.note||5)))}<br>${esc(a.commentaire)}</div>`).join('') : '<p style="color:#64748b;font-size:13px">Aucun avis pour l’instant. Sois le premier à commander.</p>');
   if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
