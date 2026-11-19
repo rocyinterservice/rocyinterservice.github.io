@@ -102,11 +102,11 @@ function estValideAnnonce(a){
   if(!s) return true;
   return s==='valide' || s==='valid' || s==='publie' || s==='publié' || s==='publiee' || s==='actif' || s==='active';
 }
-// CORRIGÉ : Commission Immobilier sans 10 000
+// CORRIGÉ : Commission Immobilier sans 10 000 + Évènement 12%
 function calculerCommission(univers, montant, annonce){
   if(univers==='domicile') return Math.round(montant * 0.08);
   if(univers==='pro') return 5000;
-  if(univers==='manger' || univers==='sejour') return Math.round(montant * 0.12);
+  if(univers==='manger' || univers==='sejour' || univers==='evenement') return Math.round(montant * 0.12);
   if(univers==='immobilier'){
     const cat = String(annonce?.categorie||'').toLowerCase();
     if(cat.includes('parcelle') || cat.includes('vente') || cat.includes('terrain')) return Math.min(200000, Math.round(montant * 0.02));
@@ -120,6 +120,7 @@ function texteCommission(univers, annonce){
   if(univers==='pro') return 'Commission Rocyinter : 5 000 FCFA pour débloquer le contact.';
   if(univers==='manger') return 'Commission Rocyinter : 12%. Espèces à la livraison : + 500 FCFA.';
   if(univers==='sejour') return 'Commission Rocyinter : 12% par nuit réservée.';
+  if(univers==='evenement') return 'Commission Rocyinter : 12% - prélevée à la libération, pas avant. Devis dans le chat.';
   if(univers==='livreur') return 'Livreur 80% / Rocyinter 20%. Prix à discuter dans le chat.';
   if(univers==='immobilier'){
     const cat = String(annonce?.categorie||'').toLowerCase();
@@ -130,7 +131,6 @@ function texteCommission(univers, annonce){
 }
 function contientNumero(txt){
   const t = String(txt||'').toLowerCase();
-  // Détecte numéro Bénin / WhatsApp / appel
   if(t.includes('whatsapp') || t.includes('whats app') || t.includes('appel moi') || t.includes('appelle')) return true;
   const chiffres = txt.replace(/\D/g,'');
   if(chiffres.length >= 8) return true;
@@ -190,7 +190,6 @@ async function initAvecAnnonce(annId, prestaId, convExistante){
   if(jeSuisPresta) document.getElementById('btnProp').style.display = 'block';
   else {
     document.getElementById('btnCmd').style.display = 'block';
-    // NOUVEAU : bouton Visite seulement pour Immobilier + seulement pour le client
     if(ann.univers==='immobilier') document.getElementById('btnVisit').style.display = 'block';
   }
   if(convExistante){ conversationId = convExistante.id; clientIdFinal = convExistante.client_id; }
@@ -260,7 +259,6 @@ async function envoyer(){
   const inp = document.getElementById('inputMsg'); const txt = inp.value.trim();
   if(!txt || !conversationId) return;
   if(txt.length>2000){ alert('Message trop long (max 2000).'); return; }
-  // NOUVEAU : avertir si numéro / WhatsApp
   if(contientNumero(txt)){
     document.getElementById('warnChat').style.display='block';
     if(!confirm('⚠️ Tu essaies de partager un numéro / WhatsApp. Si tu paies en dehors de Rocyinter, tu perds la protection et la facture. Tu veux vraiment envoyer ?')) return;
