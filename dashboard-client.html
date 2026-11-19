@@ -7,6 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="pays.js"></script>
 <script src="rocy-layout.js"></script>
+<script src="app.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
 body{background:#f6f7f9;color:#111}
@@ -74,7 +75,7 @@ const sb = window.supabaseClient || window.supabase.createClient(SUPABASE_URL, S
 window.supabaseClient = sb;
 let uid = null;
 function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-function fmt(n){ return Number(n || 0).toLocaleString('fr-FR'); }
+function fmt(n){ return window.rocyFormatPrix ? window.rocyFormatPrix(Number(n||0)) : Number(n||0).toLocaleString('fr-FR')+' FCFA'; }
 async function getUtilisateurSecurise(){
   for(let i=0;i<5;i++){
     const {data:{user}, error} = await sb.auth.getUser();
@@ -104,7 +105,6 @@ function badgeStatus(s){
   if(s==='livre') return '<span class="badge valide">📦 Livré</span>';
   return `<span class="badge attente">${esc(s)}</span>`;
 }
-// SUIVI PAR UNIVERS - C'est ça la correction principale
 function stepsHtml(c){
   const s = c.status;
   if(s==='litige') return `<p style="color:#991b1b">⚠️ Litige en cours - Argent bloqué. L'Admin va trancher.</p>`;
@@ -138,18 +138,18 @@ function stepsHtml(c){
   return `<div class="steps">${labels.map((l,i)=>`<div class="step ${i<idx?'done':''} ${i===idx?'active':''}">${esc(l)}</div>`).join('')}</div>`;
 }
 function texteCommission(c){
-  if(c.univers==='domicile') return `Commission 8% : ${fmt(c.commission)} FCFA`;
+  if(c.univers==='domicile') return `Commission 8% : ${fmt(c.commission)}`;
   if(c.univers==='pro') return `Commission 5 000 FCFA fixe`;
-  if(c.univers==='manger') return `Commission 12% : ${fmt(c.commission)} FCFA`;
-  if(c.univers==='sejour') return `Commission 12% : ${fmt(c.commission)} FCFA`;
-  if(c.univers==='evenement') return `Commission 12% : ${fmt(c.commission)} FCFA`;
-  if(c.univers==='livreur') return `Commission 20% (Livreur 80%) : ${fmt(c.commission)} FCFA`;
+  if(c.univers==='manger') return `Commission 12% : ${fmt(c.commission)}`;
+  if(c.univers==='sejour') return `Commission 12% : ${fmt(c.commission)}`;
+  if(c.univers==='evenement') return `Commission 12% : ${fmt(c.commission)}`;
+  if(c.univers==='livreur') return `Commission 20% (Livreur 80%) : ${fmt(c.commission)}`;
   if(c.univers==='immobilier'){
     const t = String(c.titre||'').toLowerCase();
-    if(t.includes('parcelle') || t.includes('vente') || t.includes('terrain')) return `Commission Parcelle 2% plafonné 200 000 : ${fmt(c.commission)} FCFA`;
-    return `Commission Location 50% d'un mois : ${fmt(c.commission)} FCFA`;
+    if(t.includes('parcelle') || t.includes('vente') || t.includes('terrain')) return `Commission Parcelle 2% plafonné 200 000 : ${fmt(c.commission)}`;
+    return `Commission Location 50% d'un mois : ${fmt(c.commission)}`;
   }
-  return `Commission : ${fmt(c.commission)} FCFA`;
+  return `Commission : ${fmt(c.commission)}`;
 }
 async function charger(){
   const user = await getUtilisateurSecurise();
@@ -192,8 +192,8 @@ async function charger(){
       ${badgeStatus(c.status)}
       <h3 style="margin-top:8px">${esc(c.titre)}</h3>
       <p>📍 ${esc(c.localite || '')} - ${esc(c.ville || '')}<br>
-      Total : <b>${fmt(c.montant_total)} FCFA</b><br>
-      Prestataire reçoit : ${fmt(c.montant_prestataire)} FCFA (${esc(texteCommission(c))})<br>
+      Total : <b>${fmt(c.montant_total)}</b><br>
+      Prestataire reçoit : ${fmt(c.montant_prestataire)} (${esc(texteCommission(c))})<br>
       <span style="color:#16a34a;font-weight:700">🔒 Escrow : argent bloqué chez Rocyinter jusqu'à validation</span></p>
       ${stepsHtml(c)}
       ${c.status==='en_attente' ? `<button class="btn btn-green" onclick="payer('${esc(c.id)}')">💳 Payer en escrow sécurisé</button>` : ''}
