@@ -6,6 +6,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="pays.js"></script>
 <script src="rocy-layout.js"></script>
+<script src="app.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
 body{background:#f6f7f9;color:#111;display:flex;flex-direction:column;height:100vh}
@@ -90,6 +91,7 @@ const prestataireId = localStorage.getItem('chat_prestataire');
 const annonceId = localStorage.getItem('chat_annonce');
 const convIdDirect = localStorage.getItem('chat_conversation_id');
 let conversationId = convIdDirect || null; let annonceData = null; let clientIdFinal = null;
+const fmt = n => window.rocyFormatPrix ? window.rocyFormatPrix(Number(n||0)) : Number(n||0).toLocaleString()+' FCFA';
 
 async function notifier(destinataire, titre, message, type, lien){
   try{
@@ -102,7 +104,6 @@ function estValideAnnonce(a){
   if(!s) return true;
   return s==='valide' || s==='valid' || s==='publie' || s==='publié' || s==='publiee' || s==='actif' || s==='active';
 }
-// CORRIGÉ : Commission Immobilier sans 10 000 + Évènement 12%
 function calculerCommission(univers, montant, annonce){
   if(univers==='domicile') return Math.round(montant * 0.08);
   if(univers==='pro') return 5000;
@@ -180,7 +181,7 @@ async function initAvecAnnonce(annId, prestaId, convExistante){
   let badgeQ = prof?.quartier ? ` 📍 ${prof.quartier}` : '';
   const bar = document.getElementById('annonceBar'); bar.innerHTML='';
   const b = document.createElement('b'); b.textContent = ann.titre; bar.appendChild(b);
-  const s = document.createElement('small'); s.textContent = `📍 ${ann.localite||''} - ${ann.ville||''} • 👤 ${nomPresta}${badgeQ} • ${ann.prix_fixe ? Number(ann.prix_indicatif||0).toLocaleString()+' '+(ann.devise||'FCFA') : 'Prix à discuter'} - ${texteCommission(ann.univers, ann)}`; bar.appendChild(s);
+  const s = document.createElement('small'); s.textContent = `📍 ${ann.localite||''} - ${ann.ville||''} • 👤 ${nomPresta}${badgeQ} • ${ann.prix_fixe ? fmt(ann.prix_indicatif||0) : 'Prix à discuter'} - ${texteCommission(ann.univers, ann)}`; bar.appendChild(s);
   document.getElementById('nomAutre').textContent = nomPresta + badgeQ;
   document.getElementById('infoAutre').textContent = `${ann.categorie||''} • ${ann.ville||''} - ${ann.localite||''}`;
   document.getElementById('cmdTitre').value = ann.titre;
@@ -237,7 +238,7 @@ async function chargerMessages(){
     if(m.type === 'proposition'){
       const statut = m.proposition_statut || 'en_attente';
       const div = document.createElement('div'); div.className='msg prop';
-      const titre = document.createElement('b'); titre.textContent = `💰 Proposition de prix : ${Number(m.proposition_prix||0).toLocaleString()} FCFA`; div.appendChild(titre);
+      const titre = document.createElement('b'); titre.textContent = `💰 Proposition de prix : ${fmt(m.proposition_prix||0)}`; div.appendChild(titre);
       const c = document.createElement('div'); c.textContent = m.contenu||''; div.appendChild(c);
       const sm = document.createElement('small'); sm.textContent = heure; div.appendChild(sm);
       const jeSuisClient = (String(moiId)!==String(prestataireId || annonceData?.prestataire_id));
@@ -283,7 +284,7 @@ async function envoyerProposition(){
   if(!montant || montant<=0){ alert('Mets un montant > 0'); return; }
   const {error} = await sb.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: detail || 'Proposition de prix pour ce service.', type: 'proposition', proposition_prix: montant, proposition_statut: 'en_attente'}]);
   if(error){ alert('Erreur : '+error.message); return; }
-  await notifier(clientIdFinal, 'Nouvelle proposition de prix', `Proposition : ${montant.toLocaleString()} FCFA - ${detail}`, 'paiement', 'chat.html');
+  await notifier(clientIdFinal, 'Nouvelle proposition de prix', `Proposition : ${fmt(montant)} - ${detail}`, 'paiement', 'chat.html');
   fermerProposition(); document.getElementById('propMontant').value = ''; chargerMessages();
 }
 async function repondreProposition(msgId, rep){
@@ -296,7 +297,7 @@ async function repondreProposition(msgId, rep){
     const {data: msg} = await sb.from('messages').select('*').eq('id', msgId).single();
     if(msg){
       document.getElementById('cmdMontant').value = msg.proposition_prix;
-      await sb.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: `✅ Proposition de ${Number(msg.proposition_prix).toLocaleString()} FCFA acceptée. Tu peux créer la commande.`, type: 'texte'}]);
+      await sb.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: `✅ Proposition de ${fmt(msg.proposition_prix)} acceptée. Tu peux créer la commande.`, type: 'texte'}]);
       document.getElementById('btnCmd').style.display = 'block';
     }
   }
@@ -316,8 +317,8 @@ async function creerCommande(){
   if(montantPresta < 0){ alert('Erreur commission > montant.'); return; }
   const {error} = await sb.from('commandes').insert([{client_id: clientIdFinal, prestataire_id: prestaActuel, annonce_id: annonceId || annonceData?.id, conversation_id: conversationId, univers: univers, titre, montant: montant, devise: 'FCFA', montant_total: montant, commission, montant_prestataire: montantPresta, status: 'en_attente', ville: annonceData?.ville, localite: annonceData?.localite}]).select().single();
   if(error){ alert('Erreur : ' + error.message); return; }
-  await notifier(prestaActuel, 'Nouvelle commande 🛒', `${titre} - ${montant.toLocaleString()} FCFA. En attente de paiement.`, 'commande', 'dashboard-prestataire.html');
-  await sb.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: `✅ COMMANDE CRÉÉE : ${titre} - ${montant.toLocaleString()} FCFA (Commission ${commission.toLocaleString()} FCFA). En attente de paiement sécurisé en escrow.`, type: 'texte'}]);
+  await notifier(prestaActuel, 'Nouvelle commande 🛒', `${titre} - ${fmt(montant)}. En attente de paiement.`, 'commande', 'dashboard-prestataire.html');
+  await sb.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: `✅ COMMANDE CRÉÉE : ${titre} - ${fmt(montant)} (Commission ${fmt(commission)}). En attente de paiement sécurisé en escrow.`, type: 'texte'}]);
   fermerCommande(); alert('✅ Commande créée ! Elle est dans ton dashboard. Va payer dans Paiement.'); chargerMessages();
 }
 init();
