@@ -84,23 +84,25 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px}
 <p style="font-size:11px;color:#64748b;margin:-10px 0 14px">* Seulement les commandes payées / en cours / validées. Les commandes en attente ne comptent pas.</p>
 <button class="btn" id="btnCreer" onclick="location.href='creer-annonce.html'">➕ Créer une nouvelle annonce</button>
 <button class="btn btn-dark" onclick="location.href='abonnement.html'">💳 Voir / Renouveler mon abonnement</button>
-<div class="section" id="sectionReglages"><h2>⚙️ Mes réglages rapides</h2>
+
+<div class="section" id="sectionReglages" style="display:none"><h2>⚙️ Mes réglages rapides</h2>
 <div class="card">
   <p id="texteReglages">Ce que le client voit dans ta fiche.</p>
   <div class="gestion">
-    <div id="bloc-portfolio"><label>📁 PORTFOLIO (lien) - PRO</label><input id="regPortfolio" placeholder="https://..."></div>
-    <div id="bloc-langues"><label>🗣️ LANGUES - Guide / PRO</label><input id="regLangues" placeholder="Ex: Français, Fon, Anglais"></div>
-    <div id="bloc-lieux"><label>📍 LIEUX CONNUS (Guide touristique)</label><input id="regLieux" placeholder="Ex: Ouidah, Grand-Popo, Ganvié"></div>
-    <div id="bloc-vehicule"><label>🛵 VÉHICULE (Livreur)</label><input id="regVehicule" placeholder="Ex: Moto, Voiture"></div>
+    <div id="bloc-portfolio"><label>📁 PORTFOLIO (lien) - PRO / Évènement</label><input id="regPortfolio" placeholder="https://..."></div>
+    <div id="bloc-langues"><label>🗣️ LANGUES - Guide / PRO / Évènement</label><input id="regLangues" placeholder="Ex: Français, Fon, Anglais"></div>
+    <div id="bloc-lieux"><label>📍 LIEUX CONNUS (Guide touristique uniquement)</label><input id="regLieux" placeholder="Ex: Ouidah, Grand-Popo, Ganvié"></div>
+    <div id="bloc-vehicule"><label>🛵 VÉHICULE (Livreur uniquement)</label><input id="regVehicule" placeholder="Ex: Moto, Voiture"></div>
     <div class="row2">
-      <div id="bloc-distance"><label>💻 TRAVAILLE À DISTANCE (PRO)</label><div class="toggle"><button id="tgDistanceOui" onclick="setToggle('distance',true)">Oui</button><button id="tgDistanceNon" onclick="setToggle('distance',false)">Non</button></div></div>
-      <div id="bloc-auj"><label>🏠 DISPONIBLE AUJOURD'HUI (Domicile)</label><div class="toggle"><button id="tgAujOui" onclick="setToggle('auj',true)">Oui</button><button id="tgAujNon" onclick="setToggle('auj',false)">Non</button></div></div>
+      <div id="bloc-distance"><label>💻 TRAVAILLE À DISTANCE (PRO uniquement)</label><div class="toggle"><button id="tgDistanceOui" onclick="setToggle('distance',true)">Oui</button><button id="tgDistanceNon" onclick="setToggle('distance',false)">Non</button></div></div>
+      <div id="bloc-auj"><label>🏠 DISPONIBLE AUJOURD'HUI (Domicile uniquement)</label><div class="toggle"><button id="tgAujOui" onclick="setToggle('auj',true)">Oui</button><button id="tgAujNon" onclick="setToggle('auj',false)">Non</button></div></div>
     </div>
-    <div id="bloc-maint"><label>🛵 DISPONIBLE MAINTENANT (Livreur)</label><div class="toggle"><button id="tgMaintOui" onclick="setToggle('maint',true)">Oui</button><button id="tgMaintNon" onclick="setToggle('maint',false)">Non</button></div></div>
+    <div id="bloc-maint"><label>🛵 DISPONIBLE MAINTENANT (Livreur uniquement)</label><div class="toggle"><button id="tgMaintOui" onclick="setToggle('maint',true)">Oui</button><button id="tgMaintNon" onclick="setToggle('maint',false)">Non</button></div></div>
     <button class="btn btn-green" onclick="sauvegarderReglages()">💾 Sauvegarder mes réglages</button>
   </div>
 </div>
 </div>
+
 <div class="section" id="sectionLivreurDemandes" style="display:none"><h2>🛵 Demandes de livraison en attente</h2><div id="listeDemandesLivreur"></div></div>
 <div class="section"><h2>📋 Mes annonces</h2><div id="listeAnnonces"></div></div>
 <div class="section"><h2>💰 Mes commandes</h2><div id="listeCommandes"></div></div>
@@ -114,7 +116,6 @@ const sb = window.supabaseClient || window.supabase.createClient(SUPABASE_URL, S
 window.supabaseClient = sb;
 let uid = null;
 let reglages = {distance:false, auj:false, maint:false};
-let mesAnnonces = [];
 function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmt(n){ const v=Number(n||0); if(!v) return '0 FCFA'; if(window.rocyFormatPrix){ const r=window.rocyFormatPrix(v); if(r && !String(r).toLowerCase().includes('discuter')) return r; } return v.toLocaleString('fr-FR')+' FCFA'; }
 async function getUtilisateurSecurise(){
@@ -122,19 +123,20 @@ async function getUtilisateurSecurise(){
   const {data:{user}} = await sb.auth.getUser(); return user || null;
 }
 async function deconnecter(){ await sb.auth.signOut(); const langue=localStorage.getItem('rocy_langue'); localStorage.clear(); if(langue) localStorage.setItem('rocy_langue',langue); location.href='index.html'; }
+
+// CORRIGÉ MONDIAL : rang réel parmi les prestataires, pas un count approximatif
 async function estDans30Premiers(profil){
   if(!profil.created_at) return false;
-  const {count} = await sb.from('profiles').select('id',{count:'exact',head:true}).neq('type_compte','client').neq('type_compte','admin').lte('created_at', profil.created_at);
-  return (count||999) <= 30;
+  const {data} = await sb.from('profiles').select('id,created_at').neq('type_compte','client').neq('type_compte','admin').order('created_at',{ascending:true}).limit(30);
+  return (data||[]).some(p=>p.id===profil.id);
 }
 async function verifierAbonnement(p){
   const auj=new Date(); const fin=p.abonnement_fin?new Date(p.abonnement_fin):null;
   const actif=p.abonnement_actif===true||p.abonnement_statut==='actif';
   let offert=p.abonnement_offert===true||p.premier_mois_offert===true;
   if(!offert && !fin){ offert = await estDans30Premiers(p); }
-  if(fin&&fin>=auj) return {ok:true,type:'paye',fin};
-  if(!fin&&(actif||offert)) return {ok:true,type:'offert',fin:null};
-  if(actif&&!fin) return {ok:true,type:'offert',fin:null};
+  if(fin && fin>=auj) return {ok:true,type:'paye',fin};
+  if(!fin && (actif||offert)) return {ok:true,type:'offert',fin:null};
   return {ok:false,type:'expire',fin:null};
 }
 function badgeCommande(s){
@@ -179,6 +181,7 @@ function setToggle(key, val){
   if(key==='auj'){ document.getElementById('tgAujOui').classList.toggle('on', val); document.getElementById('tgAujNon').classList.toggle('on', !val); }
   if(key==='maint'){ document.getElementById('tgMaintOui').classList.toggle('on', val); document.getElementById('tgMaintNon').classList.toggle('on', !val); }
 }
+// CORRIGÉ : 1 dashboard, affichage par activité. Jamais tout mélangé.
 function afficherReglagesParActivite(universSet, categories){
   const has = (...u) => u.some(x => universSet.has(x));
   const cat = (categories||[]).join(' ').toLowerCase();
@@ -186,12 +189,18 @@ function afficherReglagesParActivite(universSet, categories){
   const isLivreur = has('livreur');
   const isPro = has('pro');
   const isDomicile = has('domicile');
-  const isSejour = has('sejour');
-  const isManger = has('manger');
-  const isImmo = has('immobilier');
   const isEvent = has('evenement');
   const show = (id, ok) => { const el=document.getElementById(id); if(el) el.style.display = ok ? '' : 'none'; };
-  if(universSet.size===0){ document.getElementById('sectionReglages').style.display=''; show('bloc-portfolio',true); show('bloc-langues',true); show('bloc-lieux',true); show('bloc-vehicule',true); show('bloc-distance',true); show('bloc-auj',true); show('bloc-maint',true); document.getElementById('texteReglages').textContent='Ce que le client voit dans ta fiche. Crée ta première annonce pour voir seulement tes réglages.'; return; }
+  // RÈGLE N°1 MONDIAL : pas d'annonce = pas de réglages. On ne devine pas.
+  if(universSet.size===0){
+    document.getElementById('sectionReglages').style.display = 'none';
+    document.getElementById('sectionLivreurDemandes').style.display = 'none';
+    return;
+  }
+  // RÈGLE N°2 : Hôtel / Restaurant / Immo seuls = tout est dans l'annonce, pas de réglages rapides
+  const seulementAnnonce = !isGuide && !isPro && !isDomicile && !isLivreur && !isEvent;
+  document.getElementById('sectionReglages').style.display = seulementAnnonce ? 'none' : '';
+  if(seulementAnnonce){ document.getElementById('sectionLivreurDemandes').style.display = 'none'; return; }
   show('bloc-portfolio', isPro || isEvent);
   show('bloc-langues', isGuide || isPro || isEvent);
   show('bloc-lieux', isGuide);
@@ -199,17 +208,11 @@ function afficherReglagesParActivite(universSet, categories){
   show('bloc-distance', isPro);
   show('bloc-auj', isDomicile);
   show('bloc-maint', isLivreur);
-  // CORRIGÉ HÔTEL : si Séjour / Manger / Immo seul, aucun réglage rapide n'a de sens -> on cache la section, les réglages sont dans l'annonce
-  const aucunReglage = !isGuide && !isPro && !isDomicile && !isLivreur && !isEvent;
-  document.getElementById('sectionReglages').style.display = aucunReglage ? 'none' : '';
   let txt = 'Ce que le client voit dans ta fiche : ';
-  if(isSejour) txt += 'Chambres, Dispo, Prix par nuit. ';
-  if(isManger) txt += 'Plats, Prix, Dispo. ';
   if(isGuide) txt += 'Langues, Lieux connus. ';
   if(isPro) txt += 'Portfolio, Travail à distance. ';
   if(isDomicile) txt += 'Dispo aujourd\'hui. ';
   if(isLivreur) txt += 'Véhicule, Dispo maintenant. ';
-  if(isImmo) txt += 'Annonces, Loué / Vendu. ';
   if(isEvent) txt += 'Portfolio, Langues. ';
   document.getElementById('texteReglages').textContent = txt;
   document.getElementById('sectionLivreurDemandes').style.display = isLivreur ? '' : 'none';
@@ -217,19 +220,36 @@ function afficherReglagesParActivite(universSet, categories){
 async function sauvegarderReglages(){
   if(!uid) return;
   const payload = {};
-  if(document.getElementById('bloc-portfolio').style.display!=='none') payload.portfolio_url = document.getElementById('regPortfolio').value.trim() || null;
-  if(document.getElementById('bloc-langues').style.display!=='none') payload.langues = document.getElementById('regLangues').value.trim() || null;
-  if(document.getElementById('bloc-lieux').style.display!=='none') payload.lieux_connus = document.getElementById('regLieux').value.trim() || null;
-  if(document.getElementById('bloc-vehicule').style.display!=='none') payload.vehicule = document.getElementById('regVehicule').value.trim() || null;
-  if(document.getElementById('bloc-distance').style.display!=='none') payload.travaille_distance = reglages.distance;
-  if(document.getElementById('bloc-auj').style.display!=='none') payload.disponible_aujourd_hui = reglages.auj;
-  if(document.getElementById('bloc-maint').style.display!=='none') payload.disponible_maintenant = reglages.maint;
+  const visible = (id) => document.getElementById(id) && document.getElementById(id).style.display!=='none';
+  if(visible('bloc-portfolio')) payload.portfolio_url = document.getElementById('regPortfolio').value.trim() || null;
+  if(visible('bloc-langues')) payload.langues = document.getElementById('regLangues').value.trim() || null;
+  if(visible('bloc-lieux')) payload.lieux_connus = document.getElementById('regLieux').value.trim() || null;
+  if(visible('bloc-vehicule')) payload.vehicule = document.getElementById('regVehicule').value.trim() || null;
+  if(visible('bloc-distance')) payload.travaille_distance = reglages.distance;
+  if(visible('bloc-auj')) payload.disponible_aujourd_hui = reglages.auj;
+  if(visible('bloc-maint')) payload.disponible_maintenant = reglages.maint;
   const {error} = await sb.from('profiles').update(payload).eq('id', uid);
   if(error){ alert('Erreur : '+error.message); return; }
   alert('✅ Réglages sauvegardés ! Ils apparaissent dans ta fiche.');
 }
 async function majAnnonce(id, champ, valeur){
   const {error} = await sb.from('annonces').update({[champ]: valeur}).eq('id', id).eq('prestataire_id', uid);
+  if(error){ alert('Erreur : '+error.message); return; }
+  return true;
+}
+// CORRIGÉ : 1 seule sauvegarde par annonce, pas 2 appels
+async function sauvegarderAnnonceComplete(a){
+  const getVal = (id) => document.getElementById(id)?.value;
+  const payload = {};
+  if(getVal('prix-'+a.id)!==undefined && getVal('prix-'+a.id)!=='') payload.prix_indicatif = Number(getVal('prix-'+a.id))||0;
+  if(document.getElementById('dispo-'+a.id)) payload.disponible = getVal('dispo-'+a.id)==='true';
+  if(document.getElementById('ch-'+a.id) && getVal('ch-'+a.id)!=='') payload.chambres_restantes = Number(getVal('ch-'+a.id));
+  if(document.getElementById('temps-'+a.id) && getVal('temps-'+a.id)!=='') payload.temps_preparation_minutes = Number(getVal('temps-'+a.id));
+  if(document.getElementById('capacite-'+a.id) && getVal('capacite-'+a.id)!=='') payload.capacite = Number(getVal('capacite-'+a.id));
+  if(document.getElementById('duree-'+a.id) && getVal('duree-'+a.id)!=='') payload.duree_jours = Number(getVal('duree-'+a.id));
+  const ok = await majAnnonce(a.id, 'prix_indicatif', payload.prix_indicatif ?? a.prix_indicatif);
+  if(!ok) return;
+  const {error} = await sb.from('annonces').update(payload).eq('id', a.id).eq('prestataire_id', uid);
   if(error){ alert('Erreur : '+error.message); return; }
   alert('✅ Mis à jour !'); charger();
 }
@@ -266,6 +286,26 @@ async function voirConversation(convId, annonceId){
   if(String(data.client_id)===String(data.prestataire_id)){ alert('Conversation invalide.'); return; }
   location.href = 'chat.html?conversation=' + encodeURIComponent(convId) + '&annonce=' + encodeURIComponent(annonceId || '');
 }
+// Gestion par annonce, 100% par activité - c'est ici que chaque métier gère son métier
+function gestionParAnnonce(a){
+  if(a.univers==='manger'){
+    return `<div class="gestion"><label>🍽️ PLAT - PRIX (FCFA)</label><input id="prix-${a.id}" type="number" value="${a.prix_indicatif||''}"><label>⏱️ TEMPS DE PRÉPARATION (minutes)</label><input id="temps-${a.id}" type="number" value="${a.temps_preparation_minutes ?? ''}" placeholder="Ex: 30"><label>DISPONIBLE ?</label><select id="dispo-${a.id}"><option value="true" ${a.disponible!==false?'selected':''}>Oui - Disponible</option><option value="false" ${a.disponible===false?'selected':''}>Non - Pas dispo</option></select><button class="btn btn-green" onclick="sauvegarderAnnonceComplete({id:'${a.id}'})">💾 Sauvegarder le plat</button></div>`;
+  }
+  if(a.univers==='sejour'){
+    return `<div class="gestion"><label>💰 PRIX PAR NUIT (FCFA)</label><input id="prix-${a.id}" type="number" value="${a.prix_indicatif||''}"><label>🛏️ CHAMBRES RESTANTES</label><input id="ch-${a.id}" type="number" value="${a.chambres_restantes ?? ''}" placeholder="Ex: 3"><label>DISPONIBLE ?</label><select id="dispo-${a.id}"><option value="true" ${a.disponible!==false?'selected':''}>Oui</option><option value="false" ${a.disponible===false?'selected':''}>Non</option></select><button class="btn btn-green" onclick="sauvegarderAnnonceComplete({id:'${a.id}'})">💾 Sauvegarder l'hôtel</button></div>`;
+  }
+  if(a.univers==='immobilier'){
+    return `<div class="gestion"><label>💰 PRIX INDICATIF (FCFA)</label><input id="prix-${a.id}" type="number" value="${a.prix_indicatif||''}"><button class="btn btn-green" onclick="sauvegarderAnnonceComplete({id:'${a.id}'})">💾 Sauvegarder le prix</button><button class="btn" style="background:#fee2e2;color:#991b1b" onclick="marquerLoueVendu('${a.id}')">🏁 Marquer comme Loué / Vendu - Masquer</button></div>`;
+  }
+  if(a.univers==='evenement'){
+    return `<div class="gestion"><label>💰 PRIX (FCFA)</label><input id="prix-${a.id}" type="number" value="${a.prix_indicatif||''}"><label>👥 CAPACITÉ (personnes)</label><input id="capacite-${a.id}" type="number" value="${a.capacite ?? ''}" placeholder="Ex: 100"><label>DISPONIBLE ?</label><select id="dispo-${a.id}"><option value="true" ${a.disponible!==false?'selected':''}>Oui</option><option value="false" ${a.disponible===false?'selected':''}>Non</option></select><button class="btn btn-green" onclick="sauvegarderAnnonceComplete({id:'${a.id}'})">💾 Sauvegarder l'évènement</button></div>`;
+  }
+  if(a.univers==='livreur'){
+    return `<div class="gestion"><label>💰 PRIX LIVRAISON (FCFA)</label><input id="prix-${a.id}" type="number" value="${a.prix_indicatif||''}"><label>DISPONIBLE ?</label><select id="dispo-${a.id}"><option value="true" ${a.disponible!==false?'selected':''}>Oui - Dispo maintenant</option><option value="false" ${a.disponible===false?'selected':''}>Non</option></select><button class="btn btn-green" onclick="sauvegarderAnnonceComplete({id:'${a.id}'})">💾 Sauvegarder</button></div>`;
+  }
+  // Guide / PRO / Domicile : prix + dispo, les détails sont dans les réglages rapides
+  return `<div class="gestion"><label>💰 PRIX INDICATIF (FCFA)</label><input id="prix-${a.id}" type="number" value="${a.prix_indicatif||''}"><label>DISPONIBLE ?</label><select id="dispo-${a.id}"><option value="true" ${a.disponible!==false?'selected':''}>Oui</option><option value="false" ${a.disponible===false?'selected':''}>Non</option></select><button class="btn btn-green" onclick="sauvegarderAnnonceComplete({id:'${a.id}'})">💾 Sauvegarder le prix</button></div>`;
+}
 async function charger(){
   const user = await getUtilisateurSecurise(); if(!user){ location.href='connexion.html'; return; }
   uid = user.id;
@@ -283,11 +323,9 @@ async function charger(){
   document.getElementById('nomUser').textContent = nomAffiche(profil);
   document.getElementById('badgeType').innerHTML = badgeTypeFournisseur(profil);
   document.getElementById('infoUser').textContent = (profil.nom_entreprise && profil.nom) ? `Contact : ${profil.nom} • ${profil.quartier || ''} - ${profil.ville || ''} • ${profil.pays || ''}` : `${profil.quartier || ''} - ${profil.ville || ''} • ${profil.pays || ''}`;
-  const quartier = profil.quartier || '';
   document.getElementById('profilNom').textContent = nomAffiche(profil);
-  document.getElementById('profilQuartier').textContent = '📍 Quartier : ' + (quartier || 'Non rempli');
+  document.getElementById('profilQuartier').textContent = '📍 Quartier : ' + (profil.quartier || 'Non rempli');
   if(profil.photo_profil_url) document.getElementById('photoProfil').src = profil.photo_profil_url;
-  // CORRIGÉ : plus de profil.statut, seulement verification_statut
   const verifStatut = String(profil.verification_statut || '').toLowerCase();
   const estVerifie = profil.quartier_verifie===true || verifStatut==='valide' || verifStatut==='verifie';
   const enAttente = verifStatut==='en_attente' || verifStatut==='attente';
@@ -323,10 +361,10 @@ async function charger(){
   const boxAbo = document.getElementById('bandeauAbo');
   const btnCreer = document.getElementById('btnCreer');
   if(resAbo.ok && resAbo.type==='offert'){ boxAbo.innerHTML = `<div class="bandeau-abo abo-offert">🎁 1er mois offert (30 premiers comptes) - Tu peux publier. Commissions dues dès la 1ère mission.</div>`; btnCreer.disabled=false; btnCreer.textContent='➕ Créer une nouvelle annonce'; }
-  else if(resAbo.ok){ boxAbo.innerHTML = `<div class="bandeau-abo abo-ok">✅ Abonnement à jour jusqu'au ${esc(resAbo.fin.toLocaleDateString('fr-FR'))} - Tu peux publier.</div>`; btnCreer.disabled=false; btnCreer.textContent='➕ Créer une nouvelle annonce'; }
+  else if(resAbo.ok && resAbo.fin){ boxAbo.innerHTML = `<div class="bandeau-abo abo-ok">✅ Abonnement à jour jusqu'au ${esc(resAbo.fin.toLocaleDateString('fr-FR'))} - Tu peux publier.</div>`; btnCreer.disabled=false; btnCreer.textContent='➕ Créer une nouvelle annonce'; }
+  else if(resAbo.ok){ boxAbo.innerHTML = `<div class="bandeau-abo abo-ok">✅ Abonnement à jour - Tu peux publier.</div>`; btnCreer.disabled=false; btnCreer.textContent='➕ Créer une nouvelle annonce'; }
   else { boxAbo.innerHTML = `<div class="bandeau-abo abo-expire">⛔ Abonnement expiré. Tu ne peux pas publier de nouvelle annonce tant que tu ne renouvelles pas.<br><button class="btn btn-dark" onclick="location.href='abonnement.html'">Renouveler maintenant →</button></div>`; btnCreer.disabled=true; btnCreer.textContent='⛔ Publier bloqué - Abonnement expiré'; }
-  const {data: annonces, error: errAnnonces} = await sb.from('annonces').select('id, titre, categorie, univers, quartier, localite, ville, prix_indicatif, prix_fixe, devise, photo_url, status, chambres_restantes, disponible, created_at').eq('prestataire_id', uid).order('created_at',{ascending:false});
-  mesAnnonces = annonces||[];
+  const {data: annonces, error: errAnnonces} = await sb.from('annonces').select('id, titre, categorie, univers, quartier, localite, ville, prix_indicatif, prix_fixe, devise, photo_url, status, chambres_restantes, disponible, temps_preparation_minutes, capacite, duree_jours, created_at').eq('prestataire_id', uid).order('created_at',{ascending:false});
   const universSet = new Set((annonces||[]).map(a=>String(a.univers||'').toLowerCase()));
   const categories = (annonces||[]).map(a=>a.categorie||'');
   if(roleReel==='livreur') universSet.add('livreur');
@@ -339,12 +377,7 @@ async function charger(){
     boxA.innerHTML = annonces.map(a=>{
       const lieu = a.quartier || a.localite || '';
       const prixTxt = a.prix_fixe ? fmt(a.prix_indicatif||0)+' - Prix fixe' : (a.prix_indicatif ? 'À partir de '+fmt(a.prix_indicatif) : 'Prix à discuter');
-      let gestion = '';
-      if(a.univers==='manger'){ gestion = `<div class="gestion"><label>🍽️ PLAT - PRIX (FCFA)</label><input id="prix-${a.id}" type="number" value="${a.prix_indicatif||''}"><label>DISPONIBLE ?</label><select id="dispo-${a.id}"><option value="true" ${a.disponible!==false?'selected':''}>Oui - Disponible</option><option value="false" ${a.disponible===false?'selected':''}>Non - Pas dispo</option></select><button class="btn btn-green" onclick="majAnnonce('${a.id}','prix_indicatif',Number(document.getElementById('prix-${a.id}').value)||0);majAnnonce('${a.id}','disponible',document.getElementById('dispo-${a.id}').value==='true')">💾 Sauvegarder le plat</button></div>`; }
-      else if(a.univers==='sejour'){ gestion = `<div class="gestion"><label>🛏️ CHAMBRES RESTANTES</label><input id="ch-${a.id}" type="number" value="${a.chambres_restantes ?? ''}" placeholder="Ex: 3"><button class="btn btn-green" onclick="majAnnonce('${a.id}','chambres_restantes',Number(document.getElementById('ch-${a.id}').value))">💾 Sauvegarder chambres</button><label>DISPONIBLE ?</label><select onchange="majAnnonce('${a.id}','disponible',this.value==='true')"><option value="true" ${a.disponible!==false?'selected':''}>Oui</option><option value="false" ${a.disponible===false?'selected':''}>Non</option></select></div>`; }
-      else if(a.univers==='immobilier'){ gestion = `<div class="gestion"><label>💰 PRIX INDICATIF (FCFA)</label><input id="prix-${a.id}" type="number" value="${a.prix_indicatif||''}"><button class="btn btn-green" onclick="majAnnonce('${a.id}','prix_indicatif',Number(document.getElementById('prix-${a.id}').value)||0)">💾 Sauvegarder le prix</button><button class="btn" style="background:#fee2e2;color:#991b1b" onclick="marquerLoueVendu('${a.id}')">🏁 Marquer comme Loué / Vendu - Masquer</button></div>`; }
-      else { gestion = `<div class="gestion"><label>💰 PRIX INDICATIF (FCFA)</label><input id="prix-${a.id}" type="number" value="${a.prix_indicatif||''}"><button class="btn btn-green" onclick="majAnnonce('${a.id}','prix_indicatif',Number(document.getElementById('prix-${a.id}').value)||0)">💾 Sauvegarder le prix</button></div>`; }
-      return `<div class="card">${badgeAnnonce(a)}<h3 style="margin-top:8px">${esc(a.titre)}</h3><p>${esc(a.categorie)} • ${esc(a.univers)} • ${esc(lieu)} - ${esc(a.ville)}<br>${prixTxt}</p>${gestion}<button class="btn btn-dark" onclick="location.href='creer-annonce.html'">✏️ Modifier / Voir</button><button class="btn" style="background:#fee2e2;color:#991b1b" onclick="supprimerAnnonce('${a.id}')">🗑️ Supprimer</button></div>`;
+      return `<div class="card">${badgeAnnonce(a)}<h3 style="margin-top:8px">${esc(a.titre)}</h3><p>${esc(a.categorie)} • ${esc(a.univers)} • ${esc(lieu)} - ${esc(a.ville)}<br>${prixTxt}</p>${gestionParAnnonce(a)}<button class="btn btn-dark" onclick="location.href='creer-annonce.html'">✏️ Modifier / Voir</button><button class="btn" style="background:#fee2e2;color:#991b1b" onclick="supprimerAnnonce('${a.id}')">🗑️ Supprimer</button></div>`;
     }).join('');
   }
   const {data: cmds, error: errCmds} = await sb.from('commandes').select('id, titre, client_id, conversation_id, annonce_id, status, univers, commission, montant_total, montant_prestataire, localite, ville, litige_raison, created_at').eq('prestataire_id', uid).order('created_at',{ascending:false});
