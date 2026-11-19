@@ -6,6 +6,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="pays.js"></script>
 <script src="rocy-layout.js"></script>
+<script src="app.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
 body{background:#f6f7f9;color:#111}
@@ -111,11 +112,13 @@ function typeSejour(a){
 function prixTexte(a){
   const prixVal = Number(a.prix_indicatif || 0);
   const t = typeSejour(a);
-  if(t==='voiture') return (prixVal>0 ? prixVal.toLocaleString()+' FCFA / jour' : 'Prix à discuter / jour');
-  if(t==='salle') return (prixVal>0 ? prixVal.toLocaleString()+' FCFA / heure' : 'Prix à discuter / heure');
-  if(t==='guide') return (prixVal>0 ? prixVal.toLocaleString()+' FCFA / jour' : 'Prix à discuter / jour');
-  if(t==='transport') return (prixVal>0 ? 'À partir de '+prixVal.toLocaleString()+' FCFA / trajet' : 'Prix à discuter / trajet');
-  return (prixVal>0 ? prixVal.toLocaleString()+' FCFA / nuit' : 'Prix à discuter / nuit');
+  const fmt = window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal.toLocaleString()+' '+(a.devise||'FCFA');
+  if(prixVal<=0) return 'Prix à discuter';
+  if(t==='voiture') return fmt + ' / jour';
+  if(t==='salle') return fmt + ' / heure';
+  if(t==='guide') return fmt + ' / jour';
+  if(t==='transport') return 'À partir de ' + fmt + ' / trajet';
+  return fmt + ' / nuit';
 }
 function estValide(a){
   const s = String(a.status || '').toLowerCase().trim();
