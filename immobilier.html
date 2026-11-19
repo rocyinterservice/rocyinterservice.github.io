@@ -6,6 +6,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="pays.js"></script>
 <script src="rocy-layout.js"></script>
+<script src="app.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
 body{background:#f6f7f9;color:#111}
@@ -92,12 +93,10 @@ function estValide(a){
   if(!s) return true;
   return s==='valide' || s==='valid' || s==='publie' || s==='publié' || s==='publiee' || s==='actif' || s==='active';
 }
-// NOUVEAU : badge terrain vérifié + badge rôle
 function badgeVerification(a){
   const cat = String(a.categorie||'').toLowerCase();
   const isTerrain = cat.includes('terrain') || cat.includes('parcelle');
   if(isTerrain){
-    // Si tu as un champ terrain_verifie dans ta table, il sera utilisé. Sinon on affiche Non Vérifié par prudence.
     if(a.terrain_verifie === true || a.verifie === true) return `<span class="badge">✅ Terrain Vérifié</span>`;
     return `<span class="badge-warn">⚠️ Non Vérifié - Attention</span>`;
   }
@@ -107,7 +106,6 @@ function badgeRole(a, pr){
   const role = String(pr.type_fournisseur || pr.type_compte || a.type_vendeur || '').toLowerCase();
   if(role.includes('demarcheur')) return `<span class="badge-role">🏷️ Démarcheur Vérifié</span>`;
   if(role.includes('proprietaire') || role.includes('propriétaire')) return `<span class="badge-role">🏠 Propriétaire</span>`;
-  // Par défaut, si pas de rôle, on ne dit rien pour ne pas mentir
   return '';
 }
 function afficher(){
@@ -132,7 +130,7 @@ function afficher(){
     const infoChambres = nbChambres ? `🛏️ ${esc(nbChambres)} chambres / pièces<br>` : '';
     const btnChat = cestMoi ? `<button class="btn btn-mine" disabled>C'est ton annonce</button>` : `<button class="btn btn-dark" onclick="discuter('${esc(prestaId)}','${esc(a.id)}')">💬 Discuter sur le site</button>`;
     const btnVisite = cestMoi ? '' : `<button class="btn btn-visit" onclick="visiter('${esc(a.id)}')">📍 Visiter - Payer 2 000 FCFA</button>`;
-    return `<div class="card"><img src="${esc(img)}" onclick="voirParcelle('${esc(a.id)}')" style="cursor:pointer" onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80'"><div class="card-body">${badgeVerification(a)} <span class="badge-cat">${esc(a.categorie)}</span> ${badgeRole(a,pr)}<h3 style="margin-top:8px">${esc(a.titre)}</h3><p>👤 ${esc(nom)}<br>📍 ${esc(lieu)}<br>${infoChambres}</p><p>${esc((a.description||'').slice(0,120))}...</p><div class="price">${esc(prixTexte(a))}</div><button class="btn btn-gris" onclick="voirParcelle('${esc(a.id)}')">${esc(t('voirBien'))}</button>${btnChat}${btnVisite}</div></div>`;
+    return `<div class="card"><img src="${esc(img)}" onclick="voirParcelle('${esc(a.id)}')" style="cursor:pointer" onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&q=80'"><div class="card-body">${badgeVerification(a)} <span class="badge-cat">${esc(a.categorie)}</span> ${badgeRole(a,pr)}<h3 style="margin-top:8px">${esc(a.titre)}</h3><p>👤 ${esc(nom)}<br>📍 ${esc(lieu)}<br>${infoChambres}</p><p>${esc((a.description||'').slice(0,120))}...</p><div class="price">${esc(prixTexte(a))}</div><button class="btn btn-gris" onclick="voirParcelle('${esc(a.id)}')">Voir le bien</button>${btnChat}${btnVisite}</div></div>`;
   }).join('');
   if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 }
@@ -145,7 +143,6 @@ async function charger(){
     toutesAnnonces=(data||[]).filter(estValide);
     const ids=[...new Set(toutesAnnonces.map(a=>a.prestataire_id).filter(Boolean))];
     if(ids.length){
-      // On ne récupère JAMAIS whatsapp ici, pour protéger la commission
       const {data: profs} = await sb.from('profiles').select('id,nom,nom_entreprise,type_compte,type_fournisseur,quartier_verifie,quartier').in('id', ids);
       (profs||[]).forEach(p=> nomsPresta[p.id]=p);
     }
@@ -155,7 +152,6 @@ async function charger(){
 function voirParcelle(id){ if(!id) return; localStorage.setItem('fiche_parcelle_id',id); location.href='fiche-parcelle.html';}
 function visiter(id){
   if(!id) return;
-  // On envoie vers paiement avec type=visite. Le montant 2000 sera déduit de la commission.
   localStorage.setItem('paiement_annonce', id);
   localStorage.setItem('paiement_type', 'visite');
   localStorage.setItem('paiement_montant', '2000');
