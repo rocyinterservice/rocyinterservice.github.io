@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Tarifs - Rocyinter</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="pays.js"></script>
 <script src="rocy-layout.js"></script>
+<script src="app.js"></script>
+<link rel="stylesheet" href="style.css">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
 body{background:#f6f7f9;color:#111;padding:16px}
@@ -26,13 +30,13 @@ th{background:#0f172a;color:#fff}
 <tr><td>Location maison</td><td>50% d'un mois, une fois, payé par le propriétaire</td></tr>
 <tr><td>Visite Immobilier</td><td>2 000 FCFA pour Rocyinter, non remboursable</td></tr>
 <tr><td>Mise en avant parcelle</td><td>5 000 FCFA / semaine</td></tr>
-<tr><td>Livreur</td><td>Livreur 80% / Rocyinter 20% - Prix livraison à discuter</td></tr>
+<tr><td>Livreur</td><td>Livreur 80% / Rocyinter 20% - Prix de livraison fixé par le livreur dans son annonce</td></tr>
 </table>
 <table><tr><th>Abonnement</th><th>Manger / Domicile</th><th>Pro / Hôtel / Immobilier</th></tr>
 <tr><td>1er mois*</td><td>Offert pour les 30 premiers</td><td>Offert pour les 30 premiers</td></tr>
 <tr><td>Pro</td><td>10 000 FCFA / mois</td><td>25 000 FCFA / mois</td></tr>
 <tr><td>Premium</td><td>25 000 FCFA / mois</td><td>50 000 FCFA / mois</td></tr>
 </table>
-<div class="info">* <b>1er mois offert = seulement l'abonnement.</b> Les commissions ci-dessus sont dues dès la 1ère mission, même pendant le mois offert. Après 6 mois : Pro 15 000 / 35 000 FCFA, Premium 35 000 / 75 000 FCFA. Annuel : 10 mois payés = 12 mois.</div>
+<div class="info">* <b>1er mois offert = seulement l'abonnement.</b> Les commissions ci-dessus sont dues dès la 1ère mission, même pendant le mois offert. <b>Prix fixe, jamais d'augmentation.</b> Annuel : 10 mois payés = 12 mois.</div>
 <button class="btn" onclick="location.href='abonnement.html'">Choisir un abonnement</button>
 </div></body></html>
