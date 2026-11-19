@@ -50,9 +50,9 @@
     bandeauAdmin:'Vous contrôlez et validez les annonces et les prestataires.',
     pasConnexion:'Pas de connexion', erreurConnexion:'Erreur de connexion', reessayer:'Réessayer',
     pays:'PAYS', ville:'VILLE / LOCALITÉ', rechercher:'RECHERCHER UN SERVICE', villePh:'Ex: Calavi, Cotonou, Godomey...', searchPh:'Ex: Plombier, Traiteur, Nettoyage...',
-    tous:'Tous', manger:'Se nourrir', domicile:'Domicile', pro:'Services professionnels', sejour:'Séjour', immo:'Immobilier', livreursTitre:'Livreurs',
+    tous:'Tous', manger:'Se nourrir', domicile:'Domicile', pro:'Services professionnels', sejour:'Séjour', immo:'Immobilier', livreursTitre:'Livreurs', evenement:'Évènement',
     proposerTitre:'Proposer un service', annoncesTitre:'Annonces réelles près de vous', aucuneTitre:'Aucune annonce pour le moment', aucuneSous:'Sois le premier à proposer un service dans ta localité.', discuter:'Discuter', voirProfil:'Voir profil', voirEntreprise:"Voir l'entreprise", prixFixe:'Prix fixe', aPartir:'À partir de', prixDiscuter:'Prix à discuter dans le chat', connectePourCommander:'Connecte-toi pour discuter et commander',
-    mangerTitre:'Se nourrir', domicileTitre:'Domicile', proTitre:'Services professionnels', sejourTitre:'Séjour', immoTitre:'Immobilier', mesAnnonces:'Mes Annonces', mesRevenus:'Mes Revenus', monAgenda:'Mon Agenda', mesActivites:'Mes Activités', creerAnnonce:'Créer une annonce', mesCommandes:'Mes Commandes', mesFavoris:'Mes Favoris', monPanier:'Mon Panier', monEscrow:'Mon Escrow', valider:'Valider', refuser:'Refuser', envoyer:'Envoyer', rechercherBtn:'Rechercher', commander:'Commander', payer:'Payer', retourAccueil:"Retour à l'accueil",
+    mangerTitre:'Se nourrir', domicileTitre:'Domicile', proTitre:'Services professionnels', sejourTitre:'Séjour', immoTitre:'Immobilier', evenementTitre:'Évènement', mesAnnonces:'Mes Annonces', mesRevenus:'Mes Revenus', monAgenda:'Mon Agenda', mesActivites:'Mes Activités', creerAnnonce:'Créer une annonce', mesCommandes:'Mes Commandes', mesFavoris:'Mes Favoris', monPanier:'Mon Panier', monEscrow:'Mon Escrow', valider:'Valider', refuser:'Refuser', envoyer:'Envoyer', rechercherBtn:'Rechercher', commander:'Commander', payer:'Payer', retourAccueil:"Retour à l'accueil",
     panierTitre:'Mon Panier', panierVide:'Panier vide', panierInfo:"Ton panier, c'est tes propositions acceptées en attente de paiement en Escrow. Tu paies à Rocyinter, pas au prestataire.", payerEscrow:'Payer en Escrow', voirDiscussion:'Voir la discussion', annuler:'Annuler', montant:'Montant', prestataire:'Prestataire', chargement:'Chargement...'
   };
 
@@ -105,25 +105,21 @@
     obs.observe(document.body, {childList:true, subtree:true});
   }
 
-  // ===== DEVISES - CAHIER DE CHARGES FINAL : GRATUIT, CACHE 5 MIN, EUR FIXE 655,957 =====
   const DEVISES = [{code:'FCFA', label:'FCFA'}, {code:'EUR', label:'€ EUR'}, {code:'USD', label:'$ USD'}, {code:'NGN', label:'₦ NGN'}, {code:'GHS', label:'₵ GHS'}, {code:'XOF', label:'XOF'}, {code:'GBP', label:'£ GBP'}];
   let devise = localStorage.getItem('rocy_devise') || 'FCFA';
-  const TAUX_FIXE_EUR = 655.957; // BCEAO - 1 EUR = 655,957 FCFA - ne bouge jamais
+  const TAUX_FIXE_EUR = 655.957;
   let tauxJour = null;
   let tauxTimestamp = 0;
   try{ const saved = JSON.parse(localStorage.getItem('rocy_taux')||'null'); if(saved && saved.rates && Date.now() - saved.ts < 5*60*1000){ tauxJour = saved.rates; tauxTimestamp = saved.ts; } }catch(e){}
 
   async function chargerTaux(){
-    // Si cache de moins de 5 min, on garde
     if(tauxJour && tauxJour.USD && Date.now() - tauxTimestamp < 5*60*1000) return;
     try{ const res = await fetch('https://open.er-api.com/v6/latest/XOF'); const j = await res.json(); if(j && j.rates){ tauxJour = j.rates; tauxTimestamp = Date.now(); try{ localStorage.setItem('rocy_taux', JSON.stringify({rates:tauxJour, ts:tauxTimestamp})); }catch(e){} } }catch(e){}
     if(!tauxJour || !tauxJour.USD) tauxJour = { XOF:1, FCFA:1, EUR:0.00152, USD:0.00165, NGN:2.45, GHS:0.025, GBP:0.0013 };
     if(!tauxJour.FCFA) tauxJour.FCFA = tauxJour.XOF || 1;
-    // On force le taux fixe EUR pour être exact à 100%
     tauxJour.EUR = 1 / TAUX_FIXE_EUR;
   }
 
-  // Retourne le taux actuel pour la devise choisie, pour figer au paiement
   window.rocyGetTauxActuel = function(){
     if(!tauxJour) return 1;
     if(devise==='FCFA' || devise==='XOF') return 1;
@@ -144,7 +140,6 @@
     return Math.round(v).toLocaleString('fr-FR') + ' ' + devise;
   };
 
-  // Pour figer le taux au moment du paiement - à appeler dans panier.html / paiement.html
   window.rocyFigerTauxPaiement = function(montantFCFA){
     const taux = window.rocyGetTauxActuel();
     const montantAffiche = window.rocyFormatPrix(montantFCFA);
@@ -294,6 +289,11 @@
       ${!isConnecte ? `<button type="button" class="rocy-menu-item" onclick="location.href='connexion.html'"><span data-traduire="Se connecter">Se connecter</span></button><button type="button" class="rocy-menu-item" onclick="location.href='inscription.html'"><span data-traduire="Créer un compte">Créer un compte</span></button>` : `<button type="button" class="rocy-menu-item" onclick="rocyAllerEspace()">👤 <span data-traduire="Mon espace">Mon espace</span></button><button type="button" class="rocy-menu-item" onclick="location.href='favoris.html'"><span data-traduire="Mes Favoris">Mes Favoris</span></button><button type="button" class="rocy-menu-item" onclick="location.href='panier.html'"><span data-traduire="Mon Panier">Mon Panier</span></button><button type="button" class="rocy-menu-item" onclick="location.href='notifications.html'"><span data-traduire="Notifications">Notifications</span><span class="rocy-notif-count" id="rocyNotifBadgeMenu"></span></button><button type="button" class="rocy-menu-item" onclick="rocyDeconnexion()"><span data-traduire="Déconnexion">Déconnexion</span></button>`}
       <div class="rocy-menu-label"><span data-traduire="SERVICES">SERVICES</span></div>
       <button type="button" class="rocy-menu-item" onclick="location.href='index.html'">🏠 <span data-traduire="Accueil">Accueil</span></button>
+      <button type="button" class="rocy-menu-item" onclick="location.href='manger.html'">🍽️ <span data-traduire="Se nourrir">Se nourrir</span></button>
+      <button type="button" class="rocy-menu-item" onclick="location.href='services-domicile.html'">🏠 <span data-traduire="Domicile">Domicile</span></button>
+      <button type="button" class="rocy-menu-item" onclick="location.href='services-pro.html'">💼 <span data-traduire="Services professionnels">Services professionnels</span></button>
+      <button type="button" class="rocy-menu-item" onclick="location.href='sejour.html'">✈️ <span data-traduire="Séjour">Séjour</span></button>
+      <button type="button" class="rocy-menu-item" onclick="location.href='evenement.html'">🎉 <span data-traduire="Évènement">Évènement</span></button>
       <button type="button" class="rocy-menu-item" onclick="location.href='immobilier.html'"><span data-traduire="Immobilier">Immobilier</span></button>
       <button type="button" class="rocy-menu-item" onclick="location.href='livreurs.html'"><span data-traduire="Livreurs">Livreurs</span></button>
       <button type="button" class="rocy-menu-item" onclick="location.href='escrow.html'"><span data-traduire="Mon Escrow">Mon Escrow</span></button>
