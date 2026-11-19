@@ -38,12 +38,13 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px;line-height:1.5}
 .profilBox .info{flex:1}
 .profilBox .info b{font-size:15px}
 .profilBox .info span{font-size:12px;color:#64748b;display:block;margin-top:2px}
+.suivi{font-size:12px;font-weight:700;color:#0f172a;background:#eff6ff;padding:8px;border-radius:8px;margin-top:8px}
 </style>
 </head>
 <body>
 <div class="top">
-<h1><span data-i18n="bonjour">Bonjour</span> <span id="nomUser">Client</span> 👋</h1>
-<p class="sub" data-i18n="dashboardClientSous">Suivez vos commandes en temps réel. Votre argent est en sécurité jusqu'à la fin du service.</p>
+<h1>Bonjour <span id="nomUser">Client</span> 👋</h1>
+<p class="sub">Suivez vos commandes en temps réel. Votre argent est en sécurité jusqu'à la fin du service.</p>
 <div class="profilBox" id="profilBox">
   <img id="photoProfil" src="" alt="" onerror="this.style.display='none'">
   <div class="info">
@@ -54,17 +55,17 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px;line-height:1.5}
 </div>
 <button class="btn btn-dark" onclick="location.href='profil.html'">👤 Mon Profil</button>
 <button class="btn btn-gris" id="btnVerif" onclick="location.href='verification.html'" style="display:none">📍 Faire vérifier mon quartier</button>
-<button class="btn" onclick="location.href='index.html'">🔍 <span data-i18n="trouverService">Trouver un service</span></button>
-<button class="btn btn-gris" onclick="location.href='devenir-fournisseur.html'">💼 <span data-i18n="devenirPresta">Devenir Fournisseur aussi ? Publier mes services →</span></button>
+<button class="btn" onclick="location.href='index.html'">🔍 Trouver un service</button>
+<button class="btn btn-gris" onclick="location.href='devenir-fournisseur.html'">💼 Devenir Fournisseur aussi ? Publier mes services →</button>
 <div class="section">
-  <h2>📦 <span data-i18n="mesCommandes">Mes commandes</span></h2>
+  <h2>📦 Mes commandes</h2>
   <div id="listeCommandes"></div>
 </div>
 <div class="section">
-  <h2>💬 <span data-i18n="mesConversations">Mes conversations</span></h2>
+  <h2>💬 Mes conversations</h2>
   <div id="listeConvs"></div>
 </div>
-<button class="btn btn-dark" style="margin-top:16px" onclick="deconnecter()" data-i18n="deconnexion">Déconnexion</button>
+<button class="btn btn-dark" style="margin-top:16px" onclick="deconnecter()">Déconnexion</button>
 </div>
 <script>
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
@@ -97,10 +98,40 @@ function badgeStatus(s){
   if(s==='valide') return '<span class="badge valide">✅ Validé</span>';
   if(s==='libere') return '<span class="badge valide">💰 Libéré</span>';
   if(s==='litige') return '<span class="badge litige">⚠️ Litige</span>';
+  if(s==='accepte') return '<span class="badge cours">✅ Accepté</span>';
+  if(s==='en_route') return '<span class="badge cours">🛵 En route</span>';
+  if(s==='en_livraison') return '<span class="badge cours">📦 En livraison</span>';
+  if(s==='livre') return '<span class="badge valide">📦 Livré</span>';
   return `<span class="badge attente">${esc(s)}</span>`;
 }
-function stepsHtml(s){
+// SUIVI PAR UNIVERS - C'est ça la correction principale
+function stepsHtml(c){
+  const s = c.status;
   if(s==='litige') return `<p style="color:#991b1b">⚠️ Litige en cours - Argent bloqué. L'Admin va trancher.</p>`;
+  if(c.univers==='manger'){
+    const labels = ['Créée','Payée','En préparation','En livraison','Livrée'];
+    const order = ['en_attente','paye','en_cours','en_livraison','livre'];
+    const idx = order.indexOf(s);
+    return `<div class="suivi">🍽️ Manger : ${labels[Math.max(0,idx)]||'Créée'}</div><div class="steps">${labels.map((l,i)=>`<div class="step ${i<idx?'done':''} ${i===idx?'active':''}">${esc(l)}</div>`).join('')}</div>`;
+  }
+  if(c.univers==='livreur'){
+    const labels = ['Demande','Acceptée','En route','En livraison','Livré'];
+    const order = ['en_attente','accepte','en_route','en_livraison','livre'];
+    const idx = order.indexOf(s);
+    return `<div class="suivi">🛵 Livreur : ${labels[Math.max(0,idx)]||'Demande'}</div><div class="steps">${labels.map((l,i)=>`<div class="step ${i<idx?'done':''} ${i===idx?'active':''}">${esc(l)}</div>`).join('')}</div>`;
+  }
+  if(c.univers==='sejour'){
+    const labels = ['Demande','Validée','En cours','Terminée'];
+    const order = ['en_attente','paye','en_cours','valide'];
+    const idx = order.indexOf(s);
+    return `<div class="suivi">✈️ Séjour : ${labels[Math.max(0,idx)]||'Demande'}</div><div class="steps">${labels.map((l,i)=>`<div class="step ${i<idx?'done':''} ${i===idx?'active':''}">${esc(l)}</div>`).join('')}</div>`;
+  }
+  if(c.univers==='evenement'){
+    const labels = ['Demande','Devis','Validée','En cours','Terminée'];
+    const order = ['en_attente','paye','en_cours','valide','libere'];
+    const idx = order.indexOf(s);
+    return `<div class="suivi">🎉 Évènement : ${labels[Math.max(0,idx)]||'Demande'}</div><div class="steps">${labels.map((l,i)=>`<div class="step ${i<idx?'done':''} ${i===idx?'active':''}">${esc(l)}</div>`).join('')}</div>`;
+  }
   const order = ['en_attente','paye','en_cours','valide','libere'];
   const idx = order.indexOf(s);
   const labels = ['Créée','Payée','En cours','Validée','Libérée'];
@@ -111,10 +142,11 @@ function texteCommission(c){
   if(c.univers==='pro') return `Commission 5 000 FCFA fixe`;
   if(c.univers==='manger') return `Commission 12% : ${fmt(c.commission)} FCFA`;
   if(c.univers==='sejour') return `Commission 12% : ${fmt(c.commission)} FCFA`;
+  if(c.univers==='evenement') return `Commission 12% : ${fmt(c.commission)} FCFA`;
   if(c.univers==='livreur') return `Commission 20% (Livreur 80%) : ${fmt(c.commission)} FCFA`;
   if(c.univers==='immobilier'){
     const t = String(c.titre||'').toLowerCase();
-    if(t.includes('parcelle') || t.includes('vente') || t.includes('terrain')) return `Commission Parcelle 10 000 + 2% plafonné 200 000 : ${fmt(c.commission)} FCFA`;
+    if(t.includes('parcelle') || t.includes('vente') || t.includes('terrain')) return `Commission Parcelle 2% plafonné 200 000 : ${fmt(c.commission)} FCFA`;
     return `Commission Location 50% d'un mois : ${fmt(c.commission)} FCFA`;
   }
   return `Commission : ${fmt(c.commission)} FCFA`;
@@ -163,12 +195,13 @@ async function charger(){
       Total : <b>${fmt(c.montant_total)} FCFA</b><br>
       Prestataire reçoit : ${fmt(c.montant_prestataire)} FCFA (${esc(texteCommission(c))})<br>
       <span style="color:#16a34a;font-weight:700">🔒 Escrow : argent bloqué chez Rocyinter jusqu'à validation</span></p>
-      ${stepsHtml(c.status)}
+      ${stepsHtml(c)}
       ${c.status==='en_attente' ? `<button class="btn btn-green" onclick="payer('${esc(c.id)}')">💳 Payer en escrow sécurisé</button>` : ''}
       ${c.status==='paye' ? `<button class="btn btn-dark" onclick="demarrer('${esc(c.id)}')">🔧 Confirmer le début du service</button>` : ''}
-      ${c.status==='en_cours' ? `<button class="btn btn-green" onclick="valider('${esc(c.id)}')">✅ Valider le service terminé</button>` : ''}
+      ${c.status==='en_cours' || c.status==='en_livraison' ? `<button class="btn btn-green" onclick="valider('${esc(c.id)}')">✅ Valider le service terminé</button>` : ''}
+      ${c.status==='livre' ? `<button class="btn btn-green" onclick="validerLivraison('${esc(c.id)}')">✅ Confirmer la livraison reçue</button>` : ''}
       ${c.status==='valide' ? `<button class="btn" onclick="noter('${esc(c.id)}','${esc(c.prestataire_id)}')">⭐ Noter le prestataire</button><p style="color:#166534">⏳ Libération dans 48h pour Services, lundi pour Manger / Hôtels.</p>` : ''}
-      ${['paye','en_cours'].includes(c.status) ? `<button class="btn btn-red" onclick="signalerLitige('${esc(c.id)}')">⚠️ Signaler un litige</button>` : ''}
+      ${['paye','en_cours','en_livraison'].includes(c.status) ? `<button class="btn btn-red" onclick="signalerLitige('${esc(c.id)}')">⚠️ Signaler un litige</button>` : ''}
       <button class="btn btn-dark" onclick="voirConversation('${esc(c.conversation_id)}','${esc(c.annonce_id)}')">Ouvrir le chat</button>
     </div>`).join('');
   }
@@ -204,9 +237,18 @@ async function valider(id){
   if(!confirm('Le service est bien terminé ? Après validation, l’argent sera libéré au prestataire.')) return;
   const user = await getUtilisateurSecurise();
   if(!user) return;
-  const {error} = await sb.from('commandes').update({status:'valide'}).eq('id', id).eq('client_id', user.id).eq('status','en_cours');
+  const {error} = await sb.from('commandes').update({status:'valide'}).eq('id', id).eq('client_id', user.id).in('status',['en_cours','en_livraison']);
   if(error){ alert('Erreur : ' + error.message); return; }
   alert('✅ Service validé ! Le prestataire sera payé. Tu peux le noter.');
+  charger();
+}
+async function validerLivraison(id){
+  if(!confirm('Tu as bien reçu ta livraison ?')) return;
+  const user = await getUtilisateurSecurise();
+  if(!user) return;
+  const {error} = await sb.from('commandes').update({status:'valide'}).eq('id', id).eq('client_id', user.id).eq('status','livre');
+  if(error){ alert('Erreur : ' + error.message); return; }
+  alert('✅ Livraison confirmée ! Tu peux noter.');
   charger();
 }
 async function signalerLitige(id){
@@ -215,7 +257,7 @@ async function signalerLitige(id){
   if(raison.trim().length > 500){ alert('Raison trop longue, max 500 caractères.'); return; }
   const user = await getUtilisateurSecurise();
   if(!user) return;
-  const {error} = await sb.from('commandes').update({status:'litige', litige_raison: raison.trim()}).eq('id', id).eq('client_id', user.id).in('status',['paye','en_cours']);
+  const {error} = await sb.from('commandes').update({status:'litige', litige_raison: raison.trim()}).eq('id', id).eq('client_id', user.id).in('status',['paye','en_cours','en_livraison']);
   if(error){ alert('Erreur : ' + error.message); return; }
   alert('⚠️ Litige signalé. Argent bloqué. L’Admin va trancher dans la Page Litiges.');
   charger();
