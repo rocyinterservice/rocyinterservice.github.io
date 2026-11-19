@@ -101,7 +101,9 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
 <optgroup label="🏠 Domicile"><option value="Nettoyage / Ménage">Nettoyage / Ménage</option><option value="Plomberie">Plomberie</option><option value="Électricité">Électricité</option><option value="Climatisation">Climatisation</option><option value="Menuiserie">Menuiserie</option><option value="Peinture">Peinture</option><option value="Jardinage">Jardinage</option><option value="Mécanique">Mécanique</option><option value="Déménagement">Déménagement</option></optgroup>
 <optgroup label="💼 Pro"><option value="Design">Design / Graphisme</option><option value="Développement">Développement Web</option><option value="Marketing">Marketing / Réseaux sociaux</option><option value="Comptabilité">Comptabilité</option><option value="Traduction">Traduction</option><option value="Cours">Cours / Coaching</option></optgroup>
 <optgroup label="✈️ Séjour"><option value="Hôtel">Hôtel / Appartement</option><option value="Location voiture">Location voiture</option><option value="Guide touristique">Guide touristique</option><option value="Transport">Transport / Moto</option><option value="Location salle">Location salle</option></optgroup>
-<optgroup label="🏘️ Immobilier"><option value="Location maison / Appartement">Location maison / Appartement</option><option value="Vente maison / Terrain">Vente maison / Terrain</option><option value="Location chambre / Studio">Location chambre / Studio</option></optgroup>
+<optgroup label="🎉 Évènement"><option value="DJ">DJ / Animation</option><option value="Décorateur">Décorateur Évènement</option><option value="Photographe">Photographe / Vidéaste</option><option value="Location matériel">Location matériel fête</option><option value="Traiteur Évènement">Traiteur Évènement</option><option value="Location salle">Location salle fête</option></optgroup>
+<optgroup label="🛵 Livreur"><option value="Livreur moto">Livreur moto</option><option value="Livreur voiture">Livreur voiture</option><option value="Coursier">Coursier / Courses</option></optgroup>
+<optgroup label="🏘️ Immobilier"><option value="Location maison / Appartement">Location maison / Appartement</option><option value="Vente maison / Terrain">Vente maison / Terrain</option><option value="Parcelle">Parcelle / Terrain</option><option value="Location chambre / Studio">Location chambre / Studio</option></optgroup>
 <optgroup label="➕ Autre"><option value="__AUTRE__">➕ Autre - Écrire ma catégorie...</option></optgroup>
 </select></div>
 <div id="blocAutreInscription" style="display:none"><label data-i18n="ecrisCategorie">ÉCRIS TA CATÉGORIE *</label><input id="autreCategorie" data-i18n-ph="categoriePh" placeholder="Ex: Nettoyage, Désinfection..."></div>
@@ -156,11 +158,15 @@ function universPourCategorie(cat){
   const domicile=['Nettoyage / Ménage','Plomberie','Électricité','Climatisation','Menuiserie','Peinture','Jardinage','Mécanique','Déménagement'];
   const pro=['Design','Design / Graphisme','Développement','Développement Web','Marketing','Marketing / Réseaux sociaux','Comptabilité','Traduction','Cours','Cours / Coaching'];
   const sejour=['Hôtel','Hôtel / Appartement','Location voiture','Guide touristique','Transport','Transport / Moto','Location salle'];
-  const immo=['Location maison / Appartement','Vente maison / Terrain','Location chambre / Studio'];
+  const evenement=['DJ','DJ / Animation','Décorateur','Décorateur Évènement','Photographe','Photographe / Vidéaste','Location matériel','Location matériel fête','Traiteur Évènement','Location salle fête'];
+  const livreur=['Livreur moto','Livreur voiture','Coursier','Coursier / Courses','Livreur'];
+  const immo=['Location maison / Appartement','Vente maison / Terrain','Location chambre / Studio','Parcelle','Parcelle / Terrain'];
   if(manger.includes(cat)) return 'manger';
   if(domicile.includes(cat)) return 'domicile';
   if(pro.includes(cat)) return 'pro';
   if(sejour.includes(cat)) return 'sejour';
+  if(evenement.includes(cat)) return 'evenement';
+  if(livreur.includes(cat)) return 'livreur';
   if(immo.includes(cat)) return 'immobilier';
   return 'domicile';
 }
