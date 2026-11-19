@@ -33,6 +33,7 @@ textarea{min-height:90px;resize:vertical}
 .msg.ok{display:block;background:#dcfce7;color:#166534}
 .msg.err{display:block;background:#fee2e2;color:#991b1b}
 small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:8px;line-height:1.5}
+.bloc-immo{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:12px;display:none;gap:12px}
 </style>
 </head>
 <body>
@@ -54,6 +55,28 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:8p
   </div>
   <div id="blocUnivers" class="info-univers" style="display:none"></div>
   <div id="infoCommission" class="info-commission"></div>
+
+  <!-- NOUVEAU : BLOC IMMOBILIER -->
+  <div id="blocImmo" class="bloc-immo">
+    <div><label>🏠 TU ES QUOI ? *</label>
+      <select id="typeVendeur">
+        <option value="">Choisir...</option>
+        <option value="proprietaire">🏠 Propriétaire - C'est mon bien</option>
+        <option value="demarcheur">🏷️ Démarcheur - Je vends pour quelqu'un</option>
+      </select>
+    </div>
+    <div><label>🛏️ NOMBRE DE CHAMBRES / PIÈCES</label>
+      <input id="nbChambres" type="number" min="0" placeholder="Ex: 2, 3... Laisse vide pour Terrain">
+    </div>
+    <div id="blocParcelle"><label>📜 NUMÉRO DE PARCELLE * (Pour Terrain / Parcelle)</label>
+      <input id="numeroParcelle" placeholder="Ex: TF 12345, Lot 12...">
+      <small style="text-align:left">Si ce numéro existe déjà, on bloque. Une parcelle = une annonce. Ça évite la vente à 2-3 personnes.</small>
+    </div>
+    <div><label>📄 TITRE / DOCUMENT (lien - optionnel)</label>
+      <input id="titreDoc" placeholder="Lien du titre, ou tu l'envoies à l'Admin sur WhatsApp">
+    </div>
+  </div>
+
   <div><label data-i18n="titreAnnonce">TITRE DE VOTRE ANNONCE *</label><input id="titre" placeholder="Ex: Plombier rapide à Calavi" maxlength="80"></div>
   <div><label data-i18n="description">DESCRIPTION DÉTAILLÉE *</label><textarea id="description" placeholder="Ex: Je suis plombier à Godomey depuis 5 ans..." maxlength="2000"></textarea></div>
   <div><label data-i18n="typePrix">TYPE DE PRIX *</label>
@@ -78,7 +101,7 @@ const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 window.supabaseClient = sb;
 let prixFixe=false, mesActivites=[], universChoisi="", abonnementAJour=false, profilFournisseur=null, uidActuel=null;
 
-const infosCommission={manger:"🍽️ <b>Manger : 12%</b>",domicile:"🏠 <b>Domicile : 8%</b> - Tu reçois 92%",pro:"💼 <b>Pro : 5 000 FCFA fixe</b>",sejour:"✈️ <b>Séjour : 12% par nuit</b>",immobilier:"🏘️ <b>Immobilier :</b> Parcelle/Vente 10 000 FCFA/30j + 2% plafonné 200 000 FCFA. Location 50% d'un mois.",livreur:"🛵 <b>Livreur 80% / Rocyinter 20%</b>"};
+const infosCommission={manger:"🍽️ <b>Manger : 12%</b>",domicile:"🏠 <b>Domicile : 8%</b> - Tu reçois 92%",pro:"💼 <b>Pro : 5 000 FCFA fixe</b>",sejour:"✈️ <b>Séjour : 12% par nuit</b>",immobilier:"🏘️ <b>Immobilier :</b> Visite 2 000 FCFA pour Rocyinter, non remboursable. Parcelle 2% plafonné 200 000 FCFA. Location 50% d'un mois. Le bien disparaît quand il est payé.",livreur:"🛵 <b>Livreur 80% / Rocyinter 20%</b>"};
 function universPourCategorie(cat){
   const manger=['Traiteur','Restaurant','Restaurant / Maquis','Livraison repas','Pâtisserie','Jus / Boissons'];
   const domicile=['Nettoyage / Ménage','Ménage / Repassage','Plomberie','Électricité','Climatisation','Menuiserie','Peinture','Jardinage','Mécanique','Serrurerie','Déménagement','Nettoyage','Désinfection'];
@@ -129,6 +152,10 @@ function onCategorieChange(){
   universChoisi=universPourCategorie(sel.value);
   const bloc=document.getElementById('blocUnivers'); bloc.style.display='block'; bloc.textContent='🌍 Univers automatique : '+universChoisi+' - activité '+sel.value;
   const info=document.getElementById('infoCommission'); info.innerHTML=infosCommission[universChoisi]||''; info.style.display='block';
+  // NOUVEAU : afficher bloc Immo seulement pour immobilier
+  const blocImmo=document.getElementById('blocImmo');
+  if(universChoisi==='immobilier'){ blocImmo.style.display='grid'; }
+  else { blocImmo.style.display='none'; }
   if(universChoisi==='livreur') setPrixType(false);
 }
 function setPrixType(fixe){prixFixe=fixe;document.getElementById('btnFixe').classList.toggle('active',fixe);document.getElementById('btnDiscuter').classList.toggle('active',!fixe);document.getElementById('blocPrix').style.display=fixe?'block':'none';}
@@ -214,6 +241,23 @@ async function publier(){
   if(titre.length < 5){ showMsg('Titre trop court, min 5 caractères', false); return; }
   if(description.length < 20){ showMsg('Description trop courte, min 20 caractères', false); return; }
   if(prixFixe && (!prix || Number(prix) <= 0)){ showMsg('Mets un prix fixe > 0', false); return; }
+  // NOUVEAU : champs Immobilier
+  let typeVendeur='', nbChambres=null, numeroParcelle='', titreDoc='';
+  if(universChoisi==='immobilier'){
+    typeVendeur = document.getElementById('typeVendeur').value;
+    nbChambres = document.getElementById('nbChambres').value ? Number(document.getElementById('nbChambres').value) : null;
+    numeroParcelle = document.getElementById('numeroParcelle').value.trim();
+    titreDoc = document.getElementById('titreDoc').value.trim();
+    if(!typeVendeur){ showMsg('Choisis : Tu es Propriétaire ou Démarcheur ?', false); return; }
+    const catLow = categorie.toLowerCase();
+    const estParcelle = catLow.includes('parcelle') || catLow.includes('terrain');
+    if(estParcelle && !numeroParcelle){ showMsg('Pour Terrain / Parcelle, mets le Numéro de parcelle.', false); return; }
+    // Vérifier doublon parcelle
+    if(numeroParcelle){
+      const {data: doublon} = await sb.from('annonces').select('id,titre').eq('numero_parcelle', numeroParcelle).eq('status','valide').maybeSingle();
+      if(doublon){ showMsg('⛔ Cette parcelle est déjà publiée : ' + doublon.titre + '. Une parcelle = une annonce.', false); return; }
+    }
+  }
   btn.disabled = true; btn.textContent = 'Publication...';
   const {error} = await sb.from('annonces').insert([{
     prestataire_id: uid,
@@ -225,7 +269,13 @@ async function publier(){
     pays, ville, localite,
     quartier: localite,
     photo_url: photo || null,
-    status: 'en_attente'
+    status: 'en_attente',
+    type_vendeur: typeVendeur || null,
+    nb_chambres: nbChambres,
+    nb_pieces: nbChambres,
+    numero_parcelle: numeroParcelle || null,
+    titre_document_url: titreDoc || null,
+    terrain_verifie: false
   }]).select('id').single();
   if(error){ showMsg('Erreur : ' + error.message, false); btn.disabled = false; btn.textContent = 'Publier mon annonce →'; return; }
   showMsg('✅ Annonce envoyée ! En attente de validation.', true);
