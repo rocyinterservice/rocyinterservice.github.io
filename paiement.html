@@ -6,6 +6,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="pays.js"></script>
 <script src="rocy-layout.js"></script>
+<script src="app.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
 body{background:#f6f7f9;color:#111}
@@ -71,6 +72,7 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 window.supabaseClient = sb;
 const WHATSAPP_ROCY = '2290191478460';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = n => window.rocyFormatPrix ? window.rocyFormatPrix(Number(n||0)) : Number(n||0).toLocaleString()+' FCFA';
 const params = new URLSearchParams(location.search);
 const commandeId = params.get('commande') || params.get('commande_id') || localStorage.getItem('paiement_commande_id') || localStorage.getItem('commande_a_payer');
 const paiementAnnonce = localStorage.getItem('paiement_annonce') || params.get('annonce');
@@ -119,7 +121,7 @@ async function chargerImmo(){
       <div class="row"><span>📍 Lieu</span><b>${esc(a.localite)} - ${esc(a.ville)}</b></div>
       <div class="row"><span>Pour qui ?</span><b>Rocyinter (notre caisse)</b></div>
       <div class="row"><span>Bien reste en ligne ?</span><b>Oui, il reste</b></div>
-      <div class="row total"><span>Tu paies maintenant</span><b>2 000 FCFA</b></div>
+      <div class="row total"><span>Tu paies maintenant</span><b>${fmt(2000)}</b></div>
     `;
   } else {
     const cat = String(a.categorie||'').toLowerCase();
@@ -130,10 +132,10 @@ async function chargerImmo(){
     document.getElementById('resume').innerHTML = `
       <h3>🛒 ${esc(a.titre)}</h3>
       <div class="row"><span>📍 Lieu</span><b>${esc(a.localite)} - ${esc(a.ville)}</b></div>
-      <div class="row"><span>Prix du bien</span><b>${Number(a.prix_indicatif||0).toLocaleString()} FCFA</b></div>
-      <div class="row"><span>Commission Rocyinter ${estParcelle ? '(2% plafonné 200 000)' : '(50% un mois location)'}</span><b>${commission.toLocaleString()} FCFA</b></div>
-      <div class="row"><span>Vendeur recevra</span><b>${(Number(a.prix_indicatif||0)-commission).toLocaleString()} FCFA</b></div>
-      <div class="row total"><span>Tu paies maintenant</span><b>${Number(a.prix_indicatif||0).toLocaleString()} FCFA</b></div>
+      <div class="row"><span>Prix du bien</span><b>${fmt(a.prix_indicatif||0)}</b></div>
+      <div class="row"><span>Commission Rocyinter ${estParcelle ? '(2% plafonné 200 000)' : '(50% un mois location)'}</span><b>${fmt(commission)}</b></div>
+      <div class="row"><span>Vendeur recevra</span><b>${fmt(Number(a.prix_indicatif||0)-commission)}</b></div>
+      <div class="row total"><span>Tu paies maintenant</span><b>${fmt(a.prix_indicatif||0)}</b></div>
     `;
   }
 }
@@ -159,11 +161,11 @@ async function charger(){
   document.getElementById('resume').innerHTML = `
     <h3>${esc(data.titre)}</h3>
     <div class="row"><span>📍 Lieu</span><b>${esc(data.localite)} - ${esc(data.ville)}</b></div>
-    <div class="row"><span>Montant convenu</span><b>${Number(data.montant_total).toLocaleString()} FCFA</b></div>
-    ${supplement ? `<div class="row"><span>Supplément espèces livraison</span><b>+ 500 FCFA</b></div>` : ''}
-    <div class="row"><span>${esc(texteCommission(data))} (prélevée à la libération)</span><b>${Number(data.commission).toLocaleString()} FCFA</b></div>
-    <div class="row"><span>Prestataire recevra</span><b>${Number(data.montant_prestataire).toLocaleString()} FCFA</b></div>
-    <div class="row total"><span>Tu paies maintenant</span><b>${total.toLocaleString()} FCFA</b></div>
+    <div class="row"><span>Montant convenu</span><b>${fmt(data.montant_total)}</b></div>
+    ${supplement ? `<div class="row"><span>Supplément espèces livraison</span><b>${fmt(500)}</b></div>` : ''}
+    <div class="row"><span>${esc(texteCommission(data))} (prélevée à la libération)</span><b>${fmt(data.commission)}</b></div>
+    <div class="row"><span>Prestataire recevra</span><b>${fmt(data.montant_prestataire)}</b></div>
+    <div class="row total"><span>Tu paies maintenant</span><b>${fmt(total)}</b></div>
   `;
   if(data.univers === 'manger') document.getElementById('zoneEspeces').style.display = 'block';
   if(data.univers === 'evenement'){
@@ -182,7 +184,7 @@ async function confirmerPaiement(mode){
     const facture = 'VIS-' + Date.now();
     const {error} = await sb.from('visites').insert([{annonce_id: annonceImmo.id, client_id: uid, prestataire_id: annonceImmo.prestataire_id, montant: 2000, statut: 'paye', facture_numero: facture}]);
     if(error){ showMsg('Erreur : ' + error.message, false); return; }
-    await notifier(annonceImmo.prestataire_id, '📍 Nouvelle visite payée', `Un client a payé 2 000 FCFA pour visiter "${annonceImmo.titre}". Facture ${facture}`, 'visite', 'dashboard-prestataire.html');
+    await notifier(annonceImmo.prestataire_id, '📍 Nouvelle visite payée', `Un client a payé ${fmt(2000)} pour visiter "${annonceImmo.titre}". Facture ${facture}`, 'visite', 'dashboard-prestataire.html');
     showMsg('✅ Visite payée ! Facture ' + facture + '. Le bien reste en ligne. Redirection...', true);
     localStorage.removeItem('paiement_annonce'); localStorage.removeItem('paiement_type'); localStorage.removeItem('paiement_montant');
     setTimeout(()=> location.href='immobilier.html', 1500);
@@ -208,9 +210,9 @@ async function confirmerPaiement(mode){
   const {error} = await sb.from('commandes').update({status: 'paye', mode_paiement: mode}).eq('id', commande.id).eq('client_id', uid).eq('status', 'en_attente');
   if(error){ showMsg('Erreur : ' + error.message, false); return; }
   if(commande.conversation_id){
-    await sb.from('messages').insert([{conversation_id: commande.conversation_id, sender_id: uid, contenu: `💳 Paiement reçu (${mode}) - ${Number(commande.montant_total).toLocaleString()} FCFA bloqué en escrow. Tu peux commencer le service.`, type: 'texte'}]);
+    await sb.from('messages').insert([{conversation_id: commande.conversation_id, sender_id: uid, contenu: `💳 Paiement reçu (${mode}) - ${fmt(commande.montant_total)} bloqué en escrow. Tu peux commencer le service.`, type: 'texte'}]);
   }
-  await notifier(commande.prestataire_id, '💰 Paiement reçu', `Commande "${commande.titre}" payée : ${Number(commande.montant_total).toLocaleString()} FCFA bloqué en escrow. Tu peux commencer.`, 'paiement', 'dashboard-prestataire.html');
+  await notifier(commande.prestataire_id, '💰 Paiement reçu', `Commande "${commande.titre}" payée : ${fmt(commande.montant_total)} bloqué en escrow. Tu peux commencer.`, 'paiement', 'dashboard-prestataire.html');
   await notifier(uid, '✅ Paiement confirmé', `Ton paiement pour "${commande.titre}" est sécurisé en escrow.`, 'validation', 'dashboard-client.html');
   showMsg('✅ Paiement confirmé ! Argent bloqué en escrow. Redirection...', true);
   setTimeout(()=> location.href='dashboard-client.html', 1200);
@@ -224,7 +226,7 @@ function payerWhatsApp(){
   let titre = commande ? commande.titre : (annonceImmo ? annonceImmo.titre : 'bien');
   let montant = commande ? commande.montant_total : (paiementType==='visite' ? 2000 : paiementMontant);
   let idTxt = commande ? commande.id : (annonceImmo ? annonceImmo.id : '');
-  const txt = encodeURIComponent(`Bonjour Rocyinter, je veux payer "${titre}" - ${Number(montant||0).toLocaleString()} FCFA. Type: ${paiementType || 'commande'} ID : ${idTxt}`);
+  const txt = encodeURIComponent(`Bonjour Rocyinter, je veux payer "${titre}" - ${fmt(montant)}. Type: ${paiementType || 'commande'} ID : ${idTxt}`);
   window.open('https://wa.me/' + WHATSAPP_ROCY + '?text=' + txt, '_blank');
   showMsg('WhatsApp ouvert. Après ton paiement WhatsApp, l’Admin confirmera ton paiement ici. Ta commande n’est PAS encore marquée payée.', true);
 }
