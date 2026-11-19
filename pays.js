@@ -1,4 +1,5 @@
-// pays.js - TOUS les pays, même liste que les indicatifs
+// pays.js - ROCYINTER - VERSION FINALE
+// Pays + Villes + Quartiers + Fonctions pour les selects Pays > Ville > Quartier
 window.ROCY_PAYS = [
   { nom: "Bénin", drapeau: "🇧🇯", code: "+229" },
   { nom: "Algérie", drapeau: "🇩🇿", code: "+213" },
@@ -165,3 +166,79 @@ window.ROCY_PAYS = [
 ];
 window.PAYS = window.ROCY_PAYS;
 window.COUNTRIES = window.ROCY_PAYS;
+
+// ===== VILLES PAR PAYS - Les plus utilisés en premier =====
+window.ROCY_VILLES = {
+  "Bénin": ["Calavi","Godomey","Cotonou","Porto-Novo","Parakou","Bohicon","Abomey","Ouidah","Natitingou","Djougou","Kandi","Lokossa","Comè","Sakété","Kétou","Dassa","Savè","Malanville","Nikki","Bembèrèkè","Tchaourou","Allada","Aplahoué","Dangbo","Covè","Zogbodomey","Grand-Popo","Kpomassè","Tori-Bossito","Zè","Sô-Ava","Adjohoun","Avrankou","Adjarra","Sèmè-Kpodji","Aguégués","Akpro-Missérété","Bonou","Ouinhi","Zagnanado","Za-Kpota","Agbangnizoun","Lalo","Klouékanmè","Dogbo","Toviklin","Houéyogbé","Bopa","Athiémé","Ouèssè","Glazoué","Savalou","Bantè","Bassila","Copargo","Ouaké","Péhunco","Kérou","Banikoara","Gogounou","Ségbana","Karimama","Matéri","Cobly","Tanguiéta","Toucountouna","Boukoumbé","Kouandé","Sinendé","Kalalé","N'Dali","Pèrèrè"],
+  "Togo": ["Lomé","Sokodé","Kara","Kpalimé","Atakpamé","Dapaong","Tsévié","Aného","Mango","Niamtougou"],
+  "Nigeria": ["Lagos","Abuja","Ibadan","Kano","Port Harcourt","Benin City","Maiduguri","Zaria","Aba","Jos"],
+  "Ghana": ["Accra","Kumasi","Takoradi","Tamale","Cape Coast","Ho","Sunyani","Bolgatanga","Wa","Koforidua"],
+  "Côte d'Ivoire": ["Abidjan","Bouaké","Yamoussoukro","Daloa","San-Pédro","Korhogo","Man","Gagnoa","Divo","Abengourou"],
+  "Sénégal": ["Dakar","Thiès","Kaolack","Ziguinchor","Saint-Louis","Mbour","Rufisque","Diourbel","Tambacounda","Kolda"],
+  "Cameroun": ["Douala","Yaoundé","Bafoussam","Garoua","Bamenda","Ngaoundéré","Maroua","Kumba","Limbe","Kribi"],
+  "Mali": ["Bamako","Sikasso","Mopti","Kayes","Ségou","Gao","Koulikoro","Koutiala","Tombouctou"],
+  "Niger": ["Niamey","Zinder","Maradi","Agadez","Tahoua","Dosso","Diffa","Tillabéri"],
+  "Burkina Faso": ["Ouagadougou","Bobo-Dioulasso","Koudougou","Banfora","Ouahigouya","Kaya","Tenkodogo","Dédougou","Fada N'Gourma"],
+  "Guinée": ["Conakry","Nzérékoré","Kankan","Kindia","Labé","Mamou","Faranah","Boké"],
+  "France": ["Paris","Lyon","Marseille","Lille","Bordeaux","Nantes","Toulouse","Montpellier","Nice","Strasbourg"],
+  "Belgique": ["Bruxelles","Anvers","Gand","Charleroi","Liège","Bruges","Namur","Louvain"],
+  "Canada": ["Montréal","Toronto","Vancouver","Ottawa","Québec","Calgary","Edmonton"],
+  "USA": ["New York","Los Angeles","Miami","Houston","Chicago","Atlanta","Dallas","Washington"],
+  "Royaume-Uni": ["Londres","Manchester","Birmingham","Liverpool","Leeds","Glasgow","Bristol"]
+};
+window.ROCY_VILLES_DEFAULT = ["Calavi","Godomey","Cotonou"];
+
+// ===== QUARTIERS / LOCALITÉS - Bénin en détail, les autres en Autre =====
+window.ROCY_QUARTIERS = {
+  "Calavi": ["Calavi Centre","Ouèdo","Akassato","Glo-Djigbé","Hêvié","Kpanroun","Togba","Zinvié","Ouédo","Arconville","Womey","Cococodji","Cococotomey","Adjagbo","Agbatito","Aïfa","Akossavié","Alogbèdji","Atchonsa","Bodji","Djadjo","Djègbadji","Finafa","Gbodjoko","Houèto","Kandévié","Kpossidja","Lissèzoun","Missèbo","Ouéga","Sodjèatinmè","Tankpè","Togoudo","Zopah"],
+  "Godomey": ["Godomey Centre","Godomey Togoudo","Hlacomey","Dèkoungbé","Sègbèya","Agbodjèdo","Aïdoha","Akogbato","Alloumè","Avlékété","Bèmbè","Dénou","Fidjrossè","Fifadji","Gbéga","Houakpè","Hounsa","Kpankpan","Kpodji","Mènontin","Sèhouè","Togbin","Wlacodji","Yagbé"],
+  "Cotonou": ["Akpakpa","Fidjrossè","Ganhi","Godomey","Hlacomey","Jéricho","Kindonou","Mènontin","Missèbo","Sainte-Cécile","Sikècodji","St Michel","Vodjè","Wlacodji","Xwlacodji","Zongo","Agla","Aïbatin","Ahouansori","Ahouato","Aibatin","Akogbato","Avotrou","Bèbè","Cadjehoun","Dantokpa","Dèkoungbé","Fifadji","Gbécon","Gbéto","Guinkomey","Hindé","Houénoussou","Kpota","Kouhounou","Ladji","Marina","Midombo","N'vè","Ouidah","Plage","Port","Quartier JAK","Sègbèya","Sèkandji","Sodjatimè","Sodjeatinmè","Tokpa","Vossa","Yénawa","Zoungo"],
+  "Porto-Novo": ["Dowa","Houinmè","Ouando","Tokpota","Avlékété","Dowa","Gbodjè","Houèto","Kétonou","Oganla","Sogbé","Tokpa"],
+  "Parakou": ["Albarika","Baka","Banikanni","Bèrè","Dépôt","Gandokossikana","Garnou","Guèma","Korobororou","Ladji Farani","Madina","Nima","Okpara","Sinangourou","Tourou","Wansirou","Zongo"],
+  "Ouidah": ["Ouidah Centre","Agbadjihoun","Agbodji","Ahouicodji","Avlékété","Djègbadji","Gbéna","Houakpè","Pahou","Savi","Tovè","Zoungbodji"],
+  "Abomey": ["Abomey Centre","Djidja","Hounli","Sè","Vidolé","Zounzonmè","Agbokpa","Dètohou","Djègbé","Houndjro","Kpota","Sèhoun"],
+  "Bohicon": ["Bohicon Centre","Agongointo","Avogbanna","Gnidonou","Hèssouhoun","Hountondji","Lissèzoun","Ouassaho","Passagon","Saclo","Sodohomè","Tohouè"]
+};
+window.rocyVillesPourPays = function(pays){
+  if(!pays) return [];
+  if(window.ROCY_VILLES[pays]) return window.ROCY_VILLES[pays];
+  return [];
+};
+window.rocyQuartiersPourVille = function(ville){
+  if(!ville) return [];
+  if(window.ROCY_QUARTIERS[ville]) return window.ROCY_QUARTIERS[ville];
+  return [];
+};
+window.rocyRemplirSelectPays = function(selectEl, valeurActuelle){
+  if(!selectEl) return;
+  selectEl.innerHTML = '<option value="">-- Choisir un pays --</option>' + window.ROCY_PAYS.map(p=>`<option value="${p.nom}" ${valeurActuelle===p.nom?'selected':''}>${p.drapeau} ${p.nom}</option>`).join('');
+};
+window.rocyRemplirSelectVilles = function(selectEl, pays, valeurActuelle){
+  if(!selectEl) return;
+  const villes = window.rocyVillesPourPays(pays);
+  if(!villes.length){
+    selectEl.innerHTML = '<option value="">-- Tape ta ville --</option>';
+    return;
+  }
+  selectEl.innerHTML = '<option value="">-- Choisir une ville --</option>' + villes.map(v=>`<option value="${v}" ${valeurActuelle===v?'selected':''}>${v}</option>`).join('');
+};
+window.rocyRemplirSelectQuartiers = function(selectEl, ville, valeurActuelle){
+  if(!selectEl) return;
+  const q = window.rocyQuartiersPourVille(ville);
+  if(!q.length){
+    selectEl.innerHTML = '<option value="">-- Tape ton quartier --</option>';
+    return;
+  }
+  selectEl.innerHTML = '<option value="">-- Choisir un quartier --</option>' + q.map(x=>`<option value="${x}" ${valeurActuelle===x?'selected':''}>${x}</option>`).join('');
+};
+window.rocyBrancherPaysVilleQuartier = function(selPays, selVille, selQuartier){
+  if(!selPays || !selVille) return;
+  window.rocyRemplirSelectPays(selPays, selPays.value);
+  const majVille = function(){
+    window.rocyRemplirSelectVilles(selVille, selPays.value, selVille.value);
+    if(selQuartier) window.rocyRemplirSelectQuartiers(selQuartier, selVille.value, selQuartier.value);
+  };
+  selPays.addEventListener('change', majVille);
+  selVille.addEventListener('change', function(){ if(selQuartier) window.rocyRemplirSelectQuartiers(selQuartier, selVille.value, ''); });
+  majVille();
+};
