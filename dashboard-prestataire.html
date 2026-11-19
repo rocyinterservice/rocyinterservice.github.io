@@ -48,11 +48,18 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px}
 .profilBox .info{flex:1}
 .profilBox .info b{font-size:15px}
 .profilBox .info span{font-size:12px;color:#64748b;display:block;margin-top:2px}
+.gestion{border:1px solid #e2e8f0;border-radius:10px;padding:10px;margin-top:10px;display:grid;gap:8px}
+.gestion label{font-size:11px;font-weight:700;color:#475569}
+.gestion input,.gestion select{width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:8px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.toggle{display:flex;gap:8px}
+.toggle button{flex:1;padding:10px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;font-weight:700;cursor:pointer}
+.toggle button.on{background:#0f172a;color:#fff}
 </style>
 </head>
 <body>
 <div class="top">
-<h1><span data-i18n="bonjour">Bonjour</span> <span id="nomUser">Prestataire</span> 👋</h1>
+<h1>Bonjour <span id="nomUser">Prestataire</span> 👋</h1>
 <div id="badgeType"></div>
 <p class="sub" id="infoUser">Chargement...</p>
 <div class="profilBox" id="profilBox">
@@ -69,17 +76,36 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px}
 <div id="bannerStatut"></div>
 <div id="bandeauAbo"></div>
 <div class="stats">
-  <div class="stat"><b id="nbAnnonces">0</b><small data-i18n="annonces">Annonces</small></div>
-  <div class="stat"><b id="nbCommandes">0</b><small data-i18n="commandes">Commandes</small></div>
-  <div class="stat"><b id="totalGagne">0 F</b><small data-i18n="aRecevoir">À recevoir*</small></div>
+  <div class="stat"><b id="nbAnnonces">0</b><small>Annonces</small></div>
+  <div class="stat"><b id="nbCommandes">0</b><small>Commandes</small></div>
+  <div class="stat"><b id="totalGagne">0 F</b><small>À recevoir*</small></div>
 </div>
-<p style="font-size:11px;color:#64748b;margin:-10px 0 14px" data-i18n="totalAide">* Seulement les commandes payées / en cours / validées. Les commandes en attente ne comptent pas.</p>
-<button class="btn" id="btnCreer" onclick="location.href='creer-annonce.html'">➕ <span data-i18n="creerAnnonce">Créer une nouvelle annonce</span></button>
-<button class="btn btn-dark" onclick="location.href='abonnement.html'">💳 <span data-i18n="voirAbonnement">Voir / Renouveler mon abonnement</span></button>
-<div class="section"><h2>📋 <span data-i18n="mesAnnonces">Mes annonces</span></h2><div id="listeAnnonces"></div></div>
-<div class="section"><h2>💰 <span data-i18n="mesCommandes">Mes commandes</span></h2><div id="listeCommandes"></div></div>
-<div class="section"><h2>💬 <span data-i18n="mesConversations">Mes conversations</span></h2><div id="listeConvs"></div></div>
-<button class="btn btn-dark" style="margin-top:16px" onclick="deconnecter()" data-i18n="deconnexion">Déconnexion</button>
+<p style="font-size:11px;color:#64748b;margin:-10px 0 14px">* Seulement les commandes payées / en cours / validées. Les commandes en attente ne comptent pas.</p>
+<button class="btn" id="btnCreer" onclick="location.href='creer-annonce.html'">➕ Créer une nouvelle annonce</button>
+<button class="btn btn-dark" onclick="location.href='abonnement.html'">💳 Voir / Renouveler mon abonnement</button>
+
+<div class="section"><h2>⚙️ Mes réglages rapides</h2>
+<div class="card">
+  <p>Ce que le client voit dans ta fiche : Portfolio, Langues, Dispo...</p>
+  <div class="gestion">
+    <div><label>📁 PORTFOLIO (lien)</label><input id="regPortfolio" placeholder="https://..."></div>
+    <div><label>🗣️ LANGUES</label><input id="regLangues" placeholder="Ex: Français, Fon, Anglais"></div>
+    <div><label>📍 LIEUX CONNUS (Guide)</label><input id="regLieux" placeholder="Ex: Ouidah, Grand-Popo, Ganvié"></div>
+    <div><label>🛵 VÉHICULE (Livreur)</label><input id="regVehicule" placeholder="Ex: Moto, Voiture"></div>
+    <div class="row2">
+      <div><label>💻 TRAVAILLE À DISTANCE (PRO)</label><div class="toggle"><button id="tgDistanceOui" onclick="setToggle('distance',true)">Oui</button><button id="tgDistanceNon" onclick="setToggle('distance',false)">Non</button></div></div>
+      <div><label>🏠 DISPONIBLE AUJOURD'HUI (Domicile)</label><div class="toggle"><button id="tgAujOui" onclick="setToggle('auj',true)">Oui</button><button id="tgAujNon" onclick="setToggle('auj',false)">Non</button></div></div>
+    </div>
+    <div><label>🛵 DISPONIBLE MAINTENANT (Livreur)</label><div class="toggle"><button id="tgMaintOui" onclick="setToggle('maint',true)">Oui</button><button id="tgMaintNon" onclick="setToggle('maint',false)">Non</button></div></div>
+    <button class="btn btn-green" onclick="sauvegarderReglages()">💾 Sauvegarder mes réglages</button>
+  </div>
+</div>
+</div>
+
+<div class="section"><h2>📋 Mes annonces</h2><div id="listeAnnonces"></div></div>
+<div class="section"><h2>💰 Mes commandes</h2><div id="listeCommandes"></div></div>
+<div class="section"><h2>💬 Mes conversations</h2><div id="listeConvs"></div></div>
+<button class="btn btn-dark" style="margin-top:16px" onclick="deconnecter()">Déconnexion</button>
 </div>
 <script>
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
@@ -87,6 +113,8 @@ const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 const sb = window.supabaseClient || window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 window.supabaseClient = sb;
 let uid = null;
+let reglages = {distance:false, auj:false, maint:false};
+let mesAnnonces = [];
 function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmt(n){ return Number(n || 0).toLocaleString('fr-FR'); }
 async function getUtilisateurSecurise(){
@@ -126,11 +154,11 @@ function badgeCommande(s){
 function texteCommission(c){
   if(c.univers==='domicile') return `Commission 8% : ${fmt(c.commission)} FCFA`;
   if(c.univers==='pro') return `Commission 5 000 FCFA fixe`;
-  if(c.univers==='manger' || c.univers==='sejour') return `Commission 12% : ${fmt(c.commission)} FCFA`;
+  if(c.univers==='manger' || c.univers==='sejour' || c.univers==='evenement') return `Commission 12% : ${fmt(c.commission)} FCFA`;
   if(c.univers==='livreur') return `Commission 20% (Livreur 80%) : ${fmt(c.commission)} FCFA`;
   if(c.univers==='immobilier'){
     const t = String(c.titre||'').toLowerCase();
-    if(t.includes('parcelle') || t.includes('vente') || t.includes('terrain')) return `Commission Parcelle 10 000 + 2% plafonné 200 000 : ${fmt(c.commission)} FCFA`;
+    if(t.includes('parcelle') || t.includes('vente') || t.includes('terrain')) return `Commission Parcelle 2% plafonné 200 000 : ${fmt(c.commission)} FCFA`;
     return `Commission Location 50% d'un mois : ${fmt(c.commission)} FCFA`;
   }
   return `Commission : ${fmt(c.commission)} FCFA`;
@@ -149,12 +177,70 @@ function badgeTypeFournisseur(profil){
   if(type === 'livreur') return '<span class="badge-type livreur">🛵 Livreur</span>';
   return '<span class="badge-type pro">👨‍🔧 Professionnel</span>';
 }
+function setToggle(key, val){
+  reglages[key]=val;
+  if(key==='distance'){ document.getElementById('tgDistanceOui').classList.toggle('on', val); document.getElementById('tgDistanceNon').classList.toggle('on', !val); }
+  if(key==='auj'){ document.getElementById('tgAujOui').classList.toggle('on', val); document.getElementById('tgAujNon').classList.toggle('on', !val); }
+  if(key==='maint'){ document.getElementById('tgMaintOui').classList.toggle('on', val); document.getElementById('tgMaintNon').classList.toggle('on', !val); }
+}
+async function sauvegarderReglages(){
+  if(!uid) return;
+  const payload = {
+    portfolio_url: document.getElementById('regPortfolio').value.trim() || null,
+    langues: document.getElementById('regLangues').value.trim() || null,
+    lieux_connus: document.getElementById('regLieux').value.trim() || null,
+    vehicule: document.getElementById('regVehicule').value.trim() || null,
+    travaille_distance: reglages.distance,
+    disponible_aujourd_hui: reglages.auj,
+    disponible_maintenant: reglages.maint
+  };
+  const {error} = await sb.from('profiles').update(payload).eq('id', uid);
+  if(error){ alert('Erreur : '+error.message); return; }
+  alert('✅ Réglages sauvegardés ! Ils apparaissent dans ta fiche.');
+}
+async function majAnnonce(id, champ, valeur){
+  const {error} = await sb.from('annonces').update({[champ]: valeur}).eq('id', id).eq('prestataire_id', uid);
+  if(error){ alert('Erreur : '+error.message); return; }
+  alert('✅ Mis à jour !');
+  charger();
+}
+async function supprimerAnnonce(id){
+  if(!confirm('Supprimer cette annonce ?')) return;
+  const {error} = await sb.from('annonces').delete().eq('id', id).eq('prestataire_id', uid);
+  if(error){ alert('Erreur : '+error.message); return; }
+  charger();
+}
+async function changerStatut(id, action){
+  const user = await getUtilisateurSecurise();
+  if(!user) return;
+  if(action==='en_cours'){
+    const {error} = await sb.from('commandes').update({status:'en_cours'}).eq('id', id).eq('prestataire_id', user.id).eq('status','paye');
+    if(error) alert('Erreur : ' + error.message);
+  } else if(action==='en_cours_termine'){
+    const {data: cmd} = await sb.from('commandes').select('id, titre, conversation_id').eq('id', id).eq('prestataire_id', user.id).single();
+    if(!cmd){ alert('Commande introuvable.'); return; }
+    if(cmd?.conversation_id){
+      await sb.from('messages').insert([{conversation_id: cmd.conversation_id, sender_id: user.id, contenu: `✅ J'ai terminé le service "${cmd.titre}". Peux-tu valider pour que l'argent soit libéré ?`}]);
+    }
+    alert('✅ Client prévenu dans le chat. Il doit valider pour libérer l’argent.');
+  }
+  charger();
+}
+async function voirConversation(convId, annonceId){
+  if(!convId || convId==='null' || convId==='undefined'){ alert('Conversation introuvable.'); return; }
+  const user = await getUtilisateurSecurise();
+  if(!user) return;
+  const {data} = await sb.from('conversations').select('id, client_id, prestataire_id').eq('id', convId).eq('prestataire_id', user.id).single();
+  if(!data){ alert('Conversation introuvable.'); return; }
+  if(String(data.client_id)===String(data.prestataire_id)){ alert('Conversation invalide.'); return; }
+  location.href = 'chat.html?conversation=' + encodeURIComponent(convId) + '&annonce=' + encodeURIComponent(annonceId || '');
+}
 async function charger(){
   const user = await getUtilisateurSecurise();
   if(!user){ location.href='connexion.html'; return; }
   uid = user.id;
   const {data: profil, error: errProfil} = await sb.from('profiles')
-    .select('id, nom, nom_entreprise, type_compte, type_fournisseur, quartier, ville, pays, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert')
+    .select('id, nom, nom_entreprise, type_compte, type_fournisseur, quartier, ville, pays, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert, portfolio_url, langues, lieux_connus, vehicule, travaille_distance, disponible_aujourd_hui, disponible_maintenant, photo_profil_url')
     .eq('id', uid).maybeSingle();
   if(errProfil){
     document.getElementById('infoUser').textContent = 'Erreur chargement profil : ' + errProfil.message;
@@ -187,11 +273,19 @@ async function charger(){
   document.getElementById('profilNom').textContent = nomAffiche(profil);
   document.getElementById('profilQuartier').textContent = '📍 Quartier : ' + (quartier || 'Non rempli');
   document.getElementById('profilBadge').textContent = quartier ? '📍 ' + quartier : '📍 Quartier non rempli';
+  if(profil.photo_profil_url) document.getElementById('photoProfil').src = profil.photo_profil_url;
   document.getElementById('btnVerif').style.display='none';
   document.getElementById('btnVerifAttente').style.display='none';
   const banner = document.getElementById('bannerStatut');
-  const t = window.rocyT || (k=>k);
-  banner.innerHTML = `<div class="banner valide">✅ <b>${esc(t('compteValide'))}</b> - ${esc(t('compteValideSous'))}</div>`;
+  banner.innerHTML = `<div class="banner valide">✅ <b>Compte validé</b> - Tu peux recevoir des commandes.</div>`;
+  // Remplir réglages
+  document.getElementById('regPortfolio').value = profil.portfolio_url || '';
+  document.getElementById('regLangues').value = profil.langues || '';
+  document.getElementById('regLieux').value = profil.lieux_connus || '';
+  document.getElementById('regVehicule').value = profil.vehicule || '';
+  setToggle('distance', profil.travaille_distance===true);
+  setToggle('auj', profil.disponible_aujourd_hui===true);
+  setToggle('maint', profil.disponible_maintenant===true);
   const resAbo = verifierAbonnement(profil||{});
   const boxAbo = document.getElementById('bandeauAbo');
   const btnCreer = document.getElementById('btnCreer');
@@ -206,8 +300,9 @@ async function charger(){
     btnCreer.disabled=true; btnCreer.textContent='⛔ Publier bloqué - Abonnement expiré';
   }
   const {data: annonces, error: errAnnonces} = await sb.from('annonces')
-    .select('id, titre, categorie, univers, quartier, localite, ville, prix_indicatif, prix_fixe, devise, photo_url, status, created_at')
+    .select('id, titre, categorie, univers, quartier, localite, ville, prix_indicatif, prix_fixe, devise, photo_url, status, chambres_restantes, disponible, created_at')
     .eq('prestataire_id', uid).order('created_at',{ascending:false});
+  mesAnnonces = annonces||[];
   const boxA = document.getElementById('listeAnnonces');
   document.getElementById('nbAnnonces').textContent = annonces?.length || 0;
   if(errAnnonces){
@@ -218,7 +313,15 @@ async function charger(){
     boxA.innerHTML = annonces.map(a=>{
       const lieu = a.quartier || a.localite || '';
       const prixTxt = a.prix_fixe ? fmt(a.prix_indicatif||0)+' '+(a.devise||'FCFA')+' - Prix fixe' : (a.prix_indicatif ? 'À partir de '+fmt(a.prix_indicatif)+' '+(a.devise||'FCFA') : 'Prix à discuter');
-      return `<div class="card">${badgeAnnonce(a)}<h3 style="margin-top:8px">${esc(a.titre)}</h3><p>${esc(a.categorie)} • ${esc(lieu)} - ${esc(a.ville)}<br>${prixTxt}</p><button class="btn btn-dark" onclick="location.href='creer-annonce.html'">✏️ Modifier / Voir</button></div>`;
+      let gestion = '';
+      if(a.univers==='manger'){
+        gestion = `<div class="gestion"><label>🍽️ PLAT - PRIX (FCFA)</label><input id="prix-${a.id}" type="number" value="${a.prix_indicatif||''}"><label>DISPONIBLE ?</label><select id="dispo-${a.id}"><option value="true" ${a.disponible!==false?'selected':''}>Oui - Disponible</option><option value="false" ${a.disponible===false?'selected':''}>Non - Pas dispo</option></select><button class="btn btn-green" onclick="majAnnonce('${a.id}','prix_indicatif',Number(document.getElementById('prix-${a.id}').value)||0);majAnnonce('${a.id}','disponible',document.getElementById('dispo-${a.id}').value==='true')">💾 Sauvegarder le plat</button></div>`;
+      } else if(a.univers==='sejour'){
+        gestion = `<div class="gestion"><label>🛏️ CHAMBRES RESTANTES</label><input id="ch-${a.id}" type="number" value="${a.chambres_restantes ?? ''}" placeholder="Ex: 3"><button class="btn btn-green" onclick="majAnnonce('${a.id}','chambres_restantes',Number(document.getElementById('ch-${a.id}').value))">💾 Sauvegarder chambres</button><label>DISPONIBLE ?</label><select onchange="majAnnonce('${a.id}','disponible',this.value==='true')"><option value="true" ${a.disponible!==false?'selected':''}>Oui</option><option value="false" ${a.disponible===false?'selected':''}>Non</option></select></div>`;
+      } else {
+        gestion = `<div class="gestion"><label>💰 PRIX INDICATIF (FCFA)</label><input id="prix-${a.id}" type="number" value="${a.prix_indicatif||''}"><button class="btn btn-green" onclick="majAnnonce('${a.id}','prix_indicatif',Number(document.getElementById('prix-${a.id}').value)||0)">💾 Sauvegarder le prix</button></div>`;
+      }
+      return `<div class="card">${badgeAnnonce(a)}<h3 style="margin-top:8px">${esc(a.titre)}</h3><p>${esc(a.categorie)} • ${esc(a.univers)} • ${esc(lieu)} - ${esc(a.ville)}<br>${prixTxt}</p>${gestion}<button class="btn btn-dark" onclick="location.href='creer-annonce.html'">✏️ Modifier / Voir</button><button class="btn" style="background:#fee2e2;color:#991b1b" onclick="supprimerAnnonce('${a.id}')">🗑️ Supprimer</button></div>`;
     }).join('');
   }
   const {data: cmds, error: errCmds} = await sb.from('commandes')
@@ -269,31 +372,6 @@ async function charger(){
     boxV.innerHTML = convs.map(cv=>`<div class="card"><b>${esc(titres[cv.annonce_id] || 'Discussion')}</b><p>Conversation • ${esc(new Date(cv.created_at).toLocaleDateString('fr-FR'))}</p><button class="btn btn-green" onclick="voirConversation('${esc(cv.id)}','${esc(cv.annonce_id)}')">Répondre</button></div>`).join('');
   }
   if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
-}
-async function changerStatut(id, action){
-  const user = await getUtilisateurSecurise();
-  if(!user) return;
-  if(action==='en_cours'){
-    const {error} = await sb.from('commandes').update({status:'en_cours'}).eq('id', id).eq('prestataire_id', user.id).eq('status','paye');
-    if(error) alert('Erreur : ' + error.message);
-  } else if(action==='en_cours_termine'){
-    const {data: cmd} = await sb.from('commandes').select('id, titre, conversation_id').eq('id', id).eq('prestataire_id', user.id).single();
-    if(!cmd){ alert('Commande introuvable.'); return; }
-    if(cmd?.conversation_id){
-      await sb.from('messages').insert([{conversation_id: cmd.conversation_id, sender_id: user.id, contenu: `✅ J'ai terminé le service "${cmd.titre}". Peux-tu valider pour que l'argent soit libéré ?`}]);
-    }
-    alert('✅ Client prévenu dans le chat. Il doit valider pour libérer l’argent.');
-  }
-  charger();
-}
-async function voirConversation(convId, annonceId){
-  if(!convId || convId==='null' || convId==='undefined'){ alert('Conversation introuvable.'); return; }
-  const user = await getUtilisateurSecurise();
-  if(!user) return;
-  const {data} = await sb.from('conversations').select('id, client_id, prestataire_id').eq('id', convId).eq('prestataire_id', user.id).single();
-  if(!data){ alert('Conversation introuvable.'); return; }
-  if(String(data.client_id)===String(data.prestataire_id)){ alert('Conversation invalide.'); return; }
-  location.href = 'chat.html?conversation=' + encodeURIComponent(convId) + '&annonce=' + encodeURIComponent(annonceId || '');
 }
 charger();
 </script>
