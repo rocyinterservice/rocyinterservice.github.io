@@ -56,6 +56,9 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:8p
   <div id="blocUnivers" class="info-univers" style="display:none"></div>
   <div id="infoCommission" class="info-commission"></div>
 
+  <!-- CORRIGÉ MONDIAL : TOUT est caché tant que la catégorie n'est pas choisie -->
+  <div id="blocFormulaire" style="display:none;gap:12px">
+
   <div id="blocImmo" class="bloc-immo">
     <div><label>🏠 TU ES QUOI ? *</label>
       <select id="typeVendeur">
@@ -123,9 +126,17 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:8p
     <div><label data-i18n="ville">VILLE *</label><input id="ville" placeholder="Ex: Cotonou" maxlength="60"></div>
   </div>
   <div><label data-i18n="localite">LOCALITÉ / QUARTIER *</label><input id="localite" placeholder="Ex: Godomey, Calavi Centre, Fidjrossè..." maxlength="80"></div>
-  <div><label>PHOTO (lien - optionnel)</label><input id="photo" placeholder="Collez un lien photo https://..." maxlength="500"></div>
+  <div>
+    <label>📸 PHOTO (depuis ton téléphone)</label>
+    <input id="photoFile" type="file" accept="image/*">
+    <img id="previewPhoto" style="display:none;width:100%;border-radius:10px;margin-top:8px;max-height:200px;object-fit:cover">
+    <small style="text-align:left">Choisis une photo dans ta galerie. Elle sera envoyée automatiquement.</small>
+  </div>
+
+  </div><!-- fin blocFormulaire -->
+
   <div id="msg" class="msg"></div>
-  <button class="btn" id="btnPublier" onclick="publier()">Publier mon annonce →</button>
+  <button class="btn" id="btnPublier" onclick="publier()" style="display:none">Publier mon annonce →</button>
   <small>⚠️ Annonce en attente de validation. Abonnement à jour obligatoire pour publier. Commissions dues dès la 1ère mission.</small>
 </div>
 </div>
@@ -134,7 +145,7 @@ const SUPABASE_URL="https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY="sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 window.supabaseClient = sb;
-let prixFixe=false, mesActivites=[], universChoisi="", abonnementAJour=false, profilFournisseur=null, uidActuel=null;
+let prixFixe=false, mesActivites=[], universChoisi="", abonnementAJour=false, profilFournisseur=null, uidActuel=null, photoFileChoisi=null;
 const infosCommission={manger:"🍽️ <b>Manger : 12%</b> - Le client voit ton menu, il commande, tu livres.",domicile:"🏠 <b>Domicile : 8%</b> - Tu reçois 92%",pro:"💼 <b>Pro : 5 000 FCFA fixe</b>",sejour:"✈️ <b>Séjour : 12% par nuit</b>",evenement:"🎉 <b>Évènement : 12%</b> - prélevée à la libération. Devis dans le chat.",immobilier:"🏘️ <b>Immobilier :</b> Visite 2 000 FCFA pour Rocyinter, non remboursable. Parcelle 2% plafonné 200 000 FCFA. Location 50% d'un mois. Le bien disparaît quand il est payé.",livreur:"🛵 <b>Livreur 80% / Rocyinter 20%</b>"};
 function universPourCategorie(cat){
   const manger=['Traiteur','Restaurant','Restaurant / Maquis','Livraison repas','Pâtisserie','Jus / Boissons','Traiteur Évènement'];
@@ -228,6 +239,8 @@ function resetAffichageNeutre(){
   document.getElementById('blocComp').style.display='none';
   document.getElementById('notePrixManger').style.display='none';
   document.getElementById('btnDiscuter').style.display='';
+  document.getElementById('blocFormulaire').style.display='none';
+  document.getElementById('btnPublier').style.display='none';
   ['Evenement','Manger','Sejour','Domicile','Livreur','Pro','Guide'].forEach(k=>{ const el=document.getElementById('comp'+k); if(el) el.style.display='none'; });
   setPrixType(false);
   majExemples();
@@ -236,8 +249,14 @@ function onCategorieChange(){
   const sel=document.getElementById('categorie');
   const isAutre=sel.value==='__AJOUTER__';
   document.getElementById('blocAutreCategorie').style.display=isAutre?'block':'none';
-  if(isAutre) return;
+  if(isAutre){
+    document.getElementById('blocFormulaire').style.display='grid';
+    document.getElementById('btnPublier').style.display='block';
+    return;
+  }
   if(!sel.value){ resetAffichageNeutre(); return; }
+  document.getElementById('blocFormulaire').style.display='grid';
+  document.getElementById('btnPublier').style.display='block';
   universChoisi=universPourCategorie(sel.value);
   const bloc=document.getElementById('blocUnivers'); bloc.style.display='block'; bloc.textContent='🌍 Univers automatique : '+universChoisi+' - activité '+sel.value;
   const info=document.getElementById('infoCommission'); info.innerHTML=infosCommission[universChoisi]||''; info.style.display='block';
@@ -293,6 +312,27 @@ async function getUtilisateurSecurise(){
   if(error || !user) return null;
   return user;
 }
+document.addEventListener('DOMContentLoaded', ()=>{
+  const input=document.getElementById('photoFile');
+  if(!input) return;
+  input.addEventListener('change', ()=>{
+    const f=input.files[0];
+    if(!f) return;
+    photoFileChoisi=f;
+    const preview=document.getElementById('previewPhoto');
+    preview.src=URL.createObjectURL(f);
+    preview.style.display='block';
+  });
+});
+async function uploadPhoto(file, uid){
+  if(!file) return null;
+  const ext=file.name.split('.').pop().toLowerCase()||'jpg';
+  const nom=uid+'/'+Date.now()+'.'+ext;
+  const {error}=await sb.storage.from('annonces').upload(nom, file, {upsert:true});
+  if(error) throw error;
+  const {data}=sb.storage.from('annonces').getPublicUrl(nom);
+  return data.publicUrl;
+}
 async function init(){
   const user = await getUtilisateurSecurise();
   if(!user){ location.href='connexion.html'; return; }
@@ -340,10 +380,9 @@ async function publier(){
   const pays = document.getElementById('pays').value;
   const ville = document.getElementById('ville').value.trim();
   const localite = document.getElementById('localite').value.trim();
-  let photo = document.getElementById('photo').value.trim();
+  let photo = null;
   const prix = document.getElementById('prix').value;
   const btn = document.getElementById('btnPublier');
-  if(photo && !/^https:\/\//i.test(photo)){ showMsg('Photo : colle un lien https:// valide', false); return; }
   if(categorie === '__AJOUTER__'){
     const autre = document.getElementById('autreCategorie').value.trim();
     if(!autre){ showMsg('Écris ta nouvelle activité', false); return; }
@@ -416,6 +455,13 @@ async function publier(){
     comp.disponible = true;
   }
   btn.disabled = true; btn.textContent = 'Publication...';
+  try{
+    if(photoFileChoisi) photo = await uploadPhoto(photoFileChoisi, uid);
+  }catch(e){
+    showMsg('Erreur photo : ' + e.message + ' - Vérifie le bucket annonces en public.', false);
+    btn.disabled = false; btn.textContent = 'Publier mon annonce →';
+    return;
+  }
   const {error} = await sb.from('annonces').insert([{
     prestataire_id: uid,
     univers: universChoisi,
