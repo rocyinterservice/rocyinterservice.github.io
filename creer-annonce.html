@@ -34,6 +34,7 @@ textarea{min-height:90px;resize:vertical}
 .msg.err{display:block;background:#fee2e2;color:#991b1b}
 small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:8px;line-height:1.5}
 .bloc-immo{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:12px;display:none;gap:12px}
+.bloc-comp{background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:12px;display:none;gap:12px}
 </style>
 </head>
 <body>
@@ -56,7 +57,6 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:8p
   <div id="blocUnivers" class="info-univers" style="display:none"></div>
   <div id="infoCommission" class="info-commission"></div>
 
-  <!-- NOUVEAU : BLOC IMMOBILIER -->
   <div id="blocImmo" class="bloc-immo">
     <div><label>🏠 TU ES QUOI ? *</label>
       <select id="typeVendeur">
@@ -74,6 +74,33 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:8p
     </div>
     <div><label>📄 TITRE / DOCUMENT (lien - optionnel)</label>
       <input id="titreDoc" placeholder="Lien du titre, ou tu l'envoies à l'Admin sur WhatsApp">
+    </div>
+  </div>
+
+  <div id="blocComp" class="bloc-comp">
+    <div id="compEvenement" style="display:none">
+      <div><label>📅 DATE DE L'ÉVÈNEMENT</label><input id="dateEvenement" type="date"></div>
+      <div><label>👥 NOMBRE DE PERSONNES ATTENDU</label><input id="nbPersonnes" type="number" min="0" placeholder="Ex: 100"></div>
+      <div><label>📍 LIEU DE L'ÉVÈNEMENT</label><input id="lieuEvenement" placeholder="Ex: Salle à Godomey..."></div>
+    </div>
+    <div id="compManger" style="display:none">
+      <div><label>🍽️ PLAT DISPONIBLE AUJOURD'HUI ?</label><select id="platDispo"><option value="true">Oui - Disponible</option><option value="false">Non - Pas dispo</option></select></div>
+      <div><label>⏰ DÉLAI LIVRAISON (min)</label><input id="delaiLivraison" type="number" placeholder="Ex: 45"></div>
+    </div>
+    <div id="compSejour" style="display:none">
+      <div><label>🛏️ CHAMBRES RESTANTES</label><input id="chambresRestantes" type="number" min="0" placeholder="Ex: 3"></div>
+      <div><label>🏨 DISPONIBLE ?</label><select id="sejourDispo"><option value="true">Oui</option><option value="false">Non</option></select></div>
+    </div>
+    <div id="compDomicile" style="display:none">
+      <div><label>🏠 DISPONIBLE AUJOURD'HUI ?</label><select id="domicileDispo"><option value="true">Oui</option><option value="false">Non</option></select></div>
+    </div>
+    <div id="compLivreur" style="display:none">
+      <div><label>🛵 VÉHICULE</label><input id="vehiculeAnnonce" placeholder="Ex: Moto, Voiture"></div>
+      <div><label>🟢 DISPONIBLE MAINTENANT ?</label><select id="livreurDispo"><option value="true">Oui</option><option value="false">Non</option></select></div>
+    </div>
+    <div id="compPro" style="display:none">
+      <div><label>💻 TRAVAILLE À DISTANCE ?</label><select id="proDistance"><option value="false">Non - Sur place</option><option value="true">Oui - À distance</option></select></div>
+      <div><label>📁 PORTFOLIO (lien)</label><input id="portfolioAnnonce" placeholder="https://..."></div>
     </div>
   </div>
 
@@ -101,19 +128,24 @@ const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 window.supabaseClient = sb;
 let prixFixe=false, mesActivites=[], universChoisi="", abonnementAJour=false, profilFournisseur=null, uidActuel=null;
 
-const infosCommission={manger:"🍽️ <b>Manger : 12%</b>",domicile:"🏠 <b>Domicile : 8%</b> - Tu reçois 92%",pro:"💼 <b>Pro : 5 000 FCFA fixe</b>",sejour:"✈️ <b>Séjour : 12% par nuit</b>",immobilier:"🏘️ <b>Immobilier :</b> Visite 2 000 FCFA pour Rocyinter, non remboursable. Parcelle 2% plafonné 200 000 FCFA. Location 50% d'un mois. Le bien disparaît quand il est payé.",livreur:"🛵 <b>Livreur 80% / Rocyinter 20%</b>"};
+const infosCommission={manger:"🍽️ <b>Manger : 12%</b>",domicile:"🏠 <b>Domicile : 8%</b> - Tu reçois 92%",pro:"💼 <b>Pro : 5 000 FCFA fixe</b>",sejour:"✈️ <b>Séjour : 12% par nuit</b>",evenement:"🎉 <b>Évènement : 12%</b> - prélevée à la libération. Devis dans le chat.",immobilier:"🏘️ <b>Immobilier :</b> Visite 2 000 FCFA pour Rocyinter, non remboursable. Parcelle 2% plafonné 200 000 FCFA. Location 50% d'un mois. Le bien disparaît quand il est payé.",livreur:"🛵 <b>Livreur 80% / Rocyinter 20%</b>"};
 function universPourCategorie(cat){
-  const manger=['Traiteur','Restaurant','Restaurant / Maquis','Livraison repas','Pâtisserie','Jus / Boissons'];
+  const manger=['Traiteur','Restaurant','Restaurant / Maquis','Livraison repas','Pâtisserie','Jus / Boissons','Traiteur Évènement'];
   const domicile=['Nettoyage / Ménage','Ménage / Repassage','Plomberie','Électricité','Climatisation','Menuiserie','Peinture','Jardinage','Mécanique','Serrurerie','Déménagement','Nettoyage','Désinfection'];
   const pro=['Design','Design / Graphisme','Développement','Développement Web','Marketing','Marketing / Réseaux sociaux','Comptabilité','Traduction','Cours','Cours / Coaching','Montage vidéo','Rédaction / CV'];
   const sejour=['Hôtel','Hôtel / Appartement','Location voiture','Guide touristique','Transport','Transport / Moto','Location salle','Excursion / Visite'];
-  const immo=['Location maison / Appartement','Maison à louer','Chambre à louer','Appartement à louer','Parcelle à vendre','Terrain à vendre','Maison à vendre','Vente maison / Terrain','Location chambre / Studio','Gestion locative','Visite / Courtage'];
+  const evenement=['DJ','DJ / Animation','Décorateur','Décorateur Évènement','Photographe','Photographe / Vidéaste','Location matériel','Location matériel fête','Location salle fête'];
+  const livreur=['Livreur moto','Livreur voiture','Coursier','Coursier / Courses','Livreur'];
+  const immo=['Location maison / Appartement','Maison à louer','Chambre à louer','Appartement à louer','Parcelle à vendre','Terrain à vendre','Maison à vendre','Vente maison / Terrain','Location chambre / Studio','Gestion locative','Visite / Courtage','Parcelle','Parcelle / Terrain'];
   if(manger.includes(cat)) return 'manger';
   if(domicile.includes(cat)) return 'domicile';
   if(pro.includes(cat)) return 'pro';
   if(sejour.includes(cat)) return 'sejour';
+  if(evenement.includes(cat)) return 'evenement';
+  if(livreur.includes(cat)) return 'livreur';
   if(immo.includes(cat)) return 'immobilier';
   if(cat.toLowerCase().includes('livraison')||cat.toLowerCase().includes('livreur')) return 'livreur';
+  if(cat.toLowerCase().includes('dj')||cat.toLowerCase().includes('décor')||cat.toLowerCase().includes('photographe')||cat.toLowerCase().includes('évènement')||cat.toLowerCase().includes('evenement')) return 'evenement';
   return 'domicile';
 }
 function verifierAbonnement(profil){
@@ -152,10 +184,19 @@ function onCategorieChange(){
   universChoisi=universPourCategorie(sel.value);
   const bloc=document.getElementById('blocUnivers'); bloc.style.display='block'; bloc.textContent='🌍 Univers automatique : '+universChoisi+' - activité '+sel.value;
   const info=document.getElementById('infoCommission'); info.innerHTML=infosCommission[universChoisi]||''; info.style.display='block';
-  // NOUVEAU : afficher bloc Immo seulement pour immobilier
   const blocImmo=document.getElementById('blocImmo');
   if(universChoisi==='immobilier'){ blocImmo.style.display='grid'; }
   else { blocImmo.style.display='none'; }
+  const blocComp=document.getElementById('blocComp');
+  const showComp = ['evenement','manger','sejour','domicile','livreur','pro'].includes(universChoisi);
+  blocComp.style.display = showComp ? 'grid' : 'none';
+  ['Evenement','Manger','Sejour','Domicile','Livreur','Pro'].forEach(k=>{ const el=document.getElementById('comp'+k); if(el) el.style.display='none'; });
+  if(universChoisi==='evenement') document.getElementById('compEvenement').style.display='block';
+  if(universChoisi==='manger') document.getElementById('compManger').style.display='block';
+  if(universChoisi==='sejour') document.getElementById('compSejour').style.display='block';
+  if(universChoisi==='domicile') document.getElementById('compDomicile').style.display='block';
+  if(universChoisi==='livreur') document.getElementById('compLivreur').style.display='block';
+  if(universChoisi==='pro') document.getElementById('compPro').style.display='block';
   if(universChoisi==='livreur') setPrixType(false);
 }
 function setPrixType(fixe){prixFixe=fixe;document.getElementById('btnFixe').classList.toggle('active',fixe);document.getElementById('btnDiscuter').classList.toggle('active',!fixe);document.getElementById('blocPrix').style.display=fixe?'block':'none';}
@@ -241,7 +282,6 @@ async function publier(){
   if(titre.length < 5){ showMsg('Titre trop court, min 5 caractères', false); return; }
   if(description.length < 20){ showMsg('Description trop courte, min 20 caractères', false); return; }
   if(prixFixe && (!prix || Number(prix) <= 0)){ showMsg('Mets un prix fixe > 0', false); return; }
-  // NOUVEAU : champs Immobilier
   let typeVendeur='', nbChambres=null, numeroParcelle='', titreDoc='';
   if(universChoisi==='immobilier'){
     typeVendeur = document.getElementById('typeVendeur').value;
@@ -252,11 +292,36 @@ async function publier(){
     const catLow = categorie.toLowerCase();
     const estParcelle = catLow.includes('parcelle') || catLow.includes('terrain');
     if(estParcelle && !numeroParcelle){ showMsg('Pour Terrain / Parcelle, mets le Numéro de parcelle.', false); return; }
-    // Vérifier doublon parcelle
     if(numeroParcelle){
       const {data: doublon} = await sb.from('annonces').select('id,titre').eq('numero_parcelle', numeroParcelle).eq('status','valide').maybeSingle();
       if(doublon){ showMsg('⛔ Cette parcelle est déjà publiée : ' + doublon.titre + '. Une parcelle = une annonce.', false); return; }
     }
+  }
+  // Compléments par univers
+  let comp = {};
+  if(universChoisi==='evenement'){
+    comp.date_evenement = document.getElementById('dateEvenement').value || null;
+    comp.nb_personnes = document.getElementById('nbPersonnes').value ? Number(document.getElementById('nbPersonnes').value) : null;
+    comp.lieu_evenement = document.getElementById('lieuEvenement').value.trim() || null;
+  }
+  if(universChoisi==='manger'){
+    comp.disponible = document.getElementById('platDispo').value==='true';
+    comp.delai_livraison = document.getElementById('delaiLivraison').value ? Number(document.getElementById('delaiLivraison').value) : null;
+  }
+  if(universChoisi==='sejour'){
+    comp.chambres_restantes = document.getElementById('chambresRestantes').value ? Number(document.getElementById('chambresRestantes').value) : null;
+    comp.disponible = document.getElementById('sejourDispo').value==='true';
+  }
+  if(universChoisi==='domicile'){
+    comp.disponible_aujourd_hui = document.getElementById('domicileDispo').value==='true';
+  }
+  if(universChoisi==='livreur'){
+    comp.vehicule = document.getElementById('vehiculeAnnonce').value.trim() || null;
+    comp.disponible = document.getElementById('livreurDispo').value==='true';
+  }
+  if(universChoisi==='pro'){
+    comp.travaille_distance = document.getElementById('proDistance').value==='true';
+    comp.portfolio_url = document.getElementById('portfolioAnnonce').value.trim() || null;
   }
   btn.disabled = true; btn.textContent = 'Publication...';
   const {error} = await sb.from('annonces').insert([{
@@ -275,7 +340,12 @@ async function publier(){
     nb_pieces: nbChambres,
     numero_parcelle: numeroParcelle || null,
     titre_document_url: titreDoc || null,
-    terrain_verifie: false
+    terrain_verifie: false,
+    chambres_restantes: comp.chambres_restantes ?? null,
+    disponible: comp.disponible ?? true,
+    date_evenement: comp.date_evenement || null,
+    nb_personnes: comp.nb_personnes ?? null,
+    lieu_evenement: comp.lieu_evenement || null
   }]).select('id').single();
   if(error){ showMsg('Erreur : ' + error.message, false); btn.disabled = false; btn.textContent = 'Publier mon annonce →'; return; }
   showMsg('✅ Annonce envoyée ! En attente de validation.', true);
