@@ -28,28 +28,32 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:12px;line-height:1.5}
 .btn-dark{background:#0f172a;color:#fff}
 .btn-gris{background:#f1f5f9;color:#111}
 .btn-mine{background:#e2e8f0;color:#64748b;cursor:not-allowed}
+.btn-green{background:#16a34a;color:#fff}
 .bandeau-role{padding:12px;border-radius:12px;font-size:13px;font-weight:600;text-align:center;line-height:1.5;margin-bottom:12px}
 .bandeau-visiteur{background:#fef3c7;color:#92400e}
 .bandeau-client{background:#dcfce7;color:#166534}
 .bandeau-presta{background:#dbeafe;color:#1e40af}
 .empty{background:#fff;border:1px dashed #cbd5e1;border-radius:16px;padding:24px;text-align:center;color:#64748b}
 .info-commission{background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:10px;font-size:12px;line-height:1.5;color:#92400e;margin-bottom:12px}
+.qty{display:flex;gap:8px;align-items:center;margin-top:8px}
+.qty button{width:36px;height:36px;border:1px solid #e2e8f0;background:#fff;border-radius:10px;font-weight:800;cursor:pointer;font-size:16px}
+.qty b{min-width:24px;text-align:center}
 </style>
 </head>
 <body>
 <div class="top">
 <div class="back" onclick="location.href='index.html'">← <span data-i18n="accueil">Accueil</span></div>
 <h1>🍽️ <span data-i18n="mangerTitre">Se nourrir</span></h1>
-<p class="sub" data-i18n="mangerSous">Vrais traiteurs, restaurants, livraison repas validés par Rocyinter.</p>
+<p class="sub">Vrais traiteurs, restaurants, livraison repas validés par Rocyinter.</p>
 <div class="info-commission">💰 Commission Manger : 12% prélevée à la libération. Espèces à la livraison : + 500 FCFA. Ne paie jamais en dehors de Rocyinter.</div>
 <div id="bandeauRole"></div>
 <div class="filters">
-  <div><label data-i18n="pays">PAYS</label><select id="filtrePays" onchange="charger()"><option value="">Tous les pays</option></select></div>
-  <div><label data-i18n="ville">VILLE / LOCALITÉ</label><input id="filtreLocalite" placeholder="Ex: Calavi, Cotonou, Godomey..." oninput="afficher()"></div>
-  <div><label data-i18n="rechercher">RECHERCHER UN SERVICE</label><input id="search" placeholder="Ex: Traiteur, Grillades, Pizza..." oninput="afficher()"></div>
+  <div><label>PAYS</label><select id="filtrePays" onchange="charger()"><option value="">Tous les pays</option></select></div>
+  <div><label>VILLE / LOCALITÉ</label><input id="filtreLocalite" placeholder="Ex: Calavi, Cotonou, Godomey..." oninput="afficher()"></div>
+  <div><label>RECHERCHER UN SERVICE</label><input id="search" placeholder="Ex: Traiteur, Grillades, Pizza..." oninput="afficher()"></div>
 </div>
-<div class="filtres" id="filtres"><button class="active" data-cat="" onclick="setCat('')" data-i18n="tous">Tous</button></div>
-<div id="liste"><span data-i18n="chargement">Chargement...</span></div>
+<div class="filtres" id="filtres"><button class="active" data-cat="" onclick="setCat('')">Tous</button></div>
+<div id="liste">Chargement...</div>
 </div>
 <script>
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
@@ -57,48 +61,55 @@ const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 let sb = null;
 try{ sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); window.supabaseClient = sb; }catch(e){}
 let catActuelle = ''; let toutesAnnonces = []; let moiId=''; let monRole=''; let nomsPresta = {};
+let quantites = {}; // quantite par annonce
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function remplirPays(){ const sel=document.getElementById('filtrePays'); if(window.ROCY_PAYS&&window.ROCY_PAYS.length){ sel.innerHTML='<option value="">Tous les pays</option>'+window.ROCY_PAYS.map(p=>`<option value="${esc(p.nom)}">${esc(p.drapeau)} ${esc(p.nom)}</option>`).join(''); } }
 async function afficherBandeauRole(){
   const box = document.getElementById('bandeauRole'); if(!box) return;
   const {data:{user}} = await sb.auth.getUser(); moiId = user?.id || '';
   if(user){ const {data:p}=await sb.from('profiles').select('type_compte, type_fournisseur').eq('id',user.id).maybeSingle(); monRole=String(p?.type_compte||p?.type_fournisseur||'').toLowerCase(); }
-  const t = window.rocyT || (k=>k);
-  if(!moiId) box.innerHTML = `<div class="bandeau-role bandeau-visiteur">👁️ ${esc(t('bandeauVisiteur'))}</div>`;
-  else if(monRole==='prestataire' || monRole==='livreur') box.innerHTML = `<div class="bandeau-role bandeau-presta">🛠️ ${esc(t('bandeauPresta'))}</div>`;
-  else if(monRole==='admin') box.innerHTML = `<div class="bandeau-role bandeau-presta">🛡️ ${esc(t('bandeauAdmin'))}</div>`;
-  else box.innerHTML = `<div class="bandeau-role bandeau-client">🛒 ${esc(t('bandeauClient'))}</div>`;
+  if(!moiId) box.innerHTML = `<div class="bandeau-role bandeau-visiteur">👁️ Visiteur - Connecte-toi pour commander</div>`;
+  else if(monRole==='prestataire' || monRole==='livreur') box.innerHTML = `<div class="bandeau-role bandeau-presta">🛠️ Prestataire - Tu ne peux pas commander tes propres plats</div>`;
+  else if(monRole==='admin') box.innerHTML = `<div class="bandeau-role bandeau-presta">🛡️ Admin</div>`;
+  else box.innerHTML = `<div class="bandeau-role bandeau-client">🛒 Client - Choisis, mets la quantité, commande</div>`;
 }
 function setCat(c){ catActuelle = c; document.querySelectorAll('#filtres button').forEach(b=> b.classList.toggle('active', b.dataset.cat === c)); afficher(); }
 function construireFiltres(){
   const cats = [...new Set(toutesAnnonces.map(a=>a.categorie).filter(Boolean))].sort();
-  const box = document.getElementById('filtres'); const t = window.rocyT || (k=>k);
-  box.innerHTML = `<button class="active" data-cat="" onclick="setCat('')">${esc(t('tous'))}</button>` + cats.map(c=>`<button data-cat="${esc(c)}" onclick="setCat('${esc(c)}')">${esc(c)}</button>`).join('');
+  const box = document.getElementById('filtres');
+  box.innerHTML = `<button class="active" data-cat="" onclick="setCat('')">Tous</button>` + cats.map(c=>`<button data-cat="${esc(c)}" onclick="setCat('${esc(c)}')">${esc(c)}</button>`).join('');
   document.querySelectorAll('#filtres button').forEach(b=> b.classList.toggle('active', b.dataset.cat === catActuelle));
-  if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 }
 function prixTexte(a){
-  const prixVal = Number(a.prix_indicatif || 0); const t = window.rocyT || (k=>k);
-  if(a.prix_fixe) return (window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal+' '+(a.devise||'FCFA')) + ' - ' + t('prixFixe');
-  if(prixVal>0) return t('aPartir') + ' ' + (window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal+' '+(a.devise||'FCFA'));
-  return t('prixDiscuter');
+  const prixVal = Number(a.prix_indicatif || 0);
+  if(a.prix_fixe) return (window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal+' '+(a.devise||'FCFA')) + ' - Prix fixe';
+  if(prixVal>0) return 'À partir de ' + (window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal+' '+(a.devise||'FCFA'));
+  return 'Prix à discuter';
 }
 function estValide(a){
   const s = String(a.status || '').toLowerCase().trim();
   if(!s) return true;
   return s==='valide' || s==='valid' || s==='publie' || s==='publié' || s==='publiee' || s==='actif' || s==='active';
 }
+function changerQty(id, delta){
+  quantites[id] = Math.max(1, (quantites[id]||1) + delta);
+  const el = document.getElementById('qty-'+id);
+  if(el) el.textContent = quantites[id];
+  const totalEl = document.getElementById('total-'+id);
+  const a = toutesAnnonces.find(x=>x.id===id);
+  if(totalEl && a) totalEl.textContent = (Number(a.prix_indicatif||0) * quantites[id]).toLocaleString() + ' FCFA';
+}
 function afficher(){
   const q = (document.getElementById('search').value || '').trim().toLowerCase();
   const pays = document.getElementById('filtrePays') ? document.getElementById('filtrePays').value : '';
   const loc = (document.getElementById('filtreLocalite').value || '').trim().toLowerCase();
-  const box = document.getElementById('liste'); const t = window.rocyT || (k=>k);
+  const box = document.getElementById('liste');
   let list = toutesAnnonces.filter(a => (a.univers||'manger') === 'manger' && estValide(a));
   if(pays) list = list.filter(a => (a.pays||'') === pays);
   if(loc) list = list.filter(a => (a.localite||'').toLowerCase().includes(loc) || (a.quartier||'').toLowerCase().includes(loc) || (a.ville||'').toLowerCase().includes(loc));
   if(catActuelle) list = list.filter(a=> a.categorie === catActuelle);
   if(q) list = list.filter(a=>((a.titre||'')+' '+(a.ville||'')+' '+(a.localite||'')+' '+(a.quartier||'')+' '+(a.categorie||'')+' '+(a.description||'')).toLowerCase().includes(q));
-  if(!list.length){ box.innerHTML = `<div class="empty"><b>${esc(t('aucuneTitre'))}</b><br>${esc(t('aucuneSous'))}<br><br><button class="btn" onclick="rocyProposerService()">${esc(t('proposerTitre'))}</button></div>`; return; }
+  if(!list.length){ box.innerHTML = `<div class="empty"><b>Aucun resto / plat</b><br>Essaie une autre ville ou catégorie.<br><br><button class="btn" onclick="rocyProposerService()">Proposer mon service</button></div>`; return; }
   box.innerHTML = list.map(a=>{
     const img = a.photo_url || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&q=80';
     const pr = nomsPresta[a.prestataire_id] || {};
@@ -106,23 +117,27 @@ function afficher(){
     const lieu = [a.localite || a.quartier, a.ville, a.pays].filter(Boolean).join(' - ');
     const prestaId = a.prestataire_id || '';
     const cestMoi = prestaId && moiId && String(prestaId)===String(moiId);
-    const btnChat = cestMoi ? `<button class="btn btn-mine" disabled>C'est ton annonce</button>` : `<button class="btn btn-dark" onclick="discuter('${esc(prestaId)}','${esc(a.id)}')">💬 ${esc(t('discuter'))}</button>`;
+    const qty = quantites[a.id] || 1;
+    const prixUnit = Number(a.prix_indicatif||0);
+    const btnChat = cestMoi ? `<button class="btn btn-mine" disabled>C'est ton annonce</button>` : `<button class="btn btn-dark" onclick="discuter('${esc(prestaId)}','${esc(a.id)}')">💬 Discuter</button>`;
+    const btnCommander = cestMoi ? '' : `<div class="qty"><span style="font-size:13px">Quantité :</span><button onclick="changerQty('${esc(a.id)}',-1)">-</button><b id="qty-${esc(a.id)}">${qty}</b><button onclick="changerQty('${esc(a.id)}',1)">+</button><span style="font-size:13px">Total : <b id="total-${esc(a.id)}">${(prixUnit*qty).toLocaleString()} FCFA</b></span></div><button class="btn btn-green" onclick="commander('${esc(a.id)}')">🛒 Commander - ${prixUnit>0 ? 'Payer après validation' : 'Demander un prix'}</button>`;
     return `<div class="card">
       <img src="${esc(img)}" onclick="voirFiche('${esc(prestaId)}','${esc(a.id)}')" style="cursor:pointer" onerror="this.src='https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&q=80'">
-      <span class="badge">${esc(a.categorie)}</span>
+      <span class="badge">${esc(a.categorie)}</span> <span class="badge" style="background:#dcfce7;color:#166534">⭐ Fiche Resto Vérifiée</span>
       <h3 style="margin-top:8px">${esc(a.titre)}</h3>
-      <p>👤 ${esc(nom)}<br>📍 ${esc(lieu)}</p>
+      <p>👤 ${esc(nom)}<br>📍 ${esc(lieu)}<br>⏱️ Temps de préparation : à discuter dans le chat</p>
       <p>${esc((a.description||'').slice(0,90))}...</p>
       <div class="price">${esc(prixTexte(a))}</div>
-      <button class="btn btn-gris" onclick="voirFiche('${esc(prestaId)}','${esc(a.id)}')">${esc(t('voirFicheResto'))}</button>
+      ${btnCommander}
+      <button class="btn btn-gris" onclick="voirFiche('${esc(prestaId)}','${esc(a.id)}')">Voir la fiche resto</button>
       ${btnChat}
     </div>`;
   }).join('');
   if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 }
 async function charger(){
-  const box = document.getElementById('liste'); const t = window.rocyT || (k=>k);
-  if(!sb){ box.innerHTML = `<div class="empty"><b>${esc(t('pasConnexion'))}</b><br><button class="btn" onclick="charger()">${esc(t('reessayer'))}</button></div>`; return; }
+  const box = document.getElementById('liste');
+  if(!sb){ box.innerHTML = `<div class="empty"><b>Pas de connexion</b><br><button class="btn" onclick="charger()">Réessayer</button></div>`; return; }
   try{
     const {data, error} = await sb.from('annonces').select('id, titre, categorie, univers, description, prix_fixe, prix_indicatif, photo_url, localite, quartier, ville, pays, status, prestataire_id, devise, created_at').eq('univers','manger').order('created_at',{ascending:false});
     if(error) throw error;
@@ -133,7 +148,30 @@ async function charger(){
       (profs||[]).forEach(p=> nomsPresta[p.id]=p);
     }
     construireFiltres(); afficher();
-  }catch(e){ console.log('ROCY manger erreur:', e); box.innerHTML = `<div class="empty"><b>${esc(t('erreurConnexion'))}</b><br><button class="btn" onclick="charger()">${esc(t('reessayer'))}</button></div>`; }
+  }catch(e){ console.log('ROCY manger erreur:', e); box.innerHTML = `<div class="empty"><b>Erreur de connexion</b><br><button class="btn" onclick="charger()">Réessayer</button></div>`; }
+}
+async function notifier(destinataire, titre, message, type, lien){
+  try{ if(!destinataire) return; await sb.rpc('creer_notification', { p_user_id: destinataire, p_titre: titre, p_message: String(message||'').slice(0,120), p_type: type||'info', p_lien: lien||'notifications.html' }); }catch(e){}
+}
+// NOUVEAU : Commander avec quantité
+async function commander(annonceId){
+  const {data:{user}} = await sb.auth.getUser();
+  if(!user){ alert('Connecte-toi pour commander.'); location.href='connexion.html'; return; }
+  if(monRole==='admin'){ alert('Admin : tu ne peux pas commander.'); return; }
+  const a = toutesAnnonces.find(x=>x.id===annonceId);
+  if(!a) return;
+  if(String(a.prestataire_id)===String(user.id)){ alert("C'est ton annonce."); return; }
+  const qty = quantites[annonceId] || 1;
+  const prixUnit = Number(a.prix_indicatif||0);
+  if(!prixUnit || prixUnit<=0){ alert('Prix à discuter. Va dans Discuter pour demander le prix, puis commande.'); discuter(a.prestataire_id, a.id); return; }
+  const total = prixUnit * qty;
+  const commission = Math.round(total * 0.12);
+  if(!confirm(`Commander ${qty} x ${a.titre} = ${total.toLocaleString()} FCFA ?\nLe resto va valider ou refuser. Commission 12% : ${commission.toLocaleString()} FCFA.`)) return;
+  const {data: cmd, error} = await sb.from('commandes').insert([{client_id: user.id, prestataire_id: a.prestataire_id, annonce_id: a.id, univers: 'manger', titre: `${qty} x ${a.titre}`, montant: total, montant_total: total, commission: commission, montant_prestataire: total - commission, status: 'en_attente', ville: a.ville, localite: a.localite, quantite: qty, mode_livraison: 'a_choisir'}]).select('id').maybeSingle();
+  if(error){ alert('Erreur : ' + error.message); return; }
+  await notifier(a.prestataire_id, '🛒 Nouvelle commande Manger', `Commande ${qty} x ${a.titre} - ${total.toLocaleString()} FCFA. Valide ou refuse.`, 'commande', 'dashboard-prestataire.html');
+  alert('✅ Commande envoyée ! Le resto va valider ou refuser. Tu verras le suivi dans Mes commandes.');
+  location.href='dashboard-client.html';
 }
 function voirFiche(prestaId, annonceId){
   if(!prestaId) return;
@@ -142,8 +180,8 @@ function voirFiche(prestaId, annonceId){
   location.href='fiche-prestataire.html';
 }
 async function discuter(prestaId, annonceId){
-  const {data:{user}} = await sb.auth.getUser(); const uid = user?.id; const t = window.rocyT || (k=>k);
-  if(!uid){ alert(t('connectePourCommander')); location.href='connexion.html'; return; }
+  const {data:{user}} = await sb.auth.getUser(); const uid = user?.id;
+  if(!uid){ alert('Connecte-toi pour discuter.'); location.href='connexion.html'; return; }
   if(monRole==='admin'){ alert('Admin : tu ne peux pas chatter, tu gères dans Admin.'); return; }
   if(!prestaId){ alert('Annonce sans prestataire.'); return; }
   if(String(prestaId)===String(uid)){ alert("C'est ton annonce. Tu ne peux pas te parler à toi-même."); return; }
