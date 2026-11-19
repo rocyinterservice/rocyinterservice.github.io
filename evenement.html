@@ -6,6 +6,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="pays.js"></script>
 <script src="rocy-layout.js"></script>
+<script src="app.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
 body{background:#f6f7f9;color:#111}
@@ -128,8 +129,9 @@ function construireFiltres(){
 }
 function prixTexte(a){
   const prixVal = Number(a.prix_indicatif || 0);
-  if(a.prix_fixe) return prixVal.toLocaleString()+' '+(a.devise||'FCFA')+' - Prix par évènement';
-  if(prixVal>0) return 'À partir de '+prixVal.toLocaleString()+' '+(a.devise||'FCFA');
+  const fmt = window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal.toLocaleString()+' '+(a.devise||'FCFA');
+  if(a.prix_fixe) return fmt + ' - Prix par évènement';
+  if(prixVal>0) return 'À partir de ' + fmt;
   return 'Prix à discuter / devis';
 }
 function estValide(a){
@@ -191,22 +193,19 @@ async function chargerDemandes(){
     if(!demandes.length){ box.innerHTML = `<div class="empty">Aucune demande en cours. Lance la première !</div>`; return; }
     box.innerHTML = demandes.map(d=>{
       const estMien = String(d.client_id)===String(moiId);
+      const budgetTxt = Number(d.budget||0)>0 ? (window.rocyFormatPrix ? window.rocyFormatPrix(Number(d.budget)) : Number(d.budget).toLocaleString()+' FCFA') : 'À discuter';
       const btn = estMien ? `<button class="btn btn-gris" disabled>C'est ta demande - Attends les devis dans le chat</button>` : (monRole==='prestataire' ? `<button class="btn btn-dark" onclick="discuterDemande('${esc(d.client_id)}')">💬 Envoyer mon devis dans le chat</button>` : `<button class="btn btn-gris" disabled>En attente de devis</button>`);
-      return `<div class="card"><span class="badge">${esc(d.type_evenement)} - ${esc(d.categorie_recherchee)}</span><h3 style="margin-top:8px">📍 ${esc(d.lieu)}</h3><p>📅 ${esc(d.date_evenement)}<br>👥 ${esc(d.nb_personnes||0)} personnes<br>💰 Budget : ${Number(d.budget||0)>0 ? Number(d.budget).toLocaleString()+' FCFA' : 'À discuter'}<br>${esc(d.detail||'')}</p>${btn}</div>`;
+      return `<div class="card"><span class="badge">${esc(d.type_evenement)} - ${esc(d.categorie_recherchee)}</span><h3 style="margin-top:8px">📍 ${esc(d.lieu)}</h3><p>📅 ${esc(d.date_evenement)}<br>👥 ${esc(d.nb_personnes||0)} personnes<br>💰 Budget : ${esc(budgetTxt)}<br>${esc(d.detail||'')}</p>${btn}</div>`;
     }).join('');
   }catch(e){ box.innerHTML = `<div class="empty">Erreur : ${esc(e.message)}</div>`; }
 }
 async function discuterDemande(clientId){
   const {data:{user}} = await sb.auth.getUser();
   if(!user){ alert('Connecte-toi.'); location.href='connexion.html'; return; }
-  // On ouvre un chat avec le client : on utilise une annonce evenement du prestataire si elle existe, sinon on passe par chat sans annonce
-  // Pour rester simple, on cherche une annonce evenement du prestataire
   const {data: ann} = await sb.from('annonces').select('id').eq('prestataire_id', user.id).eq('univers','evenement').maybeSingle();
   if(ann){
     localStorage.setItem('chat_prestataire', user.id);
     localStorage.setItem('chat_annonce', ann.id);
-    // On veut parler au client, donc on inverse : le chat se crée avec client_id = clientId
-    // On passe par conversations : on crée si besoin
     const {data: conv} = await sb.from('conversations').insert([{client_id: clientId, prestataire_id: user.id, annonce_id: ann.id}]).select('id').maybeSingle();
     if(conv) localStorage.setItem('chat_conversation_id', conv.id);
   } else {
