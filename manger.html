@@ -6,6 +6,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="pays.js"></script>
 <script src="rocy-layout.js"></script>
+<script src="app.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
 body{background:#f6f7f9;color:#111}
@@ -61,7 +62,7 @@ const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 let sb = null;
 try{ sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); window.supabaseClient = sb; }catch(e){}
 let catActuelle = ''; let toutesAnnonces = []; let moiId=''; let monRole=''; let nomsPresta = {};
-let quantites = {}; // quantite par annonce
+let quantites = {};
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function remplirPays(){ const sel=document.getElementById('filtrePays'); if(window.ROCY_PAYS&&window.ROCY_PAYS.length){ sel.innerHTML='<option value="">Tous les pays</option>'+window.ROCY_PAYS.map(p=>`<option value="${esc(p.nom)}">${esc(p.drapeau)} ${esc(p.nom)}</option>`).join(''); } }
 async function afficherBandeauRole(){
@@ -153,7 +154,6 @@ async function charger(){
 async function notifier(destinataire, titre, message, type, lien){
   try{ if(!destinataire) return; await sb.rpc('creer_notification', { p_user_id: destinataire, p_titre: titre, p_message: String(message||'').slice(0,120), p_type: type||'info', p_lien: lien||'notifications.html' }); }catch(e){}
 }
-// NOUVEAU : Commander avec quantité
 async function commander(annonceId){
   const {data:{user}} = await sb.auth.getUser();
   if(!user){ alert('Connecte-toi pour commander.'); location.href='connexion.html'; return; }
