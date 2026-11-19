@@ -16,6 +16,8 @@ body{background:#f6f7f9;color:#111;padding:16px}
 .avatar img{width:100%;height:100%;object-fit:cover}
 .profil h1{font-size:22px} .profil p{color:#64748b;font-size:13px;margin:4px 0}
 .badge{display:inline-block;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:700;background:#dcfce7;color:#166534;margin-top:6px}
+.badge-purple{display:inline-block;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:700;background:#ede9fe;color:#6d28d9;margin-top:6px}
+.badge-orange{display:inline-block;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:700;background:#fef3c7;color:#92400e;margin-top:6px}
 .badgeQuartier{display:inline-block;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:800;margin-top:8px}
 .badgeQuartier.vert{background:#dcfce7;color:#166534;border:1px solid #bbf7d0}
 .badgeQuartier.orange{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
@@ -32,6 +34,9 @@ body{background:#f6f7f9;color:#111;padding:16px}
 .avis{background:#fff;border-radius:12px;padding:12px;margin-bottom:8px;font-size:13px}
 .empty{background:#fff;border:1px dashed #cbd5e1;border-radius:16px;padding:24px;text-align:center;color:#64748b}
 .info-escrow{background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:10px;font-size:12px;line-height:1.5;color:#92400e;margin-top:12px;text-align:left}
+.galerie{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.galerie img{width:100%;height:110px;object-fit:cover;border-radius:10px;background:#e2e8f0}
+.galerie a{color:#1e40af;font-size:13px;word-break:break-all}
 </style>
 </head>
 <body>
@@ -64,13 +69,18 @@ function badgeQuartierHTML(p){
   if(enAttente) return `<div><span class="badgeQuartier orange">⏳ Vérification en cours à ${esc(quartier)}</span></div>`;
   return `<div><span class="badgeQuartier gris">📍 ${esc(quartier)} (non vérifié)</span></div>`;
 }
+function parsePhotos(val){
+  if(!val) return [];
+  if(Array.isArray(val)) return val.filter(Boolean);
+  try{ const j = JSON.parse(val); if(Array.isArray(j)) return j.filter(Boolean); }catch(e){}
+  return String(val).split(',').map(s=>s.trim()).filter(Boolean);
+}
 async function charger(){
   const {data:{user}} = await sb.auth.getUser();
   moiId = user?.id || '';
   if(!prestaId && moiId) prestaId = moiId;
   if(!prestaId){ document.getElementById('contenu').innerHTML='Prestataire introuvable. <a href="index.html">Retour</a>'; return; }
-  const t = window.rocyT || (k=>k);
-  const {data: p, error} = await sb.from('profiles').select('id, nom, nom_entreprise, type_compte, type_fournisseur, photo_profil_url, description_profil, categorie_prestataire, quartier, verification_quartier, quartier_verifie, ville, pays, statut_validation').eq('id', prestaId).maybeSingle();
+  const {data: p, error} = await sb.from('profiles').select('id, nom, prenom, nom_entreprise, type_compte, type_fournisseur, photo_profil_url, photo_profil, description_profil, categorie_prestataire, quartier, verification_quartier, quartier_verifie, ville, pays, statut_validation, travaille_distance, portfolio_url, annees_experience, disponible_aujourd_hui, photos_avant_apres, langues, lieux_connus, vehicule, disponible_maintenant, verifie').eq('id', prestaId).maybeSingle();
   if(error || !p){ document.getElementById('contenu').innerHTML='Prestataire introuvable. <a href="index.html">Retour Accueil</a>'; return; }
   const statut = String(p.statut_validation || '').toLowerCase();
   if(statut && statut!=='valide' && statut!=='valid'){
@@ -79,7 +89,7 @@ async function charger(){
     document.getElementById('avis').innerHTML = '';
     return;
   }
-  const photo = p.photo_profil_url || '';
+  const photo = p.photo_profil_url || p.photo_profil || '';
   const description = p.description_profil || '';
   const categorie = p.categorie_prestataire || '';
   const nomAff = p.nom_entreprise || p.nom || 'Prestataire';
@@ -88,7 +98,7 @@ async function charger(){
   const initiale = (nomAff||'R').charAt(0).toUpperCase();
   const lieu = [p.quartier, p.ville, p.pays].filter(Boolean).join(' - ');
   let annoncesBrutes = [];
-  const r1 = await sb.from('annonces').select('id, titre, categorie, description, prix_fixe, prix_indicatif, localite, ville, quartier, status').eq('prestataire_id', prestaId).order('created_at',{ascending:false});
+  const r1 = await sb.from('annonces').select('id, titre, categorie, univers, description, prix_fixe, prix_indicatif, photo_url, localite, ville, quartier, status').eq('prestataire_id', prestaId).order('created_at',{ascending:false});
   annoncesBrutes = r1.data || [];
   const annonces = (annoncesBrutes||[]).filter(estValideAnnonce);
   const {data: avis} = await sb.from('avis').select('note, commentaire, created_at').eq('prestataire_id', prestaId).order('created_at',{ascending:false});
@@ -99,15 +109,38 @@ async function charger(){
   const btnPrincipal = cestMoi
     ? `<button class="btn btn-mine" disabled>C'est ton profil</button>`
     : `<button class="btn" onclick="contacter('${esc(annonces && annonces[0] ? annonces[0].id : '')}')">💬 Discuter avec ${esc(nomAff)}</button>`;
+
+  // --- COMPLEMENTS ---
+  let complements = '';
+  if(p.travaille_distance === true) complements += `<span class="badge-purple">💻 Travaille à distance</span> `;
+  if(p.disponible_aujourd_hui === true) complements += `<span class="badge">🟢 Disponible aujourd'hui</span> `;
+  if(p.disponible_maintenant === true) complements += `<span class="badge">🟢 Disponible maintenant</span> `;
+  if(p.vehicule) complements += `<span class="badge-orange">🛵 / 🚗 ${esc(p.vehicule)}</span> `;
+  if(p.annees_experience) complements += `<p>⭐ ${esc(p.annees_experience)} ans d'expérience</p>`;
+  if(p.langues) complements += `<p>🗣️ <b>Langues parlées :</b> ${esc(p.langues)}</p>`;
+  if(p.lieux_connus) complements += `<p>📍 <b>Lieux connus :</b> ${esc(p.lieux_connus)}</p>`;
+  if(p.portfolio_url) complements += `<p>📁 <b>Portfolio :</b> <a href="${esc(p.portfolio_url)}" target="_blank" rel="noopener">${esc(p.portfolio_url)}</a></p>`;
+  const photosAvantApres = parsePhotos(p.photos_avant_apres);
+  let galerieHTML = '';
+  if(photosAvantApres.length){
+    galerieHTML = `<div class="card"><h3>📸 Photos avant / après - Anciens évènements / Travaux</h3><p>Preuves de ses anciens travaux. Regarde avant de commander.</p><div class="galerie">${photosAvantApres.map(u=>`<img src="${esc(u)}" onerror="this.remove()">`).join('')}</div></div>`;
+  }
+  // Photos des annonces aussi comme galerie
+  const photosAnnonces = (annonces||[]).map(a=>a.photo_url).filter(Boolean);
+  if(photosAnnonces.length && !photosAvantApres.length){
+    galerieHTML = `<div class="card"><h3>📸 Photos de ses services</h3><div class="galerie">${photosAnnonces.map(u=>`<img src="${esc(u)}" onerror="this.remove()">`).join('')}</div></div>`;
+  }
+
   document.getElementById('contenu').innerHTML = `
     <div class="profil">
       <div class="avatar">${photo ? `<img src="${esc(photo)}" onerror="this.remove()">` : esc(initiale)}</div>
       <h1>${esc(nomAff)}</h1>
       <p>📍 ${esc(lieu)}</p>
       <p>${labelType} • ${esc(categorie)}</p>
-      ${p.nom_entreprise && p.nom ? `<p style="font-size:12px">Contact : ${esc(p.nom)}</p>` : ''}
+      ${p.nom_entreprise && p.nom ? `<p style="font-size:12px">Contact : ${esc(p.nom)} ${esc(p.prenom||'')}</p>` : ''}
       <span class="badge">✅ Profil vérifié Rocyinter</span>
       ${badgeQuartierHTML(p)}
+      <div style="margin-top:8px;text-align:left">${complements}</div>
       <p style="margin-top:10px;text-align:left">${esc(description)}</p>
       ${btnPrincipal}
       ${btnVerifier}
@@ -118,11 +151,12 @@ async function charger(){
       <div class="stat"><b>${avis?.length||0}</b><small>Avis</small></div>
       <div class="stat"><b>${moyenne||'—'} ⭐</b><small>Note moyenne</small></div>
       <div class="stat"><b>${annonces?.length||0}</b><small>Annonces</small></div>
-    </div>`;
+    </div>
+    ${galerieHTML}`;
   document.getElementById('annonces').innerHTML = `<h3 style="margin:10px 0">📋 Ses services</h3>` + (annonces && annonces.length ? annonces.map(a=>{
     const prixTxt = (a.prix_indicatif > 0) ? (a.prix_fixe ? Number(a.prix_indicatif).toLocaleString()+' FCFA' : 'À partir de '+Number(a.prix_indicatif).toLocaleString()+' FCFA') : 'Prix à discuter';
     const btnAnnonce = cestMoi ? `<button class="btn btn-mine" disabled>C'est ton annonce</button>` : `<button class="btn" onclick="contacter('${esc(a.id)}')">Discuter pour cette annonce</button>`;
-    return `<div class="card"><h3>${esc(a.titre)}</h3><p>${esc(a.categorie)} • ${esc([a.localite,a.ville].filter(Boolean).join(' - '))}<br>${esc(prixTxt)}<br>${esc(a.description)}</p>${btnAnnonce}</div>`;
+    return `<div class="card"><h3>${esc(a.titre)}</h3><p>${esc(a.categorie)} • ${esc(a.univers||'')} • ${esc([a.localite,a.ville].filter(Boolean).join(' - '))}<br>${esc(prixTxt)}<br>${esc(a.description)}</p>${btnAnnonce}</div>`;
   }).join('') : '<p style="color:#64748b;font-size:13px">Aucune annonce validée pour l’instant.</p>');
   document.getElementById('avis').innerHTML = `<h3 style="margin:14px 0 10px">⭐ Avis clients (${avis?.length||0})</h3>` + (avis && avis.length ? avis.map(a=>`<div class="avis">${'⭐'.repeat(Math.min(5,Number(a.note||5)))}<br>${esc(a.commentaire)}</div>`).join('') : '<p style="color:#64748b;font-size:13px">Aucun avis pour l’instant. Sois le premier à commander.</p>');
   if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
