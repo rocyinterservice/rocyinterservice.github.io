@@ -73,7 +73,6 @@ const WHATSAPP_ROCY = '2290191478460';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const params = new URLSearchParams(location.search);
 const commandeId = params.get('commande') || params.get('commande_id') || localStorage.getItem('paiement_commande_id') || localStorage.getItem('commande_a_payer');
-// NOUVEAU : mode visite / achat immobilier venant de fiche-parcelle.html
 const paiementAnnonce = localStorage.getItem('paiement_annonce') || params.get('annonce');
 const paiementType = localStorage.getItem('paiement_type') || params.get('type') || '';
 const paiementMontant = Number(localStorage.getItem('paiement_montant') || params.get('montant') || 0);
@@ -88,7 +87,6 @@ async function init(){
   const {data:p}=await sb.from('profiles').select('type_compte, type_fournisseur').eq('id',uid).maybeSingle();
   monRole = String(p?.type_compte||p?.type_fournisseur||'').toLowerCase();
   if(monRole==='admin'){ location.href='admin.html'; return; }
-  // Si c'est une visite ou achat immobilier, on charge l'annonce, pas la commande
   if(paiementType==='visite' || paiementType==='achat_immobilier'){
     chargerImmo();
     return;
@@ -102,11 +100,11 @@ function texteCommission(c){
   if(c.univers==='pro') return 'Commission 5 000 FCFA fixe';
   if(c.univers==='manger') return 'Commission 12%';
   if(c.univers==='sejour') return 'Commission 12% par nuit';
+  if(c.univers==='evenement') return 'Commission 12%';
   if(c.univers==='livreur') return 'Commission 20% (Livreur 80%)';
   if(c.univers==='immobilier') return 'Commission Immobilier';
   return 'Commission';
 }
-// NOUVEAU : charger annonce pour visite / achat
 async function chargerImmo(){
   if(!paiementAnnonce){ document.getElementById('resume').innerHTML='Aucun bien à payer.'; return; }
   const {data:a, error} = await sb.from('annonces').select('id,titre,categorie,prix_indicatif,localite,ville,prestataire_id,status').eq('id',paiementAnnonce).maybeSingle();
@@ -124,7 +122,6 @@ async function chargerImmo(){
       <div class="row total"><span>Tu paies maintenant</span><b>2 000 FCFA</b></div>
     `;
   } else {
-    // achat_immobilier
     const cat = String(a.categorie||'').toLowerCase();
     const estParcelle = cat.includes('parcelle') || cat.includes('terrain');
     const commission = estParcelle ? Math.min(200000, Math.round(Number(a.prix_indicatif||0)*0.02)) : Math.round(Number(a.prix_indicatif||0)*0.5);
@@ -169,29 +166,34 @@ async function charger(){
     <div class="row total"><span>Tu paies maintenant</span><b>${total.toLocaleString()} FCFA</b></div>
   `;
   if(data.univers === 'manger') document.getElementById('zoneEspeces').style.display = 'block';
+  if(data.univers === 'evenement'){
+    document.getElementById('sousTitre').innerHTML = '🎉 Évènement : tu paies le montant convenu. Rocyinter bloque l\'argent. Le prestataire prépare ton évènement. Tu valides après l\'évènement, on libère.';
+    document.getElementById('commentMarche').innerHTML = '1. Tu paies ici (acompte ou total convenu)<br>2. Rocyinter bloque l\'argent<br>3. Le prestataire prépare (décor, DJ, photo...)<br>4. Jour J : il fait l\'évènement<br>5. Tu valides après l\'évènement<br>6. Rocyinter libère au prestataire moins 12%<br><br><b>Si litige :</b> Argent bloqué, Admin tranche.';
+  }
+  if(data.univers === 'livreur'){
+    document.getElementById('commentMarche').innerHTML = '1. Tu paies ici<br>2. Rocyinter bloque l\'argent<br>3. Le livreur vient chercher<br>4. Il livre<br>5. Tu valides la réception<br>6. Rocyinter libère au livreur 80%';
+  }
+  if(data.univers === 'sejour'){
+    document.getElementById('commentMarche').innerHTML = '1. Tu paies ici<br>2. Rocyinter bloque l\'argent<br>3. Tu arrives à l\'hôtel / la location<br>4. Tu valides après ton séjour<br>5. Rocyinter libère au prestataire moins 12% par nuit';
+  }
 }
 async function confirmerPaiement(mode){
-  // CAS 1 : VISITE - argent pour Rocyinter, bien RESTE en ligne
   if(paiementType==='visite' && annonceImmo){
     const facture = 'VIS-' + Date.now();
     const {error} = await sb.from('visites').insert([{annonce_id: annonceImmo.id, client_id: uid, prestataire_id: annonceImmo.prestataire_id, montant: 2000, statut: 'paye', facture_numero: facture}]);
     if(error){ showMsg('Erreur : ' + error.message, false); return; }
-    // On NE change PAS annonces.status, le bien reste valide et visible
     await notifier(annonceImmo.prestataire_id, '📍 Nouvelle visite payée', `Un client a payé 2 000 FCFA pour visiter "${annonceImmo.titre}". Facture ${facture}`, 'visite', 'dashboard-prestataire.html');
     showMsg('✅ Visite payée ! Facture ' + facture + '. Le bien reste en ligne. Redirection...', true);
     localStorage.removeItem('paiement_annonce'); localStorage.removeItem('paiement_type'); localStorage.removeItem('paiement_montant');
     setTimeout(()=> location.href='immobilier.html', 1500);
     return;
   }
-  // CAS 2 : ACHAT IMMOBILIER - vrai prix, bien DISPARAÎT
   if(paiementType==='achat_immobilier' && annonceImmo){
     const cat = String(annonceImmo.categorie||'').toLowerCase();
     const estParcelle = cat.includes('parcelle') || cat.includes('terrain');
     const commission = estParcelle ? Math.min(200000, Math.round(Number(annonceImmo.prix_indicatif||0)*0.02)) : Math.round(Number(annonceImmo.prix_indicatif||0)*0.5);
-    // Créer commande
     const {data:cmd, error:errCmd} = await sb.from('commandes').insert([{client_id: uid, prestataire_id: annonceImmo.prestataire_id, univers: 'immobilier', titre: annonceImmo.titre, montant: Number(annonceImmo.prix_indicatif||0), montant_total: Number(annonceImmo.prix_indicatif||0), commission: commission, montant_prestataire: Number(annonceImmo.prix_indicatif||0)-commission, annonce_id: annonceImmo.id, localite: annonceImmo.localite, ville: annonceImmo.ville, status: 'paye', mode_paiement: mode}]).select('id').maybeSingle();
     if(errCmd){ showMsg('Erreur : ' + errCmd.message, false); return; }
-    // Faire disparaître le bien : status = vendu / loue
     const nouveauStatus = estParcelle ? 'vendu' : 'loue';
     await sb.from('annonces').update({status: nouveauStatus}).eq('id', annonceImmo.id);
     await notifier(annonceImmo.prestataire_id, '💰 Bien payé', `Ton bien "${annonceImmo.titre}" a été payé. Il a disparu du site.`, 'paiement', 'dashboard-prestataire.html');
@@ -200,7 +202,6 @@ async function confirmerPaiement(mode){
     setTimeout(()=> location.href='dashboard-client.html', 1500);
     return;
   }
-  // CAS 3 : commande normale (ancien système)
   if(!commande) return;
   const {data: frais} = await sb.from('commandes').select('status').eq('id', commande.id).single();
   if(!frais || frais.status !== 'en_attente'){ showMsg('Cette commande a déjà été payée.', false); setTimeout(()=>location.href='dashboard-client.html', 1000); return; }
