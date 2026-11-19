@@ -7,6 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="pays.js"></script>
 <script src="rocy-layout.js"></script>
+<script src="app.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
 body{background:#f6f7f9;color:#111}
@@ -78,7 +79,7 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px}
 <div class="stats">
   <div class="stat"><b id="nbAnnonces">0</b><small>Annonces</small></div>
   <div class="stat"><b id="nbCommandes">0</b><small>Commandes</small></div>
-  <div class="stat"><b id="totalGagne">0 F</b><small>À recevoir*</small></div>
+  <div class="stat"><b id="totalGagne">0</b><small>À recevoir*</small></div>
 </div>
 <p style="font-size:11px;color:#64748b;margin:-10px 0 14px">* Seulement les commandes payées / en cours / validées. Les commandes en attente ne comptent pas.</p>
 <button class="btn" id="btnCreer" onclick="location.href='creer-annonce.html'">➕ Créer une nouvelle annonce</button>
@@ -116,7 +117,7 @@ let uid = null;
 let reglages = {distance:false, auj:false, maint:false};
 let mesAnnonces = [];
 function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-function fmt(n){ return Number(n || 0).toLocaleString('fr-FR'); }
+function fmt(n){ return window.rocyFormatPrix ? window.rocyFormatPrix(Number(n||0)) : Number(n||0).toLocaleString('fr-FR')+' FCFA'; }
 async function getUtilisateurSecurise(){
   for(let i=0;i<5;i++){
     const {data:{user}, error} = await sb.auth.getUser();
@@ -152,16 +153,16 @@ function badgeCommande(s){
   return `<span class="badge attente">${esc(s)}</span>`;
 }
 function texteCommission(c){
-  if(c.univers==='domicile') return `Commission 8% : ${fmt(c.commission)} FCFA`;
+  if(c.univers==='domicile') return `Commission 8% : ${fmt(c.commission)}`;
   if(c.univers==='pro') return `Commission 5 000 FCFA fixe`;
-  if(c.univers==='manger' || c.univers==='sejour' || c.univers==='evenement') return `Commission 12% : ${fmt(c.commission)} FCFA`;
-  if(c.univers==='livreur') return `Commission 20% (Livreur 80%) : ${fmt(c.commission)} FCFA`;
+  if(c.univers==='manger' || c.univers==='sejour' || c.univers==='evenement') return `Commission 12% : ${fmt(c.commission)}`;
+  if(c.univers==='livreur') return `Commission 20% (Livreur 80%) : ${fmt(c.commission)}`;
   if(c.univers==='immobilier'){
     const t = String(c.titre||'').toLowerCase();
-    if(t.includes('parcelle') || t.includes('vente') || t.includes('terrain')) return `Commission Parcelle 2% plafonné 200 000 : ${fmt(c.commission)} FCFA`;
-    return `Commission Location 50% d'un mois : ${fmt(c.commission)} FCFA`;
+    if(t.includes('parcelle') || t.includes('vente') || t.includes('terrain')) return `Commission Parcelle 2% plafonné 200 000 : ${fmt(c.commission)}`;
+    return `Commission Location 50% d'un mois : ${fmt(c.commission)}`;
   }
-  return `Commission : ${fmt(c.commission)} FCFA`;
+  return `Commission : ${fmt(c.commission)}`;
 }
 function badgeAnnonce(a){
   const s = String(a.status || '').toLowerCase();
@@ -278,7 +279,6 @@ async function charger(){
   document.getElementById('btnVerifAttente').style.display='none';
   const banner = document.getElementById('bannerStatut');
   banner.innerHTML = `<div class="banner valide">✅ <b>Compte validé</b> - Tu peux recevoir des commandes.</div>`;
-  // Remplir réglages
   document.getElementById('regPortfolio').value = profil.portfolio_url || '';
   document.getElementById('regLangues').value = profil.langues || '';
   document.getElementById('regLieux').value = profil.lieux_connus || '';
@@ -312,7 +312,7 @@ async function charger(){
   } else {
     boxA.innerHTML = annonces.map(a=>{
       const lieu = a.quartier || a.localite || '';
-      const prixTxt = a.prix_fixe ? fmt(a.prix_indicatif||0)+' '+(a.devise||'FCFA')+' - Prix fixe' : (a.prix_indicatif ? 'À partir de '+fmt(a.prix_indicatif)+' '+(a.devise||'FCFA') : 'Prix à discuter');
+      const prixTxt = a.prix_fixe ? fmt(a.prix_indicatif||0)+' - Prix fixe' : (a.prix_indicatif ? 'À partir de '+fmt(a.prix_indicatif) : 'Prix à discuter');
       let gestion = '';
       if(a.univers==='manger'){
         gestion = `<div class="gestion"><label>🍽️ PLAT - PRIX (FCFA)</label><input id="prix-${a.id}" type="number" value="${a.prix_indicatif||''}"><label>DISPONIBLE ?</label><select id="dispo-${a.id}"><option value="true" ${a.disponible!==false?'selected':''}>Oui - Disponible</option><option value="false" ${a.disponible===false?'selected':''}>Non - Pas dispo</option></select><button class="btn btn-green" onclick="majAnnonce('${a.id}','prix_indicatif',Number(document.getElementById('prix-${a.id}').value)||0);majAnnonce('${a.id}','disponible',document.getElementById('dispo-${a.id}').value==='true')">💾 Sauvegarder le plat</button></div>`;
@@ -331,7 +331,7 @@ async function charger(){
   document.getElementById('nbCommandes').textContent = cmds?.length || 0;
   let total = 0;
   (cmds||[]).forEach(c=>{ if(['paye','en_cours','valide','libere'].includes(c.status)) total += Number(c.montant_prestataire||0); });
-  document.getElementById('totalGagne').textContent = fmt(total) + ' F';
+  document.getElementById('totalGagne').textContent = fmt(total);
   if(errCmds){
     boxC.innerHTML = `<div class="empty">Erreur commandes : ${esc(errCmds.message)}</div>`;
   } else if(!cmds || cmds.length===0){
@@ -350,7 +350,7 @@ async function charger(){
       if(c.status==='litige') action = `<p style="color:#991b1b">⚠️ Litige : ${esc(c.litige_raison || 'En cours')} - Argent bloqué, Admin tranche.</p>`;
       if(c.status==='valide') action = `<p style="color:#166534">⏳ Validé par le client - Libération dans 48h / lundi.</p>`;
       if(c.status==='libere') action = `<p style="color:#166534">💰 Argent libéré - Vérifie ton Mobile Money / compte.</p>`;
-      return `<div class="card">${badgeCommande(c.status)}<h3 style="margin-top:8px">${esc(c.titre)}</h3><p>Client : ${esc(nomsClients[c.client_id] || 'Client')}<br>Total : ${fmt(c.montant_total)} FCFA • ${esc(texteCommission(c))} • Tu reçois : <b>${fmt(c.montant_prestataire)} FCFA</b><br>📍 ${esc(c.localite||'')} - ${esc(c.ville||'')}<br><span style="color:#16a34a">🔒 Escrow : argent bloqué chez Rocyinter jusqu'à validation client</span></p>${action}<button class="btn btn-dark" onclick="voirConversation('${esc(c.conversation_id)}','${esc(c.annonce_id)}')">Ouvrir le chat</button></div>`;
+      return `<div class="card">${badgeCommande(c.status)}<h3 style="margin-top:8px">${esc(c.titre)}</h3><p>Client : ${esc(nomsClients[c.client_id] || 'Client')}<br>Total : ${fmt(c.montant_total)} • ${esc(texteCommission(c))} • Tu reçois : <b>${fmt(c.montant_prestataire)}</b><br>📍 ${esc(c.localite||'')} - ${esc(c.ville||'')}<br><span style="color:#16a34a">🔒 Escrow : argent bloqué chez Rocyinter jusqu'à validation client</span></p>${action}<button class="btn btn-dark" onclick="voirConversation('${esc(c.conversation_id)}','${esc(c.annonce_id)}')">Ouvrir le chat</button></div>`;
     }).join('');
   }
   const {data: convsBrutes, error: errConvs} = await sb.from('conversations')
