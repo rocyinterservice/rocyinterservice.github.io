@@ -48,6 +48,17 @@ h1,h2,h3{font-family:'Plus Jakarta Sans','Inter',sans-serif;letter-spacing:-0.02
 .bandeau-visiteur{background:#fef3c7;color:#92400e}
 .bandeau-client{background:#dcfce7;color:#166534}
 .bandeau-presta{background:#dbeafe;color:#1e40af}
+/* === AJOUT BOUCLES + INFOS - ne touche pas le reste === */
+.ticker{background:#fef3c7;border:1px solid #fde68a;margin:0 16px 16px;border-radius:12px;overflow:hidden;display:none}
+.ticker-inner{display:flex;gap:32px;white-space:nowrap;padding:10px 12px;font-size:13px;font-weight:600;color:#92400e;animation:defile 30s linear infinite;width:max-content}
+@keyframes defile{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.bloc-univers{padding:0 16px 20px}
+.bloc-univers-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.bloc-univers-head h3{font-size:17px;font-weight:800}
+.bloc-univers-head a{font-size:12px;font-weight:700;color:#1e40af;cursor:pointer;text-decoration:none}
+.rail{display:flex;gap:12px;overflow-x:auto;padding-bottom:4px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+.rail .card{min-width:260px;max-width:260px;scroll-snap-align:start;flex-shrink:0}
+.rail .card img{height:140px}
 </style>
 </head>
 <body>
@@ -64,6 +75,8 @@ h1,h2,h3{font-family:'Plus Jakarta Sans','Inter',sans-serif;letter-spacing:-0.02
 </div>
 
 <div id="bandeauRole"></div>
+<!-- AJOUT : infos entreprises qui défilent -->
+<div id="tickerInfos" class="ticker"><div id="tickerInner" class="ticker-inner"></div></div>
 <div class="filters">
   <div><label data-i18n="pays">PAYS</label><select id="filtrePays" onchange="majVilleQuartierIndex();chargerAnnonces()"><option value="">Pays</option></select></div>
   <div><label>VILLE / LOCALITÉ</label><select id="filtreVille" onchange="majQuartierIndex();chargerAnnonces()"><option value="">-- Ville --</option></select></div>
@@ -163,6 +176,40 @@ async function afficherBandeauRole(){
     box.innerHTML = `<div class="bandeau-role bandeau-client">🛒 ${esc(t('bandeauClient'))}</div>`;
   }
 }
+// === AJOUT : infos entreprises ===
+async function chargerInfosEntreprises(){
+  const box=document.getElementById('tickerInfos'); const inner=document.getElementById('tickerInner');
+  if(!box||!inner) return;
+  try{
+    const {data,error}=await sb.from('profiles').select('nom,nom_entreprise,message_entreprise').not('message_entreprise','is',null).neq('message_entreprise','').limit(20);
+    if(error||!data||!data.length){ box.style.display='none'; return; }
+    const items=data.map(p=>`📢 <b>${esc(p.nom_entreprise||p.nom||'Entreprise')}</b> : ${esc(p.message_entreprise)}`).join('<span> • </span>');
+    inner.innerHTML=items+'<span> • </span>'+items;
+    box.style.display='block';
+  }catch(e){ box.style.display='none'; }
+}
+const BLOCS_UNIVERS=[
+  {univers:'manger',titre:'🍽️ À manger en ce moment',page:'manger.html'},
+  {univers:'immobilier',titre:'🏘️ Immobilier à saisir',page:'immobilier.html'},
+  {univers:'sejour',titre:'✈️ Séjours',page:'sejour.html'},
+  {univers:'livreur',titre:'🛵 Livreurs disponibles',page:'livreurs.html'},
+  {univers:'evenement',titre:'🎉 Évènements',page:'evenement.html'},
+  {univers:'pro',titre:'💼 Pros',page:'services-pro.html'},
+  {univers:'domicile',titre:'🏠 Domicile',page:'services-domicile.html'},
+];
+function carteAnnonce(a,noms){
+  const t = window.rocyT || (k=>k);
+  const img = a.photo_url || 'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&q=80';
+  const prestaId = a.prestataire_id || '';
+  const nom = noms[prestaId] || 'Prestataire';
+  const lieu = [a.localite || a.quartier, a.ville, a.pays].filter(Boolean).join(' - ');
+  const prixVal = Number(a.prix_indicatif ?? 0) || 0;
+  const isFixe = a.prix_fixe === true || a.prix_fixe === 'true';
+  const prixTxt = isFixe ? `${window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal+' '+(a.devise||'FCFA')} - ${t('prixFixe')}` : (prixVal>0 ? `${t('aPartir')} ${window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal+' '+(a.devise||'FCFA')}` : t('prixDiscuter'));
+  const cestMoi = prestaId && moiId && String(prestaId)===String(moiId);
+  const btnChat = cestMoi ? `<button type="button" class="btn-mine" disabled>C'est ton annonce</button>` : `<button type="button" class="btn-chat" onclick="allerChat('${esc(prestaId)}','${esc(a.id)}')">${esc(t('discuter'))}</button>`;
+  return `<div class="card"><img src="${esc(img)}" onclick="voirProfil('${esc(prestaId)}')" style="cursor:pointer" onerror="this.src='https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&q=80'"><div class="card-body"><span class="badge">${esc(a.univers)} • ${esc(a.categorie)}</span><h3 style="margin-top:8px">${esc(a.titre)}</h3><p>📍 ${esc(lieu)} • 👤 ${esc(nom)}</p><p>${esc((a.description||'').slice(0,90))}...</p><div class="price">${esc(prixTxt)}</div><div class="card-actions">${btnChat}<button type="button" class="btn-voir" onclick="voirProfil('${esc(prestaId)}')">${esc(t('voirEntreprise'))}</button></div></div></div>`;
+}
 async function chargerAnnonces(){
   const box = document.getElementById('listeAnnonces'); if(!box) return;
   const t = window.rocyT || (k=>k);
@@ -171,6 +218,7 @@ async function chargerAnnonces(){
     const ville = document.getElementById('filtreVille').value.trim().toLowerCase();
     const quartier = document.getElementById('filtreQuartier').value.trim().toLowerCase();
     const search = document.getElementById('filtreSearch').value.trim().toLowerCase();
+    const enRecherche = !!(pays||ville||quartier||search);
     if(!sb){ box.innerHTML = `<div class="empty"><b>${esc(t('pasConnexion'))}</b><br><button type="button" class="btn" onclick="chargerAnnonces()">${esc(t('reessayer'))}</button></div>`; return; }
     let q = sb.from('annonces').select('id, titre, categorie, univers, description, prix_fixe, prix_indicatif, devise, photo_url, localite, ville, pays, status, prestataire_id, quartier').order('created_at',{ascending:false});
     if(pays) q = q.eq('pays', pays);
@@ -195,33 +243,21 @@ async function chargerAnnonces(){
       box.innerHTML = `<div class="empty"><b>${esc(t('aucuneTitre'))}</b>${esc(t('aucuneSous'))}<br><br><button type="button" class="btn" onclick="rocyProposerService()">${esc(t('proposerTitre'))}</button></div>`;
       return;
     }
-    box.innerHTML = filtres.map(a=>{
-      const img = a.photo_url || 'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&q=80';
-      const prestaId = a.prestataire_id || '';
-      const nom = noms[prestaId] || 'Prestataire';
-      const lieu = [a.localite || a.quartier, a.ville, a.pays].filter(Boolean).join(' - ');
-      const prixVal = Number(a.prix_indicatif ?? 0) || 0;
-      const isFixe = a.prix_fixe === true || a.prix_fixe === 'true';
-      const prixTxt = isFixe ? `${window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal+' '+(a.devise||'FCFA')} - ${t('prixFixe')}` : (prixVal>0 ? `${t('aPartir')} ${window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal+' '+(a.devise||'FCFA')}` : t('prixDiscuter'));
-      const cestMoi = prestaId && moiId && String(prestaId)===String(moiId);
-      const btnChat = cestMoi
-        ? `<button type="button" class="btn-mine" disabled>C'est ton annonce</button>`
-        : `<button type="button" class="btn-chat" onclick="allerChat('${esc(prestaId)}','${esc(a.id)}')">${esc(t('discuter'))}</button>`;
-      return `<div class="card">
-        <img src="${esc(img)}" onclick="voirProfil('${esc(prestaId)}')" style="cursor:pointer" onerror="this.src='https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&q=80'">
-        <div class="card-body">
-          <span class="badge">${esc(a.univers)} • ${esc(a.categorie)}</span>
-          <h3 style="margin-top:8px">${esc(a.titre)}</h3>
-          <p>📍 ${esc(lieu)} • 👤 ${esc(nom)}</p>
-          <p>${esc((a.description||'').slice(0,90))}...</p>
-          <div class="price">${esc(prixTxt)}</div>
-          <div class="card-actions">
-            ${btnChat}
-            <button type="button" class="btn-voir" onclick="voirProfil('${esc(prestaId)}')">${esc(t('voirEntreprise'))}</button>
-          </div>
-        </div>
-      </div>`;
-    }).join('');
+    // MODE RECHERCHE / FILTRE : on garde ton ancienne liste complète
+    if(enRecherche){
+      document.getElementById('titreSection').textContent='Résultats';
+      box.className='grid';
+      box.innerHTML = filtres.map(a=>carteAnnonce(a,noms)).join('');
+      return;
+    }
+    // MODE ACCUEIL : boucles, 4 max par univers, pas de bruit
+    document.getElementById('titreSection').textContent='Découvrir';
+    box.className='';
+    box.innerHTML = BLOCS_UNIVERS.map(b=>{
+      const list = filtres.filter(a=>String(a.univers||'').toLowerCase()===b.univers).slice(0,4);
+      if(!list.length) return '';
+      return `<div class="bloc-univers"><div class="bloc-univers-head"><h3>${b.titre}</h3><a href="${b.page}">Voir tout →</a></div><div class="rail">${list.map(a=>carteAnnonce(a,noms)).join('')}</div></div>`;
+    }).join('') || `<div class="empty"><b>${esc(t('aucuneTitre'))}</b>${esc(t('aucuneSous'))}</div>`;
   }catch(e){
     console.log('ROCY index erreur annonces:', e);
     box.innerHTML = `<div class="empty"><b>Annonces non chargées</b><br><small>${esc(e.message || e)}</small><br><br><button type="button" class="btn" onclick="chargerAnnonces()">${esc(t('reessayer'))}</button></div>`;
@@ -235,6 +271,7 @@ async function allerChat(prestataireId, annonceId){
   if(monRole==='admin'){ alert('Admin : tu ne peux pas chatter, tu gères dans Admin.'); return; }
   if(!prestataireId){ alert('Annonce sans prestataire.'); return; }
   if(String(prestataireId)===String(uid)){ alert("C'est ton annonce. Tu ne peux pas te parler à toi-même."); return; }
+  localStorage.removeItem('chat_conversation_id');
   localStorage.setItem('chat_prestataire', prestataireId);
   localStorage.setItem('chat_annonce', annonceId);
   location.href = 'chat.html';
@@ -246,6 +283,7 @@ function voirProfil(prestataireId){
 }
 remplirPaysIndex();
 afficherBandeauRole();
+chargerInfosEntreprises();
 chargerAnnonces();
 if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 </script>
