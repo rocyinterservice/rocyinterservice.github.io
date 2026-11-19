@@ -71,6 +71,7 @@ textarea{height:80px;resize:none}
     <option value="professionnel">Professionnel seul - Je travaille seul</option>
     <option value="entreprise">Entreprise - Hôtel / Restaurant / Société</option>
     <option value="livreur">Livreur</option>
+    <option value="admin">Admin - Rocyinter</option>
   </select>
 
   <label>Catégorie / Métier</label>
@@ -152,6 +153,13 @@ textarea{height:80px;resize:none}
   <label>Description de ton activité</label>
   <textarea id="description_profil" disabled></textarea>
 
+  <!-- CORRIGE : Message du jour - Prestataire / Entreprise / Livreur / Pro + ADMIN, JAMAIS Client -->
+  <div id="blocMessageEntreprise" style="display:none">
+    <label id="labelMessageEntreprise">📢 Message du jour - pour l'accueil</label>
+    <input id="message_entreprise" disabled maxlength="120" placeholder="Ex: Fermé aujourd'hui, on rouvre demain 11h">
+    <small id="aideMessageEntreprise" style="display:block;color:#64748b;font-size:12px;margin-top:4px">Ce message défile sur l'accueil. Laisse vide pour ne rien afficher. Max 120 caractères.</small>
+  </div>
+
   <button id="btnModifier" class="btn btn-dark" onclick="activerModification()">✏️ Modifier mon profil</button>
   <button id="btnEnregistrer" class="btn btn-orange" onclick="sauvegarder()" style="display:none">💾 Enregistrer mes modifications</button>
   <button id="btnAnnuler" class="btn btn-grey" onclick="chargerProfil()" style="display:none">Annuler</button>
@@ -182,8 +190,8 @@ let userId = null;
 let monRole = '';
 function esc(v){ return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function setDisabled(dis){
-  ['nom','type_compte','categorie_prestataire','whatsapp','quartier','ville','pays','photo_profil_url','description_profil'].forEach(id=>{
-    document.getElementById(id).disabled = dis;
+  ['nom','type_compte','categorie_prestataire','whatsapp','quartier','ville','pays','photo_profil_url','description_profil','message_entreprise'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.disabled = dis;
   });
 }
 function activerModification(){
@@ -203,7 +211,7 @@ async function chargerProfil(){
   const {data:{user}} = await sb.auth.getUser();
   if(!user){ window.location.href='connexion.html'; return; }
   userId = user.id;
-  const {data: p, error: errP} = await sb.from('profiles').select('id, nom, nom_entreprise, type_compte, type_fournisseur, categorie_prestataire, whatsapp, quartier, ville, pays, description_profil, photo_profil_url, photo_piece_url, photo_atelier_url, quartier_verifie, verification_quartier, statut_validation').eq('id', userId).single();
+  const {data: p, error: errP} = await sb.from('profiles').select('id, nom, nom_entreprise, type_compte, type_fournisseur, categorie_prestataire, whatsapp, quartier, ville, pays, description_profil, photo_profil_url, photo_piece_url, photo_atelier_url, quartier_verifie, verification_quartier, statut_validation, message_entreprise').eq('id', userId).single();
   if(errP){
     document.getElementById('nomAffiche').textContent = 'Erreur : ' + errP.message;
     document.getElementById('msg').textContent = '❌ ' + errP.message;
@@ -212,6 +220,20 @@ async function chargerProfil(){
   }
   if(!p) return;
   monRole = String(p.type_compte || p.type_fournisseur || '').toLowerCase();
+  // CORRIGE : Client = caché, Admin + Prestataire / Pro / Entreprise / Livreur = visible
+  const peutMessage = ['prestataire','professionnel','entreprise','livreur','fournisseur','pro','admin'].includes(monRole);
+  document.getElementById('blocMessageEntreprise').style.display = peutMessage ? 'block' : 'none';
+  // Libellé différent pour Admin
+  if(monRole==='admin'){
+    document.getElementById('labelMessageEntreprise').textContent = '📢 Message Rocyinter pour tous - affiché sur l\'accueil';
+    document.getElementById('message_entreprise').placeholder = 'Ex: Rocyinter : Maintenance ce soir 22h, Nouvelle fonction disponible...';
+    document.getElementById('aideMessageEntreprise').textContent = 'Ce message défile en premier sur l\'accueil pour tous les visiteurs. Laisse vide pour ne rien afficher. Max 120 caractères.';
+  } else {
+    document.getElementById('labelMessageEntreprise').textContent = '📢 Message du jour - pour l\'accueil';
+    document.getElementById('message_entreprise').placeholder = 'Ex: Fermé aujourd\'hui, on rouvre demain 11h';
+    document.getElementById('aideMessageEntreprise').textContent = 'Ce message défile sur l\'accueil. Laisse vide pour ne rien afficher. Max 120 caractères.';
+  }
+  document.getElementById('message_entreprise').value = p.message_entreprise || "";
   const btnDash = document.getElementById('btnDashboard');
   if(monRole==='admin'){ btnDash.textContent='🛡️ Aller au Panel Admin →'; btnDash.onclick=()=>window.location.href='admin.html'; btnDash.style.display='block'; }
   else if(['prestataire','professionnel','entreprise','livreur','fournisseur','pro'].includes(monRole)){ btnDash.textContent='📊 Aller à mon Dashboard Prestataire →'; btnDash.onclick=()=>window.location.href='dashboard-prestataire.html'; btnDash.style.display='block'; }
@@ -278,6 +300,10 @@ async function sauvegarder(){
     photo_profil_url: document.getElementById('photo_profil_url').value.trim() || null,
     description_profil: document.getElementById('description_profil').value.trim() || null,
   };
+  // CORRIGE : Message enregistré pour Admin aussi, jamais pour Client
+  if(['prestataire','professionnel','entreprise','livreur','fournisseur','pro','admin'].includes(monRole)){
+    updates.message_entreprise = document.getElementById('message_entreprise').value.trim() || null;
+  }
   const {error} = await sb.from('profiles').update(updates).eq('id', userId);
   if(error){ msg.textContent = "❌ " + error.message; msg.style.color="red"; }
   else{
