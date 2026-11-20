@@ -143,16 +143,18 @@ textarea{height:80px;resize:none}
   <input id="ville" disabled>
   <label>Pays</label>
   <input id="pays" disabled>
-  <label>Photo de profil / Logo entreprise (lien)</label>
-  <input id="photo_profil_url" disabled>
+  <!-- CORRIGÉ : choix depuis le téléphone, plus de lien à coller -->
+  <label>Photo de profil / Logo entreprise</label>
+  <input type="file" id="photo_profil_file" accept="image/*" disabled style="padding:10px;background:#fff">
+  <p id="photoFileInfo" style="font-size:12px;color:#64748b">Choisis une photo depuis ton téléphone. Elle sera envoyée automatiquement quand tu cliques sur Enregistrer.</p>
+  <input id="photo_profil_url" type="hidden">
   <label>Description de ton activité</label>
   <textarea id="description_profil" disabled></textarea>
   <button id="btnModifier" class="btn btn-dark" onclick="activerModification()">✏️ Modifier mon profil</button>
   <button id="btnEnregistrer" class="btn btn-orange" onclick="sauvegarder()" style="display:none">💾 Enregistrer mes modifications</button>
-  <button id="btnAnnuler" class="btn btn-grey" onclick="chargerProfil()" style="display:none">Annuler</button>
+  <button id="btnAnnuler" class="btn btn-grey" onclick="annulerModif()" style="display:none">Annuler</button>
 </div>
 
-<!-- BLOC A PART, ENTIEREMENT SEPARE DU PROFIL : INFO DU JOUR -->
 <div class="card card-info" id="blocInfoJour" style="display:none">
   <h3 id="titreInfoJour">📢 Info du jour - pour l'accueil</h3>
   <p id="texteInfoJour">Ton message défile sur l'accueil. Il s'efface tout seul quand la durée est finie.</p>
@@ -197,9 +199,11 @@ const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let userId = null;
 let monRole = '';
+let fichierPhotoChoisi = null;
+
 function esc(v){ return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function setDisabled(dis){
-  ['nom','type_compte','categorie_prestataire','whatsapp','quartier','ville','pays','photo_profil_url','description_profil'].forEach(id=>{
+  ['nom','type_compte','categorie_prestataire','whatsapp','quartier','ville','pays','description_profil','photo_profil_file'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.disabled = dis;
   });
 }
@@ -211,8 +215,42 @@ function activerModification(){
   document.getElementById('msg').textContent = "Tu peux modifier maintenant. Change seulement ce qui est faux.";
   document.getElementById('msg').style.color = "#f59e0b";
 }
+function annulerModif(){
+  fichierPhotoChoisi = null;
+  const f = document.getElementById('photo_profil_file'); if(f) f.value = '';
+  document.getElementById('photoFileInfo').textContent = "Choisis une photo depuis ton téléphone. Elle sera envoyée automatiquement quand tu cliques sur Enregistrer.";
+  document.getElementById('photoFileInfo').style.color = "#64748b";
+  chargerProfil();
+}
+// Choix photo depuis téléphone + aperçu immédiat
+document.addEventListener('DOMContentLoaded', () => {
+  const inputFile = document.getElementById('photo_profil_file');
+  if(inputFile){
+    inputFile.addEventListener('change', (e) => {
+      const f = e.target.files[0];
+      if(!f) return;
+      fichierPhotoChoisi = f;
+      const reader = new FileReader();
+      reader.onload = (ev) => { document.getElementById('photoPreview').src = ev.target.result; };
+      reader.readAsDataURL(f);
+      const info = document.getElementById('photoFileInfo');
+      info.textContent = '✅ Photo choisie : ' + f.name + ' - Clique sur Enregistrer pour l\'envoyer.';
+      info.style.color = 'green';
+    });
+  }
+});
+async function uploaderPhotoProfil(){
+  if(!fichierPhotoChoisi) return document.getElementById('photo_profil_url').value || null;
+  const nomFichier = userId + '/profil-' + Date.now() + '-' + fichierPhotoChoisi.name.replace(/\s+/g,'-');
+  const { error: errUpload } = await sb.storage.from('photos').upload(nomFichier, fichierPhotoChoisi, { upsert: true, contentType: fichierPhotoChoisi.type });
+  if(errUpload) throw errUpload;
+  const { data } = sb.storage.from('photos').getPublicUrl(nomFichier);
+  return data.publicUrl;
+}
 async function chargerProfil(){
   setDisabled(true);
+  fichierPhotoChoisi = null;
+  const f = document.getElementById('photo_profil_file'); if(f) f.value = '';
   document.getElementById('btnModifier').style.display='block';
   document.getElementById('btnEnregistrer').style.display='none';
   document.getElementById('btnAnnuler').style.display='none';
@@ -309,10 +347,8 @@ async function publierInfo(){
   const heures = Number(document.getElementById('dureeInfo').value || 24);
   const fin = new Date(Date.now() + heures*3600*1000);
   msgEl.textContent='Publication...'; msgEl.style.color='#f59e0b';
-  // 1. On garde dans profiles comme avant, pour ton affichage perso
   const {error: errProfil} = await sb.from('profiles').update({message_entreprise: texte, message_expire_at: fin.toISOString()}).eq('id', userId);
   if(errProfil){ msgEl.textContent='❌ '+errProfil.message; msgEl.style.color='red'; return; }
-  // 2. CORRECTION : On publie AUSSI dans la table PUBLIQUE que tout le monde peut lire
   await sb.from('infos_du_jour').delete().eq('auteur_id', userId);
   const nomAff = document.getElementById('nomAffiche')?.textContent || document.getElementById('nom')?.value || '';
   const {error: errPublic} = await sb.from('infos_du_jour').insert({ auteur_id: userId, nom_entreprise: nomAff, message: texte, expire_at: fin.toISOString() });
@@ -330,6 +366,20 @@ async function sauvegarder(){
   msg.textContent = "Enregistrement..."; msg.style.color = "#f59e0b";
   const nomVal = document.getElementById('nom').value.trim();
   if(!nomVal){ msg.textContent = "❌ Mets ton nom"; msg.style.color="red"; return; }
+  // Si une nouvelle photo a été choisie depuis le téléphone, on l'envoie d'abord
+  let urlPhotoFinale = document.getElementById('photo_profil_url').value.trim() || null;
+  if(fichierPhotoChoisi){
+    try{
+      msg.textContent = "📸 Envoi de la photo...";
+      urlPhotoFinale = await uploaderPhotoProfil();
+      document.getElementById('photo_profil_url').value = urlPhotoFinale;
+      fichierPhotoChoisi = null;
+    }catch(e){
+      msg.textContent = "❌ Photo non envoyée : " + e.message + " - Vérifie que tu as créé le bucket 'photos' dans Supabase.";
+      msg.style.color = "red";
+      return;
+    }
+  }
   const updates = {
     nom: nomVal,
     nom_entreprise: nomVal,
@@ -339,7 +389,7 @@ async function sauvegarder(){
     quartier: document.getElementById('quartier').value,
     ville: document.getElementById('ville').value.trim(),
     pays: document.getElementById('pays').value.trim() || 'Bénin',
-    photo_profil_url: document.getElementById('photo_profil_url').value.trim() || null,
+    photo_profil_url: urlPhotoFinale,
     description_profil: document.getElementById('description_profil').value.trim() || null,
   };
   const {error} = await sb.from('profiles').update(updates).eq('id', userId);
