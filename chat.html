@@ -16,6 +16,8 @@ header b{font-size:16px} header small{display:block;opacity:.7;font-size:11px;fo
 .annonce-bar{background:#fffbeb;border-bottom:1px solid #fde68a;padding:10px 16px;font-size:13px}
 .annonce-bar b{display:block}
 .annonce-bar small{color:#92400e}
+.commande-bar{background:#dcfce7;border-bottom:1px solid #bbf7d0;padding:10px 16px;font-size:13px;color:#166534;display:none}
+.commande-bar b{display:block}
 #messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
 .msg{max-width:80%;padding:10px 12px;border-radius:16px;font-size:14px;line-height:1.4;overflow-wrap:break-word}
 .msg.moi{background:#0f172a;color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
@@ -49,6 +51,7 @@ header b{font-size:16px} header small{display:block;opacity:.7;font-size:11px;fo
   <div><b id="nomAutre">Discussion</b><small id="infoAutre">Chargement...</small></div>
 </header>
 <div class="annonce-bar" id="annonceBar">Chargement de l'annonce...</div>
+<div class="commande-bar" id="commandeBar"></div>
 <div id="warnChat" class="warn-chat" style="display:none">⚠️ Ne partage jamais ton numéro / WhatsApp ici. Discute et paie seulement sur Rocyinter, sinon tu perds la protection.</div>
 <div id="messages"></div>
 <div class="actions" id="actionsBar">
@@ -92,7 +95,6 @@ const annonceId = localStorage.getItem('chat_annonce');
 const convIdDirect = localStorage.getItem('chat_conversation_id');
 let conversationId = convIdDirect || null; let annonceData = null; let clientIdFinal = null;
 const fmt = n => window.rocyFormatPrix ? window.rocyFormatPrix(Number(n||0)) : Number(n||0).toLocaleString()+' FCFA';
-
 async function notifier(destinataire, titre, message, type, lien){
   try{
     if(!destinataire || String(destinataire)===String(moiId)) return;
@@ -143,6 +145,33 @@ function bloquerChat(msg){
   document.getElementById('messages').appendChild(d);
   document.getElementById('inputMsg').disabled = true;
   document.getElementById('btnEnvoyer').disabled = true;
+}
+function afficherCommandeDepuisFiche(){
+  const type = localStorage.getItem('commande_type');
+  if(!type || !annonceData) return;
+  const bar = document.getElementById('commandeBar');
+  const prixUnit = Number(annonceData.prix_indicatif||0);
+  if(type==='plat'){
+    const qty = Number(localStorage.getItem('commande_quantite')||1);
+    const total = prixUnit * qty;
+    bar.style.display = 'block';
+    bar.innerHTML = `<b>🍽️ Commande depuis le menu : ${qty} x ${annonceData.titre} = ${fmt(total)}</b><small>Le montant est déjà rempli dans Créer la commande. Clique sur Créer la commande en bas.</small>`;
+    document.getElementById('cmdTitre').value = `${qty} x ${annonceData.titre}`;
+    document.getElementById('cmdMontant').value = total;
+    document.getElementById('inputMsg').value = `Bonjour, je veux commander ${qty} x ${annonceData.titre} = ${fmt(total)}.`;
+  } else if(type==='sejour'){
+    const date = localStorage.getItem('commande_date')||'';
+    const nuits = Number(localStorage.getItem('commande_nuits')||1);
+    const chambres = Number(localStorage.getItem('commande_chambres')||1);
+    const total = prixUnit * nuits * chambres;
+    bar.style.display = 'block';
+    bar.innerHTML = `<b>📅 Réservation depuis la fiche : ${annonceData.titre} - Arrivée ${date}, ${nuits} nuit(s), ${chambres} chambre(s) = ${fmt(total)}</b><small>Le montant est déjà rempli dans Créer la commande. Clique sur Créer la commande en bas.</small>`;
+    document.getElementById('cmdTitre').value = `${annonceData.titre} - ${date} - ${nuits} nuit(s) - ${chambres} chambre(s)`;
+    document.getElementById('cmdMontant').value = total;
+    document.getElementById('inputMsg').value = `Bonjour, je veux réserver ${annonceData.titre} - Arrivée ${date}, ${nuits} nuit(s), ${chambres} chambre(s) = ${fmt(total)}.`;
+  }
+  // On nettoie pour ne pas ré-afficher à chaque reload, mais on garde le montant déjà rempli
+  localStorage.removeItem('commande_type'); localStorage.removeItem('commande_quantite'); localStorage.removeItem('commande_date'); localStorage.removeItem('commande_nuits'); localStorage.removeItem('commande_chambres');
 }
 async function init(){
   const {data:{user}} = await sb.auth.getUser();
@@ -214,6 +243,7 @@ async function initAvecAnnonce(annId, prestaId, convExistante){
     } else { bloquerChat("⏳ En attente qu'un client te parle sur cette annonce."); document.getElementById('btnProp').style.display='none'; return; }
   }
   if(!jeSuisPresta) clientIdFinal = moiId;
+  afficherCommandeDepuisFiche();
   chargerMessages();
   setInterval(chargerMessages, 3000);
 }
