@@ -65,30 +65,10 @@ textarea{height:80px;resize:none}
   <div id="msg"></div>
   <label>Nom de la personne OU Nom Hôtel / Restaurant / Entreprise</label>
   <input id="nom" disabled>
-  <!-- CORRIGÉ : Type de compte BLOQUÉ, jamais modifiable, plus de select avec Admin -->
   <label>Type de compte (non modifiable)</label>
   <input id="type_compte" disabled style="background:#f1f5f9;color:#334155;font-weight:700">
   <p style="font-size:12px;color:#64748b">Ton type de compte ne change pas ici. Pour devenir fournisseur, utilise le bouton "Devenir fournisseur" sur l'accueil.</p>
-  <label>Catégorie / Métier</label>
-  <select id="categorie_prestataire" disabled>
-    <option value="">-- Choisir --</option>
-    <option>Hôtel</option>
-    <option>Restaurant</option>
-    <option>Entreprise de nettoyage</option>
-    <option>Plombier</option>
-    <option>Électricien</option>
-    <option>Maçon</option>
-    <option>Menuisier</option>
-    <option>Peintre</option>
-    <option>Climatisation</option>
-    <option>Coiffeur / Beauté</option>
-    <option>Couturier</option>
-    <option>Mécanicien</option>
-    <option>Photographe</option>
-    <option>Livreur</option>
-    <option>Immobilier</option>
-    <option>Autre</option>
-  </select>
+  <!-- SUPPRIMÉ : Catégorie / Métier ne doit pas exister ici -->
   <label>WhatsApp</label>
   <input id="whatsapp" disabled>
   <label>Quartier</label>
@@ -197,8 +177,8 @@ let fichierPhotoChoisi = null;
 
 function esc(v){ return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function setDisabled(dis){
-  // type_compte volontairement RETIRÉ : jamais modifiable, il reste toujours disabled
-  ['nom','categorie_prestataire','whatsapp','quartier','ville','pays','description_profil','photo_profil_file'].forEach(id=>{
+  // type_compte : jamais modifiable | categorie_prestataire : supprimée
+  ['nom','whatsapp','quartier','ville','pays','description_profil','photo_profil_file'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.disabled = dis;
   });
 }
@@ -236,7 +216,6 @@ document.addEventListener('DOMContentLoaded', () => {
 async function uploaderPhotoProfil(){
   if(!fichierPhotoChoisi) return document.getElementById('photo_profil_url').value || null;
   const nomFichier = userId + '/profil-' + Date.now() + '-' + fichierPhotoChoisi.name.replace(/\s+/g,'-');
-  // CORRIGÉ : bucket "annonces" qui existe déjà chez toi, pas "photos"
   const { error: errUpload } = await sb.storage.from('annonces').upload(nomFichier, fichierPhotoChoisi, { upsert: true, contentType: fichierPhotoChoisi.type });
   if(errUpload) throw errUpload;
   const { data } = sb.storage.from('annonces').getPublicUrl(nomFichier);
@@ -253,7 +232,7 @@ async function chargerProfil(){
   const {data:{user}} = await sb.auth.getUser();
   if(!user){ window.location.href='connexion.html'; return; }
   userId = user.id;
-  const {data: p, error: errP} = await sb.from('profiles').select('id, nom, nom_entreprise, type_compte, type_fournisseur, categorie_prestataire, whatsapp, quartier, ville, pays, description_profil, photo_profil_url, photo_piece_url, photo_atelier_url, quartier_verifie, verification_quartier, statut_validation, message_entreprise, message_expire_at').eq('id', userId).single();
+  const {data: p, error: errP} = await sb.from('profiles').select('id, nom, nom_entreprise, type_compte, type_fournisseur, whatsapp, quartier, ville, pays, description_profil, photo_profil_url, photo_piece_url, photo_atelier_url, quartier_verifie, verification_quartier, statut_validation, message_entreprise, message_expire_at').eq('id', userId).single();
   if(errP){
     document.getElementById('nomAffiche').textContent = 'Erreur : ' + errP.message;
     document.getElementById('msg').textContent = '❌ ' + errP.message;
@@ -291,10 +270,8 @@ async function chargerProfil(){
   else if(['prestataire','professionnel','entreprise','livreur','fournisseur','pro'].includes(monRole)){ btnDash.textContent='📊 Aller à mon Dashboard Prestataire →'; btnDash.onclick=()=>window.location.href='dashboard-prestataire.html'; btnDash.style.display='block'; }
   else if(monRole==='client'){ btnDash.textContent='📊 Aller à mes commandes →'; btnDash.onclick=()=>window.location.href='dashboard-client.html'; btnDash.style.display='block'; }
   document.getElementById('nom').value = p.nom || p.nom_entreprise || "";
-  // Affichage seulement, pas de modification
   const libelleType = { client:'Client', prestataire:'Prestataire / Fournisseur', professionnel:'Professionnel seul', entreprise:'Entreprise', livreur:'Livreur', admin:'Admin - Rocyinter', fournisseur:'Fournisseur' };
   document.getElementById('type_compte').value = libelleType[monRole] || p.type_compte || "";
-  document.getElementById('categorie_prestataire').value = p.categorie_prestataire || "";
   document.getElementById('whatsapp').value = p.whatsapp || "";
   document.getElementById('quartier').value = p.quartier || "";
   document.getElementById('ville').value = p.ville || "";
@@ -310,7 +287,8 @@ async function chargerProfil(){
   else if(monRole==='client') labelType = '🛒 Client';
   else if(monRole==='admin') labelType = '🛡️ Admin';
   else labelType = '💼 Fournisseur';
-  document.getElementById('catAffiche').textContent = labelType + (p.categorie_prestataire ? ' • ' + p.categorie_prestataire : '');
+  // Plus de catégorie affichée, juste le type
+  document.getElementById('catAffiche').textContent = labelType;
   document.getElementById('lieuAffiche').textContent = "📍 " + (p.quartier || "") + " - " + (p.ville || "") + " - " + (p.pays || "");
   if(p.photo_profil_url) document.getElementById('photoPreview').src = p.photo_profil_url;
   if(p.photo_piece_url) document.getElementById('imgPiece').src = p.photo_piece_url;
@@ -379,8 +357,7 @@ async function sauvegarder(){
   const updates = {
     nom: nomVal,
     nom_entreprise: nomVal,
-    // type_compte NE PAS METTRE ICI : sinon quelqu'un peut devenir admin
-    categorie_prestataire: document.getElementById('categorie_prestataire').value || null,
+    // type_compte : jamais envoyé | categorie_prestataire : supprimée
     whatsapp: document.getElementById('whatsapp').value.trim(),
     quartier: document.getElementById('quartier').value,
     ville: document.getElementById('ville').value.trim(),
