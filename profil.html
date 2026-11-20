@@ -65,15 +65,10 @@ textarea{height:80px;resize:none}
   <div id="msg"></div>
   <label>Nom de la personne OU Nom Hôtel / Restaurant / Entreprise</label>
   <input id="nom" disabled>
-  <label>Type de compte</label>
-  <select id="type_compte" disabled>
-    <option value="client">Client - Je cherche un service</option>
-    <option value="prestataire">Prestataire / Fournisseur - Je propose un service</option>
-    <option value="professionnel">Professionnel seul - Je travaille seul</option>
-    <option value="entreprise">Entreprise - Hôtel / Restaurant / Société</option>
-    <option value="livreur">Livreur</option>
-    <option value="admin">Admin - Rocyinter</option>
-  </select>
+  <!-- CORRIGÉ : Type de compte BLOQUÉ, jamais modifiable, plus de select avec Admin -->
+  <label>Type de compte (non modifiable)</label>
+  <input id="type_compte" disabled style="background:#f1f5f9;color:#334155;font-weight:700">
+  <p style="font-size:12px;color:#64748b">Ton type de compte ne change pas ici. Pour devenir fournisseur, utilise le bouton "Devenir fournisseur" sur l'accueil.</p>
   <label>Catégorie / Métier</label>
   <select id="categorie_prestataire" disabled>
     <option value="">-- Choisir --</option>
@@ -143,7 +138,6 @@ textarea{height:80px;resize:none}
   <input id="ville" disabled>
   <label>Pays</label>
   <input id="pays" disabled>
-  <!-- CORRIGÉ : choix depuis le téléphone, plus de lien à coller -->
   <label>Photo de profil / Logo entreprise</label>
   <input type="file" id="photo_profil_file" accept="image/*" disabled style="padding:10px;background:#fff">
   <p id="photoFileInfo" style="font-size:12px;color:#64748b">Choisis une photo depuis ton téléphone. Elle sera envoyée automatiquement quand tu cliques sur Enregistrer.</p>
@@ -203,7 +197,8 @@ let fichierPhotoChoisi = null;
 
 function esc(v){ return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function setDisabled(dis){
-  ['nom','type_compte','categorie_prestataire','whatsapp','quartier','ville','pays','description_profil','photo_profil_file'].forEach(id=>{
+  // type_compte volontairement RETIRÉ : jamais modifiable, il reste toujours disabled
+  ['nom','categorie_prestataire','whatsapp','quartier','ville','pays','description_profil','photo_profil_file'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.disabled = dis;
   });
 }
@@ -222,7 +217,6 @@ function annulerModif(){
   document.getElementById('photoFileInfo').style.color = "#64748b";
   chargerProfil();
 }
-// Choix photo depuis téléphone + aperçu immédiat
 document.addEventListener('DOMContentLoaded', () => {
   const inputFile = document.getElementById('photo_profil_file');
   if(inputFile){
@@ -242,9 +236,10 @@ document.addEventListener('DOMContentLoaded', () => {
 async function uploaderPhotoProfil(){
   if(!fichierPhotoChoisi) return document.getElementById('photo_profil_url').value || null;
   const nomFichier = userId + '/profil-' + Date.now() + '-' + fichierPhotoChoisi.name.replace(/\s+/g,'-');
-  const { error: errUpload } = await sb.storage.from('photos').upload(nomFichier, fichierPhotoChoisi, { upsert: true, contentType: fichierPhotoChoisi.type });
+  // CORRIGÉ : bucket "annonces" qui existe déjà chez toi, pas "photos"
+  const { error: errUpload } = await sb.storage.from('annonces').upload(nomFichier, fichierPhotoChoisi, { upsert: true, contentType: fichierPhotoChoisi.type });
   if(errUpload) throw errUpload;
-  const { data } = sb.storage.from('photos').getPublicUrl(nomFichier);
+  const { data } = sb.storage.from('annonces').getPublicUrl(nomFichier);
   return data.publicUrl;
 }
 async function chargerProfil(){
@@ -296,7 +291,9 @@ async function chargerProfil(){
   else if(['prestataire','professionnel','entreprise','livreur','fournisseur','pro'].includes(monRole)){ btnDash.textContent='📊 Aller à mon Dashboard Prestataire →'; btnDash.onclick=()=>window.location.href='dashboard-prestataire.html'; btnDash.style.display='block'; }
   else if(monRole==='client'){ btnDash.textContent='📊 Aller à mes commandes →'; btnDash.onclick=()=>window.location.href='dashboard-client.html'; btnDash.style.display='block'; }
   document.getElementById('nom').value = p.nom || p.nom_entreprise || "";
-  document.getElementById('type_compte').value = p.type_compte || "prestataire";
+  // Affichage seulement, pas de modification
+  const libelleType = { client:'Client', prestataire:'Prestataire / Fournisseur', professionnel:'Professionnel seul', entreprise:'Entreprise', livreur:'Livreur', admin:'Admin - Rocyinter', fournisseur:'Fournisseur' };
+  document.getElementById('type_compte').value = libelleType[monRole] || p.type_compte || "";
   document.getElementById('categorie_prestataire').value = p.categorie_prestataire || "";
   document.getElementById('whatsapp').value = p.whatsapp || "";
   document.getElementById('quartier').value = p.quartier || "";
@@ -366,7 +363,6 @@ async function sauvegarder(){
   msg.textContent = "Enregistrement..."; msg.style.color = "#f59e0b";
   const nomVal = document.getElementById('nom').value.trim();
   if(!nomVal){ msg.textContent = "❌ Mets ton nom"; msg.style.color="red"; return; }
-  // Si une nouvelle photo a été choisie depuis le téléphone, on l'envoie d'abord
   let urlPhotoFinale = document.getElementById('photo_profil_url').value.trim() || null;
   if(fichierPhotoChoisi){
     try{
@@ -375,7 +371,7 @@ async function sauvegarder(){
       document.getElementById('photo_profil_url').value = urlPhotoFinale;
       fichierPhotoChoisi = null;
     }catch(e){
-      msg.textContent = "❌ Photo non envoyée : " + e.message + " - Vérifie que tu as créé le bucket 'photos' dans Supabase.";
+      msg.textContent = "❌ Photo non envoyée : " + e.message + " - Vérifie le bucket 'annonces' dans Supabase.";
       msg.style.color = "red";
       return;
     }
@@ -383,7 +379,7 @@ async function sauvegarder(){
   const updates = {
     nom: nomVal,
     nom_entreprise: nomVal,
-    type_compte: document.getElementById('type_compte').value,
+    // type_compte NE PAS METTRE ICI : sinon quelqu'un peut devenir admin
     categorie_prestataire: document.getElementById('categorie_prestataire').value || null,
     whatsapp: document.getElementById('whatsapp').value.trim(),
     quartier: document.getElementById('quartier').value,
