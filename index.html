@@ -48,9 +48,6 @@ h1,h2,h3{font-family:'Plus Jakarta Sans','Inter',sans-serif;letter-spacing:-0.02
 .bandeau-visiteur{background:#fef3c7;color:#92400e}
 .bandeau-client{background:#dcfce7;color:#166534}
 .bandeau-presta{background:#dbeafe;color:#1e40af}
-/* === INFO DU JOUR - COULEUR MONDIALE CORRIGÉE === */
-/* Avant : jaune pâle + marron = site local */
-/* Après : bleu nuit premium + blanc + doré = Airbnb / Booking / Uber */
 .ticker{background:#0f172a;border:1px solid #1e293b;margin:0 16px 16px;border-radius:14px;overflow:hidden;display:none;box-shadow:0 4px 18px rgba(15,23,42,.18)}
 .ticker-inner{display:flex;gap:36px;white-space:nowrap;padding:12px 14px;font-size:13.5px;font-weight:500;color:#e2e8f0;animation:defile 32s linear infinite;width:max-content}
 .ticker-inner b{color:#fff;font-weight:700}
@@ -65,6 +62,9 @@ h1,h2,h3{font-family:'Plus Jakarta Sans','Inter',sans-serif;letter-spacing:-0.02
 .rail{display:flex;gap:12px;overflow-x:auto;padding-bottom:4px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
 .rail .card{min-width:260px;max-width:260px;scroll-snap-align:start;flex-shrink:0}
 .rail .card img{height:140px}
+.dots{display:flex;gap:5px;justify-content:center;margin-top:8px}
+.dots span{width:6px;height:6px;border-radius:50%;background:#e2e8f0}
+.dots span.on{background:#f59e0b;width:18px;border-radius:99px}
 </style>
 </head>
 <body>
@@ -107,6 +107,9 @@ let sb = window.supabaseClient || null;
 try{ if(!sb){ sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } window.supabaseClient = sb; }catch(e){}
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let moiId=''; let monRole='';
+let profilsMapGlobal = {};
+let indexRotation = {};
+let rotationTimer = null;
 const heroPhrases = [
   { titre: 'Tout ce dont vous avez besoin, <span>près de chez vous,</span> en toute sécurité.', sous: 'Chambre, restaurant, plombier, DJ, livreur, maison... Des pros vérifiés dans votre quartier.' },
   { titre: 'Vous arrivez au Bénin ? <span>Votre séjour est déjà prêt.</span>', sous: 'Hôtel, chambre, appartement, location voiture. Réservez avant d\'arriver, avec des hôtes vérifiés.' },
@@ -179,20 +182,16 @@ async function afficherBandeauRole(){
     box.innerHTML = `<div class="bandeau-role bandeau-client">🛒 ${esc(t('bandeauClient'))}</div>`;
   }
 }
-// === CORRIGÉ : Lecture publique infos_du_jour + Couleur mondiale ===
-// Tout le monde voit : visiteur, client, admin, vendeur. Avant le choix du pays.
 async function chargerInfosEntreprises(){
   const box=document.getElementById('tickerInfos'); const inner=document.getElementById('tickerInner');
   if(!box||!inner) return;
   try{
-    // 1. NOUVEAU : table publique, lisible même déconnecté
     const {data, error} = await sb.from('infos_du_jour')
       .select('nom_entreprise, message, expire_at, created_at')
       .gt('expire_at', new Date().toISOString())
       .order('created_at', {ascending:false})
       .limit(30);
     if(!error && data && data.length){
-      // Admin / Rocyinter en premier
       const tries = [...data].sort((a,b)=>{
         const aAdmin = String(a.nom_entreprise||'').toLowerCase().includes('rocyinter') ? 0 : 1;
         const bAdmin = String(b.nom_entreprise||'').toLowerCase().includes('rocyinter') ? 0 : 1;
@@ -207,7 +206,6 @@ async function chargerInfosEntreprises(){
       box.style.display='block';
       return;
     }
-    // 2. SECOURS : si table pas encore créée, ancien système profiles
     const {data: old, error: errOld} = await sb.from('profiles')
       .select('nom,nom_entreprise,message_entreprise,message_expire_at,type_compte,type_fournisseur')
       .not('message_entreprise','is',null).neq('message_entreprise','')
@@ -242,18 +240,93 @@ const BLOCS_UNIVERS=[
   {univers:'pro',titre:'💼 Pros',page:'services-pro.html'},
   {univers:'domicile',titre:'🏠 Domicile',page:'services-domicile.html'},
 ];
-function carteAnnonce(a,noms){
-  const t = window.rocyT || (k=>k);
-  const img = a.photo_url || 'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&q=80';
-  const prestaId = a.prestataire_id || '';
-  const nom = noms[prestaId] || 'Prestataire';
-  const lieu = [a.localite || a.quartier, a.ville, a.pays].filter(Boolean).join(' - ');
-  const prixVal = Number(a.prix_indicatif ?? 0) || 0;
-  const isFixe = a.prix_fixe === true || a.prix_fixe === 'true';
-  const prixTxt = isFixe ? `${window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal+' '+(a.devise||'FCFA')} - ${t('prixFixe')}` : (prixVal>0 ? `${t('aPartir')} ${window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal+' '+(a.devise||'FCFA')}` : t('prixDiscuter'));
-  const cestMoi = prestaId && moiId && String(prestaId)===String(moiId);
-  const btnChat = cestMoi ? `<button type="button" class="btn-mine" disabled>C'est ton annonce</button>` : `<button type="button" class="btn-chat" onclick="allerChat('${esc(prestaId)}','${esc(a.id)}')">${esc(t('discuter'))}</button>`;
-  return `<div class="card"><img src="${esc(img)}" onclick="voirProfil('${esc(prestaId)}')" style="cursor:pointer" onerror="this.src='https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&q=80'"><div class="card-body"><span class="badge">${esc(a.univers)} • ${esc(a.categorie)}</span><h3 style="margin-top:8px">${esc(a.titre)}</h3><p>📍 ${esc(lieu)} • 👤 ${esc(nom)}</p><p>${esc((a.description||'').slice(0,90))}...</p><div class="price">${esc(prixTxt)}</div><div class="card-actions">${btnChat}<button type="button" class="btn-voir" onclick="voirProfil('${esc(prestaId)}')">${esc(t('voirEntreprise'))}</button></div></div></div>`;
+// === N°7 : Grouper par entreprise ===
+function grouperParEntreprise(liste){
+  const map = {};
+  liste.forEach(a=>{
+    const pid = a.prestataire_id || 'sans-'+a.id;
+    if(!map[pid]) map[pid] = { prestataire_id: pid, presta: profilsMapGlobal[pid] || {}, annonces: [] };
+    map[pid].annonces.push(a);
+  });
+  return Object.values(map);
+}
+// === N°7 : Carte ENTREPRISE seulement, jamais le produit ===
+function carteEntreprise(groupe, univers){
+  const presta = groupe.presta || {};
+  const annonces = groupe.annonces || [];
+  const premiere = annonces[0] || {};
+  const photos = [];
+  if(presta.photo_profil_url) photos.push(presta.photo_profil_url);
+  annonces.forEach(a=>{ if(a.photo_url) photos.push(a.photo_url); });
+  const imgDefaut = photos[0] || 'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&q=80';
+  const nom = presta.nom_entreprise || presta.nom || premiere.titre || 'Entreprise';
+  const lieu = [presta.pays || premiere.pays, presta.ville || premiere.ville, presta.quartier || premiere.localite || premiere.quartier].filter(Boolean).join(' - ');
+  const desc = (presta.description_profil || premiere.description || '').slice(0,100);
+  const nb = annonces.length;
+  const isSejour = String(univers||'').toLowerCase()==='sejour';
+  const isManger = String(univers||'').toLowerCase()==='manger';
+  let sousInfo = '';
+  if(isSejour) sousInfo = `🛏️ ${nb} chambre${nb>1?'s':''}`;
+  else if(isManger) sousInfo = `🍽️ ${nb} plat${nb>1?'s':''}`;
+  else sousInfo = `📦 ${nb} offre${nb>1?'s':''}`;
+  const photosAttr = esc(JSON.stringify(photos));
+  return `<div class="card"><img src="${esc(imgDefaut)}" data-photos="${photosAttr}" data-idx="0" class="img-entreprise" onclick="voirProfil('${esc(groupe.prestataire_id)}')" style="cursor:pointer" onerror="this.src='https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&q=80'"><div class="card-body"><span class="badge">${esc(premiere.univers||univers)} ${presta.quartier_verifie ? '• ✅ Vérifié' : ''}</span><h3 style="margin-top:8px">🏢 ${esc(nom)}</h3><p>🌍 ${esc(lieu)}<br><small>${sousInfo}</small></p><p>${esc(desc)}...</p><div class="card-actions"><button type="button" class="btn-chat" onclick="voirProfil('${esc(groupe.prestataire_id)}')">Voir l'entreprise →</button></div></div></div>`;
+}
+// === Photo entreprise qui défile : chambre 1, chambre 2... toutes les 2 secondes ===
+function lancerDiaporama(){
+  setInterval(()=>{
+    document.querySelectorAll('.img-entreprise').forEach(img=>{
+      try{
+        const photos = JSON.parse(img.getAttribute('data-photos') || '[]');
+        if(photos.length <= 1) return;
+        let idx = Number(img.getAttribute('data-idx') || 0);
+        idx = (idx + 1) % photos.length;
+        img.setAttribute('data-idx', idx);
+        img.src = photos[idx];
+      }catch(e){}
+    });
+  }, 2000);
+}
+lancerDiaporama();
+// === N°8 : Affichage 4 par 4 en boucle ===
+function afficherBloc(b, filtres){
+  const list = filtres.filter(a=>String(a.univers||'').toLowerCase()===b.univers);
+  if(!list.length) return '';
+  const groupes = grouperParEntreprise(list);
+  if(indexRotation[b.univers]===undefined) indexRotation[b.univers]=0;
+  if(indexRotation[b.univers] >= groupes.length) indexRotation[b.univers]=0;
+  const start = indexRotation[b.univers];
+  let page = groupes.slice(start, start+4);
+  if(page.length < 4 && groupes.length > 4) page = page.concat(groupes.slice(0, 4 - page.length));
+  const nbPages = Math.max(1, Math.ceil(groupes.length/4));
+  const pageActuelle = Math.floor(start/4) % nbPages;
+  let dots = '';
+  for(let i=0;i<nbPages;i++) dots += `<span class="${i===pageActuelle?'on':''}"></span>`;
+  const html = page.map(g=>carteEntreprise(g, b.univers)).join('');
+  return `<div class="bloc-univers"><div class="bloc-univers-head"><h3>${b.titre}</h3><a href="${b.page}">Voir tout →</a></div><div class="rail">${html}</div><div class="dots">${dots}</div></div>`;
+}
+let dernierFiltres = [];
+function lancerRotation(){
+  if(rotationTimer) clearInterval(rotationTimer);
+  rotationTimer = setInterval(()=>{
+    const search = document.getElementById('filtreSearch').value.trim();
+    const pays = document.getElementById('filtrePays').value;
+    const ville = document.getElementById('filtreVille').value;
+    const quartier = document.getElementById('filtreQuartier').value;
+    if(search || pays || ville || quartier) return;
+    if(!dernierFiltres.length) return;
+    BLOCS_UNIVERS.forEach(b=>{
+      const groupes = grouperParEntreprise(dernierFiltres.filter(a=>String(a.univers||'').toLowerCase()===b.univers));
+      if(groupes.length <= 4) return;
+      indexRotation[b.univers] = (indexRotation[b.univers]||0) + 4;
+      if(indexRotation[b.univers] >= groupes.length) indexRotation[b.univers]=0;
+    });
+    const box = document.getElementById('listeAnnonces');
+    if(!box) return;
+    document.getElementById('titreSection').textContent='Découvrir';
+    box.className='';
+    box.innerHTML = BLOCS_UNIVERS.map(b=>afficherBloc(b, dernierFiltres)).join('');
+  }, 6000);
 }
 async function chargerAnnonces(){
   const box = document.getElementById('listeAnnonces'); if(!box) return;
@@ -272,8 +345,8 @@ async function chargerAnnonces(){
     let noms = {};
     const ids = [...new Set((data||[]).map(a=>a.prestataire_id).filter(Boolean))];
     if(ids.length){
-      const {data: profs} = await sb.from('profiles').select('id, nom, nom_entreprise').in('id', ids);
-      (profs||[]).forEach(p=> noms[p.id] = p.nom_entreprise || p.nom);
+      const {data: profs} = await sb.from('profiles').select('id, nom, nom_entreprise, photo_profil_url, description_profil, quartier, ville, pays, quartier_verifie, categorie_prestataire, type_compte, type_fournisseur').in('id', ids);
+      (profs||[]).forEach(p=>{ noms[p.id] = p.nom_entreprise || p.nom; profilsMapGlobal[p.id]=p; });
     }
     let filtres = (data || []).filter(a => {
       const s = String(a.status || '').toLowerCase().trim();
@@ -291,16 +364,15 @@ async function chargerAnnonces(){
     if(enRecherche){
       document.getElementById('titreSection').textContent='Résultats';
       box.className='grid';
-      box.innerHTML = filtres.map(a=>carteAnnonce(a,noms)).join('');
+      const groupes = grouperParEntreprise(filtres);
+      box.innerHTML = groupes.map(g=>carteEntreprise(g, g.annonces[0]?.univers || '')).join('');
       return;
     }
+    dernierFiltres = filtres;
     document.getElementById('titreSection').textContent='Découvrir';
     box.className='';
-    box.innerHTML = BLOCS_UNIVERS.map(b=>{
-      const list = filtres.filter(a=>String(a.univers||'').toLowerCase()===b.univers).slice(0,4);
-      if(!list.length) return '';
-      return `<div class="bloc-univers"><div class="bloc-univers-head"><h3>${b.titre}</h3><a href="${b.page}">Voir tout →</a></div><div class="rail">${list.map(a=>carteAnnonce(a,noms)).join('')}</div></div>`;
-    }).join('') || `<div class="empty"><b>${esc(t('aucuneTitre'))}</b>${esc(t('aucuneSous'))}</div>`;
+    box.innerHTML = BLOCS_UNIVERS.map(b=>afficherBloc(b, filtres)).join('') || `<div class="empty"><b>${esc(t('aucuneTitre'))}</b>${esc(t('aucuneSous'))}</div>`;
+    lancerRotation();
   }catch(e){
     console.log('ROCY index erreur annonces:', e);
     box.innerHTML = `<div class="empty"><b>Annonces non chargées</b><br><small>${esc(e.message || e)}</small><br><br><button type="button" class="btn" onclick="chargerAnnonces()">${esc(t('reessayer'))}</button></div>`;
