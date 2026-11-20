@@ -67,20 +67,18 @@ let sb = window.supabaseClient || null;
 if(!sb && window.supabase && window.supabase.createClient){
   try{ sb = window.supabase.createClient("https://gdwgjsloivrpxxvggxyz.supabase.co", "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF"); window.supabaseClient = sb; }catch(e){}
 }
-let photoPiece='', photoAtelier='';
+// CORRIGÉ : on garde les FICHIERS, pas du base64
+let filePiece = null, fileAtelier = null;
 let userId = localStorage.getItem('rocy_user_id') || '';
 const QUARTIERS = ["Godomey","Calavi Centre","Ouèdo","Akassato","Hêvié","Togba","Zinvié","Kpanroun","Glo-Djigbé","Fidjrossè","Agla","Akpakpa","Ganhi","Gbégamey","Jéricho","Kindonou","Mènontin","Sainte-Cécile","St Michel","Vodjè","Wologuèdè","Zongo","Avakpa","Dowa","Houinmè","Oganla","Ouando","Tokpota","Pahou","Savi","Albarika","Banikanni","Titirou","Sodohomè","Passagon"];
 function showMsg(txt, ok){ const m=document.getElementById('msg'); m.textContent=txt; m.className='msg '+(ok?'ok':'err'); m.style.display='block'; }
 function previewImg(input, imgId, boxId){
   const f=input.files[0]; if(!f) return;
   if(f.size > 2*1024*1024){ showMsg('Photo trop lourde, max 2 Mo', false); input.value=''; return; }
-  const r=new FileReader();
-  r.onload=function(e){
-    document.getElementById(imgId).src=e.target.result;
-    document.getElementById(boxId).classList.add('hasImg');
-    if(imgId==='prevPiece') photoPiece=e.target.result; else photoAtelier=e.target.result;
-  };
-  r.readAsDataURL(f);
+  // Aperçu local seulement, on ne stocke pas le base64 en base
+  document.getElementById(imgId).src = URL.createObjectURL(f);
+  document.getElementById(boxId).classList.add('hasImg');
+  if(imgId==='prevPiece') filePiece = f; else fileAtelier = f;
 }
 async function getUserId(){
   if(userId) return userId;
@@ -125,12 +123,28 @@ async function chargerProfil(){
 async function envoyerVerification(){
   const quartier = document.getElementById('quartier').value.trim();
   if(!quartier){ showMsg('Mets ton quartier, ex: Godomey', false); return; }
-  if(!photoPiece || !photoAtelier){ showMsg('Envoie les 2 photos : pièce + atelier', false); return; }
+  if(!filePiece || !fileAtelier){ showMsg('Envoie les 2 photos : pièce + atelier', false); return; }
   const btn=document.getElementById('btnEnvoyer'); btn.disabled=true; btn.textContent='Envoi...';
   try{
     const uid = await getUserId();
     if(!sb || !uid){ showMsg('Connecte-toi d\'abord sur Connexion', false); btn.disabled=false; btn.textContent='Envoyer pour vérification →'; return; }
-    const payload = { quartier: quartier, verification_quartier: 'en_attente', quartier_verifie: false, photo_piece_url: photoPiece, photo_atelier_url: photoAtelier };
+
+    // 1. Atelier -> bucket PUBLIC "annonces" (les clients peuvent la voir, c'est normal)
+    const nomAtelier = uid + '/atelier-' + Date.now() + '-' + fileAtelier.name.replace(/\s+/g,'-');
+    const { error: errAtelier } = await sb.storage.from('annonces').upload(nomAtelier, fileAtelier, { upsert:true, contentType: fileAtelier.type });
+    if(errAtelier) throw new Error('Photo atelier : ' + errAtelier.message);
+    const { data: urlAtelier } = sb.storage.from('annonces').getPublicUrl(nomAtelier);
+
+    // 2. Pièce -> bucket PRIVÉ "verification-privee" (seul l'admin doit voir)
+    const nomPiece = uid + '/piece-' + Date.now() + '-' + filePiece.name.replace(/\s+/g,'-');
+    let urlPiece = nomPiece; // on stocke le chemin, pas l'URL publique
+    const { error: errPiece } = await sb.storage.from('verification-privee').upload(nomPiece, filePiece, { upsert:true, contentType: filePiece.type });
+    if(errPiece){
+      // Si tu n'as pas encore créé le bucket privé, on te le dit clairement au lieu de mettre la pièce en public
+      throw new Error("Crée le bucket privé 'verification-privee' dans Supabase (Public = NON), puis réessaie. Erreur : " + errPiece.message);
+    }
+
+    const payload = { quartier: quartier, verification_quartier: 'en_attente', quartier_verifie: false, photo_piece_url: urlPiece, photo_atelier_url: urlAtelier.publicUrl };
     const {error} = await sb.from('profiles').update(payload).eq('id', uid);
     if(error){ showMsg('Erreur : '+error.message, false); btn.disabled=false; btn.textContent='Envoyer pour vérification →'; return; }
     localStorage.setItem('rocy_user_localite', quartier);
