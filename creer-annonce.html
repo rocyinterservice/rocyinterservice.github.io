@@ -30,12 +30,18 @@ textarea{min-height:90px;resize:vertical}
 .btn{background:#f59e0b;color:#000;border:none;padding:14px;border-radius:12px;font-weight:800;cursor:pointer;font-size:15px;width:100%}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .btn-dark{background:#0f172a;color:#fff}
+.btn-second{background:#fff;color:#0f172a;border:2px solid #0f172a}
 .msg{text-align:center;font-size:13px;padding:10px;border-radius:10px;display:none}
 .msg.ok{display:block;background:#dcfce7;color:#166534}
 .msg.err{display:block;background:#fee2e2;color:#991b1b}
 small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:8px;line-height:1.5}
 .bloc-immo{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:12px;display:none;gap:12px}
 .bloc-comp{background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:12px;display:none;gap:12px}
+.photos-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px}
+.photos-grid .ph{position:relative;border-radius:10px;overflow:hidden;background:#e2e8f0;height:90px}
+.photos-grid .ph img{width:100%;height:100%;object-fit:cover}
+.photos-grid .ph button{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:none;background:#ef4444;color:#fff;font-weight:800;cursor:pointer;font-size:12px;line-height:1}
+.photos-grid .ph span{position:absolute;left:4px;bottom:4px;background:rgba(0,0,0,.65);color:#fff;font-size:10px;padding:2px 6px;border-radius:99px}
 </style>
 </head>
 <body>
@@ -122,14 +128,17 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:8p
   </div>
   <div><label data-i18n="localite">LOCALITÉ / QUARTIER *</label><input id="localite" placeholder="Ex: Godomey, Calavi Centre, Fidjrossè..." maxlength="80"></div>
   <div>
-    <label>📸 PHOTO (depuis ton téléphone)</label>
+    <label id="labelPhoto">📸 PHOTO (depuis ton téléphone)</label>
     <input id="photoFile" type="file" accept="image/*">
+    <input id="photoFileMultiple" type="file" accept="image/*" multiple style="display:none">
+    <div id="photosPreview" class="photos-grid"></div>
     <img id="previewPhoto" style="display:none;width:100%;border-radius:10px;margin-top:8px;max-height:200px;object-fit:cover">
-    <small style="text-align:left">Choisis une photo dans ta galerie. Elle sera envoyée automatiquement.</small>
+    <small id="aidePhoto" style="text-align:left">Choisis une photo dans ta galerie. Elle sera envoyée automatiquement.</small>
   </div>
   </div>
   <div id="msg" class="msg"></div>
-  <button class="btn" id="btnPublier" onclick="publier()" style="display:none">Publier mon annonce →</button>
+  <button class="btn" id="btnPublier" onclick="publier(false)" style="display:none">Publier mon annonce →</button>
+  <button class="btn btn-second" id="btnPublierAutrePlat" onclick="publier(true)" style="display:none;margin-top:8px">+ Publier et ajouter un autre plat</button>
   <small>⚠️ Annonce en attente de validation. Abonnement à jour obligatoire pour publier. Commissions dues dès la 1ère mission.</small>
 </div>
 </div>
@@ -139,6 +148,7 @@ const SUPABASE_KEY="sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 window.supabaseClient = sb;
 let prixFixe=false, mesActivites=[], universChoisi="", abonnementAJour=false, profilFournisseur=null, uidActuel=null, photoFileChoisi=null;
+let photosChoisies = [];
 const infosCommission={manger:"🍽️ <b>Manger : 12%</b> - Le client voit ton menu, il commande, tu livres.",domicile:"🏠 <b>Domicile : 8%</b> - Tu reçois 92%",pro:"💼 <b>Pro : 5 000 FCFA fixe</b>",sejour:"✈️ <b>Séjour : 12% par nuit</b>",evenement:"🎉 <b>Évènement : 12%</b> - prélevée à la libération. Devis dans le chat.",immobilier:"🏘️ <b>Immobilier :</b> Visite 2 000 FCFA pour Rocyinter, non remboursable. Parcelle 2% plafonné 200 000 FCFA. Location 50% d'un mois. Le bien disparaît quand il est payé.",livreur:"🛵 <b>Livreur 80% / Rocyinter 20%</b>"};
 function universPourCategorie(cat){
   const manger=['Traiteur','Restaurant','Restaurant / Maquis','Livraison repas','Pâtisserie','Jus / Boissons','Traiteur Évènement'];
@@ -169,7 +179,7 @@ function majExemples(){
   if(!u && !cat){ titre.placeholder='Ex: Décrivez votre service en quelques mots'; desc.placeholder='Ex: Décrivez votre service...'; return; }
   if(u==='manger' || cat.includes('restaurant')){ titre.placeholder='Ex: Poulet braisé + Attiéké à Cotonou'; desc.placeholder='Ex: Restaurant à Fidjrossè depuis 3 ans. Poulet braisé, poisson, attiéké. Ouvert 11h à 23h. Livraison disponible...'; }
   else if(u==='sejour' && cat.includes('guide')){ titre.placeholder='Ex: Guide Ouidah - Visite historique 4h'; desc.placeholder='Ex: Guide à Ouidah depuis 5 ans. Je parle Français, Fon, Anglais. Visite de la Route des Esclaves...'; }
-  else if(u==='sejour'){ titre.placeholder='Ex: Chambre climatisée à Cotonou - 15 000 FCFA / nuit'; desc.placeholder='Ex: Hôtel à Fidjrossè, 10 chambres climatisées, wifi, petit-déjeuner inclus...'; }
+  else if(u==='sejour'){ titre.placeholder='Ex: Hôtel Le Soleil à Cotonou - 15 000 FCFA / nuit'; desc.placeholder='Ex: Hôtel à Fidjrossè, 10 chambres climatisées, wifi, petit-déjeuner inclus...'; }
   else if(u==='livreur'){ titre.placeholder='Ex: Livraison rapide Moto à Cotonou'; desc.placeholder='Ex: Livreur moto à Cotonou depuis 2 ans, disponible 7j/7, livraison en 30 min...'; }
   else if(u==='immobilier'){ titre.placeholder='Ex: Appartement 2 chambres à Calavi'; desc.placeholder='Ex: Appartement neuf à Calavi, 2 chambres, salon, cuisine, proche goudron...'; }
   else if(u==='pro'){ titre.placeholder='Ex: Développeur Web - Site vitrine en 7 jours'; desc.placeholder='Ex: Développeur depuis 4 ans. Sites web, boutiques en ligne. Travail à distance possible...'; }
@@ -205,15 +215,58 @@ function resetAffichageNeutre(){
   document.getElementById('btnDiscuter').style.display='';
   document.getElementById('blocFormulaire').style.display='none';
   document.getElementById('btnPublier').style.display='none';
+  document.getElementById('btnPublierAutrePlat').style.display='none';
   ['Evenement','Manger','Sejour','Domicile','Livreur','Pro','Guide'].forEach(k=>{ const el=document.getElementById('comp'+k); if(el) el.style.display='none'; });
   setPrixType(false);
   majExemples();
 }
+function majBlocPhoto(){
+  const isSejour = universChoisi==='sejour';
+  const isManger = universChoisi==='manger';
+  const label = document.getElementById('labelPhoto');
+  const aide = document.getElementById('aidePhoto');
+  const inputSimple = document.getElementById('photoFile');
+  const inputMulti = document.getElementById('photoFileMultiple');
+  const btnAutre = document.getElementById('btnPublierAutrePlat');
+  if(isSejour){
+    label.textContent = '📸 PHOTOS DE TON HÔTEL - Plusieurs photos (1 seule publication)';
+    aide.textContent = 'Choisis plusieurs photos d\'un coup : chambre, piscine, entrée... Max 10 photos. Elles défileront sur Index.';
+    inputSimple.style.display='none';
+    inputMulti.style.display='block';
+    btnAutre.style.display='none';
+  } else if(isManger){
+    label.textContent = '📸 PHOTO DU PLAT - 1 seule photo par plat';
+    aide.textContent = '1 plat = 1 photo. Après, clique sur "+ Publier et ajouter un autre plat" pour publier vite le plat suivant.';
+    inputSimple.style.display='block';
+    inputMulti.style.display='none';
+    btnAutre.style.display = document.getElementById('blocFormulaire').style.display==='grid' ? 'block' : 'none';
+  } else {
+    label.textContent = '📸 PHOTO (depuis ton téléphone)';
+    aide.textContent = 'Choisis une photo dans ta galerie. Elle sera envoyée automatiquement.';
+    inputSimple.style.display='block';
+    inputMulti.style.display='none';
+    btnAutre.style.display='none';
+  }
+  document.getElementById('btnPublier').textContent = isManger ? 'Publier ce plat →' : isSejour ? 'Publier mon hôtel →' : 'Publier mon annonce →';
+}
+function afficherPreviews(){
+  const grid = document.getElementById('photosPreview');
+  const single = document.getElementById('previewPhoto');
+  if(universChoisi==='sejour'){
+    single.style.display='none';
+    grid.innerHTML = photosChoisies.map((f,i)=>`<div class="ph"><img src="${URL.createObjectURL(f)}"><button type="button" onclick="retirerPhoto(${i})">✕</button><span>${i===0?'Photo principale':'Photo '+(i+1)}</span></div>`).join('');
+  } else {
+    grid.innerHTML='';
+    if(photoFileChoisi){ single.src = URL.createObjectURL(photoFileChoisi); single.style.display='block'; }
+    else single.style.display='none';
+  }
+}
+function retirerPhoto(i){ photosChoisies.splice(i,1); afficherPreviews(); }
 function onCategorieChange(){
   const sel=document.getElementById('categorie');
   const isAutre=sel.value==='__AJOUTER__';
   document.getElementById('blocAutreCategorie').style.display=isAutre?'block':'none';
-  if(isAutre){ document.getElementById('blocFormulaire').style.display='grid'; document.getElementById('btnPublier').style.display='block'; return; }
+  if(isAutre){ document.getElementById('blocFormulaire').style.display='grid'; document.getElementById('btnPublier').style.display='block'; majBlocPhoto(); return; }
   if(!sel.value){ resetAffichageNeutre(); return; }
   document.getElementById('blocFormulaire').style.display='grid';
   document.getElementById('btnPublier').style.display='block';
@@ -238,6 +291,7 @@ function onCategorieChange(){
   const note=document.getElementById('notePrixManger');
   if(universChoisi==='manger'){ setPrixType(true); btnDisc.style.display='none'; note.style.display='block'; }
   else { btnDisc.style.display=''; note.style.display='none'; if(universChoisi==='livreur') setPrixType(false); }
+  majBlocPhoto();
   majExemples();
 }
 function setPrixType(fixe){
@@ -263,24 +317,41 @@ async function getUtilisateurSecurise(){
 }
 document.addEventListener('DOMContentLoaded', ()=>{
   const input=document.getElementById('photoFile');
-  if(!input) return;
-  input.addEventListener('change', ()=>{
+  if(input) input.addEventListener('change', ()=>{
     const f=input.files[0];
     if(!f) return;
     photoFileChoisi=f;
-    const preview=document.getElementById('previewPhoto');
-    preview.src=URL.createObjectURL(f);
-    preview.style.display='block';
+    afficherPreviews();
+  });
+  const inputM=document.getElementById('photoFileMultiple');
+  if(inputM) inputM.addEventListener('change', ()=>{
+    const files = Array.from(inputM.files||[]);
+    files.forEach(f=>{
+      if(photosChoisies.length < 10) photosChoisies.push(f);
+    });
+    if(files.length && photosChoisies.length>=10) showMsg('Max 10 photos pour ton hôtel.', false);
+    afficherPreviews();
   });
 });
 async function uploadPhoto(file, uid){
   if(!file) return null;
   const ext=file.name.split('.').pop().toLowerCase()||'jpg';
-  const nom=uid+'/'+Date.now()+'.'+ext;
+  const nom=uid+'/'+Date.now()+'-'+Math.floor(Math.random()*10000)+'.'+ext;
   const {error}=await sb.storage.from('annonces').upload(nom, file, {upsert:true});
   if(error) throw error;
   const {data}=sb.storage.from('annonces').getPublicUrl(nom);
   return data.publicUrl;
+}
+async function uploadToutesPhotos(uid){
+  if(universChoisi==='sejour'){
+    const urls=[];
+    for(const f of photosChoisies){ const u = await uploadPhoto(f, uid); if(u) urls.push(u); }
+    return urls;
+  } else {
+    if(!photoFileChoisi) return [];
+    const u = await uploadPhoto(photoFileChoisi, uid);
+    return u ? [u] : [];
+  }
 }
 async function init(){
   const user = await getUtilisateurSecurise();
@@ -309,7 +380,19 @@ async function init(){
   else { const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); sel.innerHTML = `<option value="">Choisir parmi tes activités...</option>` + mesActivites.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('') + `<option value="__AJOUTER__">➕ + Ajouter une autre activité</option>`; }
   resetAffichageNeutre();
 }
-async function publier(){
+function resetPourAutrePlat(){
+  document.getElementById('titre').value='';
+  document.getElementById('description').value='';
+  document.getElementById('prix').value='';
+  document.getElementById('tempsPreparation').value='';
+  document.getElementById('delaiLivraison').value='';
+  photoFileChoisi=null;
+  document.getElementById('photoFile').value='';
+  document.getElementById('previewPhoto').style.display='none';
+  document.getElementById('titre').focus();
+  window.scrollTo({top:200, behavior:'smooth'});
+}
+async function publier(ajouterAutre){
   if(!abonnementAJour){ showMsg('⛔ Abonnement expiré. Renouvelle pour publier.', false); setTimeout(()=> location.href='abonnement.html', 1200); return; }
   const user = await getUtilisateurSecurise();
   if(!user){ location.href='connexion.html'; return; }
@@ -320,7 +403,6 @@ async function publier(){
   const pays = document.getElementById('pays').value;
   const ville = document.getElementById('ville').value.trim();
   const localite = document.getElementById('localite').value.trim();
-  let photo = null;
   const prix = document.getElementById('prix').value;
   const btn = document.getElementById('btnPublier');
   if(categorie === '__AJOUTER__'){
@@ -395,10 +477,11 @@ async function publier(){
     comp.disponible = true;
   }
   btn.disabled = true; btn.textContent = 'Publication...';
-  try{ if(photoFileChoisi) photo = await uploadPhoto(photoFileChoisi, uid); }
+  let photoUrls = [];
+  try{ photoUrls = await uploadToutesPhotos(uid); }
   catch(e){ showMsg('Erreur photo : ' + e.message + ' - Vérifie le bucket annonces en public.', false); btn.disabled = false; btn.textContent = 'Publier mon annonce →'; return; }
-  // CORRIGÉ : vehicule / langues / lieux_connus / capacite ne sont PAS dans annonces, ils sont dans profiles
-  const {error} = await sb.from('annonces').insert([{
+  const photoPrincipale = photoUrls[0] || null;
+  const baseInsert = {
     prestataire_id: uid,
     univers: universChoisi,
     categorie, titre, description,
@@ -407,7 +490,7 @@ async function publier(){
     devise: 'FCFA',
     pays, ville, localite,
     quartier: localite,
-    photo_url: photo || null,
+    photo_url: photoPrincipale,
     status: 'en_attente',
     type_vendeur: typeVendeur || null,
     nb_chambres: nbChambres,
@@ -426,9 +509,14 @@ async function publier(){
     delai_livraison: comp.delai_livraison ?? null,
     travaille_distance: comp.travaille_distance ?? null,
     portfolio_url: comp.portfolio_url || null
-  }]).select('id').single();
+  };
+  let insertAvecPhotos = {...baseInsert, photos: photoUrls, photo_urls: photoUrls};
+  let {error} = await sb.from('annonces').insert([insertAvecPhotos]).select('id').single();
+  if(error && (String(error.message||'').toLowerCase().includes('photos') || String(error.message||'').toLowerCase().includes('column'))){
+    const r2 = await sb.from('annonces').insert([baseInsert]).select('id').single();
+    error = r2.error;
+  }
   if(error){ showMsg('Erreur : ' + error.message, false); btn.disabled = false; btn.textContent = 'Publier mon annonce →'; return; }
-  // Sauvegarde les infos profil dans profiles (pas dans annonces)
   const majProfil = {};
   if(comp.vehicule) majProfil.vehicule = comp.vehicule;
   if(comp.langues) majProfil.langues = comp.langues;
@@ -436,6 +524,12 @@ async function publier(){
   if(comp.travaille_distance !== undefined && comp.travaille_distance !== null) majProfil.travaille_distance = comp.travaille_distance;
   if(comp.portfolio_url) majProfil.portfolio_url = comp.portfolio_url;
   if(Object.keys(majProfil).length) await sb.from('profiles').update(majProfil).eq('id', uid);
+  if(ajouterAutre && universChoisi==='manger'){
+    showMsg('✅ Plat publié ! Ajoute le plat suivant.', true);
+    btn.disabled = false; btn.textContent = 'Publier ce plat →';
+    resetPourAutrePlat();
+    return;
+  }
   showMsg('✅ Annonce envoyée ! En attente de validation.', true);
   setTimeout(()=> location.href='dashboard-prestataire.html', 1500);
 }
