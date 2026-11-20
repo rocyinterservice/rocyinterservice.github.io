@@ -67,21 +67,21 @@ header b{font-size:16px} header small{display:block;opacity:.7;font-size:11px;fo
 <div class="modal" id="modalProp">
   <div class="modal-box">
     <h3>💰 <span data-i18n="proposerPrix">Proposer un prix</span></h3>
-    <p style="font-size:13px;color:#64748b" data-i18n="propAide">Le client verra ta proposition et pourra l'accepter ou la refuser. Pas de paiement tant qu'il n'a pas accepté.</p>
-    <div><label data-i18n="montantPropose">MONTANT PROPOSÉ (FCFA)</label><input id="propMontant" type="number" placeholder="Ex: 20000"></div>
-    <div><label data-i18n="detail">DÉTAIL (optionnel)</label><input id="propDetail" placeholder="Ex: Matériel inclus, 2h de travail..."></div>
-    <button style="background:#f59e0b;border:none;padding:14px;border-radius:12px;font-weight:800;cursor:pointer" onclick="envoyerProposition()" data-i18n="envoyerProp">Envoyer la proposition →</button>
-    <button style="background:#f1f5f9;border:none;padding:12px;border-radius:12px;cursor:pointer" onclick="fermerProposition()" data-i18n="annuler">Annuler</button>
+    <p style="font-size:13px;color:#64748b">Le client verra ta proposition et pourra l'accepter ou la refuser. Pas de paiement tant qu'il n'a pas accepté.</p>
+    <div><label>MONTANT PROPOSÉ (FCFA)</label><input id="propMontant" type="number" placeholder="Ex: 20000"></div>
+    <div><label>DÉTAIL (optionnel)</label><input id="propDetail" placeholder="Ex: Matériel inclus, 2h de travail..."></div>
+    <button style="background:#f59e0b;border:none;padding:14px;border-radius:12px;font-weight:800;cursor:pointer" onclick="envoyerProposition()">Envoyer la proposition →</button>
+    <button style="background:#f1f5f9;border:none;padding:12px;border-radius:12px;cursor:pointer" onclick="fermerProposition()">Annuler</button>
   </div>
 </div>
 <div class="modal" id="modalCmd">
   <div class="modal-box">
     <h3>✅ <span data-i18n="creerCommande">Créer la commande</span></h3>
     <p style="font-size:13px;color:#64748b" id="texteCommission">Vous êtes d'accord sur le prix ? Créez la commande.</p>
-    <div><label data-i18n="titreCommande">TITRE DE LA COMMANDE</label><input id="cmdTitre" placeholder="Ex: Réparation fuite cuisine"></div>
-    <div><label data-i18n="montantConvenu">MONTANT TOTAL CONVENU (FCFA)</label><input id="cmdMontant" type="number" placeholder="Ex: 20000"></div>
-    <button style="background:#16a34a;color:#fff;border:none;padding:14px;border-radius:12px;font-weight:800;cursor:pointer" onclick="creerCommande()" data-i18n="creerCommandeBtn">Créer la commande →</button>
-    <button style="background:#f1f5f9;border:none;padding:12px;border-radius:12px;cursor:pointer" onclick="fermerCommande()" data-i18n="annuler">Annuler</button>
+    <div><label>TITRE DE LA COMMANDE</label><input id="cmdTitre" placeholder="Ex: Réparation fuite cuisine"></div>
+    <div><label>MONTANT TOTAL CONVENU (FCFA)</label><input id="cmdMontant" type="number" placeholder="Ex: 20000"></div>
+    <button style="background:#16a34a;color:#fff;border:none;padding:14px;border-radius:12px;font-weight:800;cursor:pointer" onclick="creerCommande()">Créer la commande →</button>
+    <button style="background:#f1f5f9;border:none;padding:12px;border-radius:12px;cursor:pointer" onclick="fermerCommande()">Annuler</button>
   </div>
 </div>
 <script>
@@ -95,6 +95,7 @@ const annonceId = localStorage.getItem('chat_annonce');
 const convIdDirect = localStorage.getItem('chat_conversation_id');
 let conversationId = convIdDirect || null; let annonceData = null; let clientIdFinal = null;
 const fmt = n => window.rocyFormatPrix ? window.rocyFormatPrix(Number(n||0)) : Number(n||0).toLocaleString()+' FCFA';
+function prixFixeUnivers(u){ return ['manger','sejour','immobilier'].includes(String(u||'').toLowerCase()); }
 async function notifier(destinataire, titre, message, type, lien){
   try{
     if(!destinataire || String(destinataire)===String(moiId)) return;
@@ -121,14 +122,14 @@ function calculerCommission(univers, montant, annonce){
 function texteCommission(univers, annonce){
   if(univers==='domicile') return 'Commission Rocyinter : 8% - prélevée à la libération, pas avant.';
   if(univers==='pro') return 'Commission Rocyinter : 5 000 FCFA pour débloquer le contact.';
-  if(univers==='manger') return 'Commission Rocyinter : 12%. Espèces à la livraison : + 500 FCFA.';
-  if(univers==='sejour') return 'Commission Rocyinter : 12% par nuit réservée.';
-  if(univers==='evenement') return 'Commission Rocyinter : 12% - prélevée à la libération, pas avant. Devis dans le chat.';
+  if(univers==='manger') return 'Prix affiché par le restaurant. Commission 12% incluse. Pas de négociation.';
+  if(univers==='sejour') return 'Prix affiché par l\'hôtel. Commission 12% incluse. Pas de négociation.';
+  if(univers==='evenement') return 'Commission Rocyinter : 12% - Devis dans le chat.';
   if(univers==='livreur') return 'Livreur 80% / Rocyinter 20%. Prix à discuter dans le chat.';
   if(univers==='immobilier'){
     const cat = String(annonce?.categorie||'').toLowerCase();
-    if(cat.includes('parcelle') || cat.includes('vente')) return 'Parcelle : 2% plafonné 200 000 FCFA. Visite 2 000 FCFA pour Rocyinter, à part. Reste devant notaire.';
-    return "Location : 50% d'un mois. Visite 2 000 FCFA pour Rocyinter, à part. Payé par le propriétaire, une fois.";
+    if(cat.includes('parcelle') || cat.includes('vente')) return 'Parcelle : 2% plafonné 200 000 FCFA. Visite 2 000 FCFA pour Rocyinter, à part.';
+    return "Location : 50% d'un mois. Visite 2 000 FCFA pour Rocyinter, à part.";
   }
   return 'Commission Rocyinter prélevée à la libération.';
 }
@@ -155,7 +156,7 @@ function afficherCommandeDepuisFiche(){
     const qty = Number(localStorage.getItem('commande_quantite')||1);
     const total = prixUnit * qty;
     bar.style.display = 'block';
-    bar.innerHTML = `<b>🍽️ Commande depuis le menu : ${qty} x ${annonceData.titre} = ${fmt(total)}</b><small>Le montant est déjà rempli dans Créer la commande. Clique sur Créer la commande en bas.</small>`;
+    bar.innerHTML = `<b>🍽️ Commande depuis le menu : ${qty} x ${annonceData.titre} = ${fmt(total)}</b><small>Prix déjà connu. Pas de négociation. Clique sur Créer la commande en bas.</small>`;
     document.getElementById('cmdTitre').value = `${qty} x ${annonceData.titre}`;
     document.getElementById('cmdMontant').value = total;
     document.getElementById('inputMsg').value = `Bonjour, je veux commander ${qty} x ${annonceData.titre} = ${fmt(total)}.`;
@@ -165,12 +166,11 @@ function afficherCommandeDepuisFiche(){
     const chambres = Number(localStorage.getItem('commande_chambres')||1);
     const total = prixUnit * nuits * chambres;
     bar.style.display = 'block';
-    bar.innerHTML = `<b>📅 Réservation depuis la fiche : ${annonceData.titre} - Arrivée ${date}, ${nuits} nuit(s), ${chambres} chambre(s) = ${fmt(total)}</b><small>Le montant est déjà rempli dans Créer la commande. Clique sur Créer la commande en bas.</small>`;
+    bar.innerHTML = `<b>📅 Réservation depuis la fiche : ${annonceData.titre} - Arrivée ${date}, ${nuits} nuit(s), ${chambres} chambre(s) = ${fmt(total)}</b><small>Prix déjà connu. Pas de négociation. Clique sur Créer la commande en bas.</small>`;
     document.getElementById('cmdTitre').value = `${annonceData.titre} - ${date} - ${nuits} nuit(s) - ${chambres} chambre(s)`;
     document.getElementById('cmdMontant').value = total;
     document.getElementById('inputMsg').value = `Bonjour, je veux réserver ${annonceData.titre} - Arrivée ${date}, ${nuits} nuit(s), ${chambres} chambre(s) = ${fmt(total)}.`;
   }
-  // On nettoie pour ne pas ré-afficher à chaque reload, mais on garde le montant déjà rempli
   localStorage.removeItem('commande_type'); localStorage.removeItem('commande_quantite'); localStorage.removeItem('commande_date'); localStorage.removeItem('commande_nuits'); localStorage.removeItem('commande_chambres');
 }
 async function init(){
@@ -217,11 +217,12 @@ async function initAvecAnnonce(annId, prestaId, convExistante){
   document.getElementById('cmdMontant').value = ann.prix_indicatif || '';
   document.getElementById('texteCommission').textContent = texteCommission(ann.univers, ann);
   const jeSuisPresta = (String(moiId)===String(prestaId));
-  if(jeSuisPresta) document.getElementById('btnProp').style.display = 'block';
-  else {
-    document.getElementById('btnCmd').style.display = 'block';
-    if(ann.univers==='immobilier') document.getElementById('btnVisit').style.display = 'block';
-  }
+  const isFixe = prixFixeUnivers(ann.univers);
+  // REGLE PRINCIPALE : prix fixe = pas de proposition. Prix à discuter = proposition.
+  if(jeSuisPresta && !isFixe) document.getElementById('btnProp').style.display = 'block';
+  else document.getElementById('btnProp').style.display = 'none';
+  if(!jeSuisPresta) document.getElementById('btnCmd').style.display = 'block';
+  if(!jeSuisPresta && ann.univers==='immobilier') document.getElementById('btnVisit').style.display = 'block';
   if(convExistante){ conversationId = convExistante.id; clientIdFinal = convExistante.client_id; }
   else {
     const {data: convs} = await sb.from('conversations').select('*').eq('annonce_id', annId);
@@ -230,9 +231,7 @@ async function initAvecAnnonce(annId, prestaId, convExistante){
     if(!cible && jeSuisPresta){
       const mesConvs = (convs||[]).filter(c => String(c.prestataire_id)===String(moiId) && c.client_id && String(c.client_id)!==String(c.prestataire_id));
       if(mesConvs.length===1) cible = mesConvs[0];
-      else if(mesConvs.length>1){
-        cible = mesConvs.sort((a,b)=> new Date(b.created_at)-new Date(a.created_at))[0];
-      }
+      else if(mesConvs.length>1){ cible = mesConvs.sort((a,b)=> new Date(b.created_at)-new Date(a.created_at))[0]; }
     }
     if(cible){ conversationId = cible.id; clientIdFinal = cible.client_id; }
     else if(!jeSuisPresta){
@@ -260,7 +259,7 @@ async function chargerMessages(){
   const {data} = await sb.from('messages').select('*').eq('conversation_id', conversationId).order('created_at',{ascending:true});
   const box = document.getElementById('messages'); box.innerHTML='';
   if(!data || data.length===0){
-    const d=document.createElement('div'); d.className='msg sys'; d.textContent='👋 Dis bonjour ! Demande le prix, la date, le lieu. Ne paie jamais en dehors de Rocyinter.'; box.appendChild(d); return;
+    const d=document.createElement('div'); d.className='msg sys'; d.textContent = prixFixeUnivers(annonceData?.univers) ? '👋 Prix déjà affiché. Clique sur Créer la commande en bas, puis paie sur Rocyinter.' : '👋 Dis bonjour ! Demande le prix, la date, le lieu. Ne paie jamais en dehors de Rocyinter.'; box.appendChild(d); return;
   }
   data.forEach(m=>{
     const isMoi = String(m.sender_id)===String(moiId);
@@ -302,11 +301,15 @@ async function envoyer(){
   await notifier(autreId, 'Nouveau message', txt, 'message', 'chat.html');
   chargerMessages();
 }
-function ouvrirProposition(){ const prestaActuel = localStorage.getItem('chat_prestataire') || prestataireId; if(String(moiId)!==String(prestaActuel)){ alert('Seul le prestataire propose un prix.'); return; } document.getElementById('modalProp').classList.add('show'); }
+function ouvrirProposition(){
+  if(prixFixeUnivers(annonceData?.univers)){ alert('Prix déjà affiché. Pas de proposition pour Manger / Séjour / Immobilier. Le client crée la commande direct.'); return; }
+  const prestaActuel = localStorage.getItem('chat_prestataire') || prestataireId; if(String(moiId)!==String(prestaActuel)){ alert('Seul le prestataire propose un prix.'); return; } document.getElementById('modalProp').classList.add('show');
+}
 function fermerProposition(){ document.getElementById('modalProp').classList.remove('show'); }
 function ouvrirCommande(){ const prestaActuel = localStorage.getItem('chat_prestataire') || prestataireId; if(String(moiId)===String(prestaActuel)){ alert('Seul le client crée la commande.'); return; } document.getElementById('modalCmd').classList.add('show'); }
 function fermerCommande(){ document.getElementById('modalCmd').classList.remove('show'); }
 async function envoyerProposition(){
+  if(prixFixeUnivers(annonceData?.univers)){ alert('Prix déjà affiché. Pas de proposition pour Manger / Séjour / Immobilier.'); return; }
   const prestaActuel = localStorage.getItem('chat_prestataire') || prestataireId;
   if(String(moiId)!==String(prestaActuel)){ alert('Seul le prestataire propose un prix.'); return; }
   const montant = Number(document.getElementById('propMontant').value);
