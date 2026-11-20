@@ -229,7 +229,6 @@ async function chargerProfil(){
   }
   if(!p) return;
   monRole = String(p.type_compte || p.type_fournisseur || '').toLowerCase();
-  // BLOC INFO A PART : Client = caché, Admin + Prestataire / Pro / Entreprise / Livreur = visible
   const peutInfo = ['prestataire','professionnel','entreprise','livreur','fournisseur','pro','admin'].includes(monRole);
   document.getElementById('blocInfoJour').style.display = peutInfo ? 'block' : 'none';
   if(monRole==='admin'){
@@ -310,14 +309,21 @@ async function publierInfo(){
   const heures = Number(document.getElementById('dureeInfo').value || 24);
   const fin = new Date(Date.now() + heures*3600*1000);
   msgEl.textContent='Publication...'; msgEl.style.color='#f59e0b';
-  const {error} = await sb.from('profiles').update({message_entreprise: texte, message_expire_at: fin.toISOString()}).eq('id', userId);
-  if(error){ msgEl.textContent='❌ '+error.message; msgEl.style.color='red'; }
-  else{ msgEl.textContent='✅ Info publiée jusqu\'au '+fin.toLocaleString('fr-FR'); msgEl.style.color='green'; chargerProfil(); }
+  // 1. On garde dans profiles comme avant, pour ton affichage perso
+  const {error: errProfil} = await sb.from('profiles').update({message_entreprise: texte, message_expire_at: fin.toISOString()}).eq('id', userId);
+  if(errProfil){ msgEl.textContent='❌ '+errProfil.message; msgEl.style.color='red'; return; }
+  // 2. CORRECTION : On publie AUSSI dans la table PUBLIQUE que tout le monde peut lire
+  await sb.from('infos_du_jour').delete().eq('auteur_id', userId);
+  const nomAff = document.getElementById('nomAffiche')?.textContent || document.getElementById('nom')?.value || '';
+  const {error: errPublic} = await sb.from('infos_du_jour').insert({ auteur_id: userId, nom_entreprise: nomAff, message: texte, expire_at: fin.toISOString() });
+  if(errPublic){ msgEl.textContent='❌ Info enregistrée dans ton profil mais pas publique : '+errPublic.message+' → Lance le SQL infos_du_jour dans Supabase.'; msgEl.style.color='red'; return; }
+  msgEl.textContent='✅ Info publiée pour TOUT LE MONDE jusqu\'au '+fin.toLocaleString('fr-FR'); msgEl.style.color='green'; chargerProfil();
 }
 async function effacerInfo(){
   if(!confirm('Arrêter ton info maintenant ?')) return;
-  const {error} = await sb.from('profiles').update({message_entreprise: null, message_expire_at: null}).eq('id', userId);
-  if(error){ alert('❌ '+error.message); } else { chargerProfil(); }
+  await sb.from('profiles').update({message_entreprise: null, message_expire_at: null}).eq('id', userId);
+  await sb.from('infos_du_jour').delete().eq('auteur_id', userId);
+  chargerProfil();
 }
 async function sauvegarder(){
   const msg = document.getElementById('msg');
