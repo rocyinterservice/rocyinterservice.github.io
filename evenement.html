@@ -51,15 +51,13 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:12px;line-height:1.5}
 <div class="top">
 <div class="back" onclick="location.href='index.html'">← Accueil</div>
 <h1>🎉 Évènement</h1>
-<p class="sub">Organisateurs, décorateurs, DJ, photographes, traiteurs, location matériel... validés par Rocyinter.</p>
+<p class="sub">Tous les organisateurs, décorateurs, DJ, photographes, traiteurs, location matériel... validés par Rocyinter. 1 prestataire = 1 carte.</p>
 <div class="info-commission">💰 Commission Évènement : 12% prélevée à la libération. Devis dans le chat. Paiement Escrow. Ne paie jamais en dehors de Rocyinter.</div>
 <div id="bandeauRole"></div>
-
 <div class="tabs">
   <button id="tab1" class="active" onclick="setTab('chercher')">🔍 Je cherche un prestataire</button>
   <button id="tab2" onclick="setTab('demande')">📣 Je lance une demande</button>
 </div>
-
 <div id="vueChercher">
   <button class="btn btn-green" onclick="ouvrirDemande()" style="margin-bottom:12px">📣 + Lancer une demande d'évènement →</button>
   <div class="filters">
@@ -70,7 +68,6 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:12px;line-height:1.5}
   <div class="filtres" id="filtres"><button class="active" data-cat="" onclick="setCat('')">Tous</button></div>
   <div id="liste">Chargement...</div>
 </div>
-
 <div id="vueDemande" style="display:none">
   <button class="btn btn-green" onclick="ouvrirDemande()">📣 + Lancer une demande d'évènement</button>
   <h3 style="margin:14px 0 8px">📋 Demandes d'évènement en cours</h3>
@@ -79,7 +76,6 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:12px;line-height:1.5}
   <button class="btn btn-gris" onclick="chargerDemandes()">🔄 Actualiser</button>
 </div>
 </div>
-
 <div class="modal" id="modalDemande">
   <div class="modal-box">
     <h3>📣 Demande d'évènement</h3>
@@ -95,13 +91,12 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:12px;line-height:1.5}
     <button style="background:#f1f5f9;border:none;padding:12px;border-radius:12px;cursor:pointer" onclick="fermerDemande()">Annuler</button>
   </div>
 </div>
-
 <script>
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 let sb = null;
 try{ sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); window.supabaseClient = sb; }catch(e){}
-let catActuelle = ''; let toutesAnnonces = []; let moiId=''; let monRole=''; let nomsPresta = {}; let demandes=[];
+let catActuelle = ''; let toutesAnnonces = []; let moiId=''; let monRole=''; let profilsMap = {}; let demandes=[];
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function remplirPays(){ const sel=document.getElementById('filtrePays'); if(window.ROCY_PAYS&&window.ROCY_PAYS.length){ sel.innerHTML='<option value="">🌍 Tous les pays</option>'+window.ROCY_PAYS.map(p=>`<option value="${esc(p.nom)}">${esc(p.drapeau)} ${esc(p.nom)}</option>`).join(''); } }
 async function afficherBandeauRole(){
@@ -127,17 +122,19 @@ function construireFiltres(){
   box.innerHTML = `<button class="active" data-cat="" onclick="setCat('')">Tous</button>` + cats.map(c=>`<button data-cat="${esc(c)}" onclick="setCat('${esc(c)}')">${esc(c)}</button>`).join('');
   document.querySelectorAll('#filtres button').forEach(b=> b.classList.toggle('active', b.dataset.cat === catActuelle));
 }
-function prixTexte(a){
-  const prixVal = Number(a.prix_indicatif || 0);
-  const fmt = window.rocyFormatPrix ? window.rocyFormatPrix(prixVal) : prixVal.toLocaleString()+' '+(a.devise||'FCFA');
-  if(a.prix_fixe) return fmt + ' - Prix par évènement';
-  if(prixVal>0) return 'À partir de ' + fmt;
-  return 'Prix à discuter / devis';
-}
 function estValide(a){
   const s = String(a.status || '').toLowerCase().trim();
   if(!s) return true;
   return s==='valide' || s==='valid' || s==='publie' || s==='publié' || s==='publiee' || s==='actif' || s==='active';
+}
+function grouperParPresta(liste){
+  const map = {};
+  liste.forEach(a=>{
+    const pid = a.prestataire_id || 'sans-'+a.id;
+    if(!map[pid]) map[pid] = { prestataire_id: pid, presta: profilsMap[pid] || {}, annonces: [] };
+    map[pid].annonces.push(a);
+  });
+  return Object.values(map);
 }
 function afficher(){
   const q = (document.getElementById('search').value || '').trim().toLowerCase();
@@ -148,18 +145,23 @@ function afficher(){
   if(pays) list = list.filter(a => (a.pays||'') === pays);
   if(loc) list = list.filter(a => (a.localite||'').toLowerCase().includes(loc) || (a.quartier||'').toLowerCase().includes(loc) || (a.ville||'').toLowerCase().includes(loc));
   if(catActuelle) list = list.filter(a=> a.categorie === catActuelle);
-  if(q) list = list.filter(a=>((a.titre||'')+' '+(a.ville||'')+' '+(a.localite||'')+' '+(a.quartier||'')+' '+(a.categorie||'')+' '+((nomsPresta[a.prestataire_id]?.nom)||'')+' '+(a.description||'')).toLowerCase().includes(q));
+  if(q) list = list.filter(a=>{
+    const pr = profilsMap[a.prestataire_id] || {};
+    const nomEnt = (pr.nom_entreprise||pr.nom||'').toLowerCase();
+    return ((a.titre||'')+' '+(a.ville||'')+' '+(a.localite||'')+' '+(a.quartier||'')+' '+(a.categorie||'')+' '+(a.description||'')+' '+nomEnt).toLowerCase().includes(q);
+  });
   if(!list.length){ box.innerHTML = `<div class="empty"><b>Aucun prestataire Évènement</b><br>Essaie une autre ville ou lance une demande.<br><br><button class="btn" onclick="ouvrirDemande()">📣 Lancer une demande</button></div>`; return; }
-  box.innerHTML = list.map(a=>{
-    const pr = nomsPresta[a.prestataire_id] || {};
-    const img = a.photo_url || pr.photo_profil || 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=800&q=80';
+  const groupes = grouperParPresta(list);
+  box.innerHTML = groupes.map(g=>{
+    const pr = g.presta || {};
+    const annonces = g.annonces || [];
+    const premiere = annonces[0] || {};
+    const img = pr.photo_profil_url || pr.photo_profil || premiere.photo_url || 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=800&q=80';
     const nom = pr.nom_entreprise || pr.nom || 'Prestataire';
-    const lieu = [a.localite || a.quartier, a.ville, a.pays].filter(Boolean).join(' - ');
-    const prestaId = a.prestataire_id || '';
-    const cestMoi = prestaId && moiId && String(prestaId)===String(moiId);
+    const lieu = [pr.pays || premiere.pays, pr.ville || premiere.ville, pr.quartier || premiere.localite || premiere.quartier].filter(Boolean).join(' - ');
     const verifie = pr.verifie ? `<span class="badge-green">✅ Vérifié</span>` : '';
-    const btnChat = cestMoi ? `<button class="btn btn-mine" disabled>C'est ton annonce</button>` : `<button class="btn btn-dark" onclick="discuter('${esc(prestaId)}','${esc(a.id)}')">💬 Discuter / Demander un devis</button>`;
-    return `<div class="card"><img src="${esc(img)}" onclick="voirPresta('${esc(prestaId)}')" style="cursor:pointer" onerror="this.src='https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=800&q=80'"><span class="badge">${esc(a.categorie)}</span> ${verifie}<h3 style="margin-top:8px">${esc(a.titre)}</h3><p>👤 ${esc(nom)}<br>📍 ${esc(lieu)}</p><p>${esc((a.description||'').slice(0,110))}...</p><div class="price">${esc(prixTexte(a))}</div><button class="btn btn-gris" onclick="voirPresta('${esc(prestaId)}')">Voir le profil + Photos anciens évènements + Avis</button>${btnChat}</div>`;
+    const desc = (pr.description_profil || premiere.description || '').slice(0,100);
+    return `<div class="card"><img src="${esc(img)}" onclick="voirPresta('${esc(g.prestataire_id)}')" style="cursor:pointer" onerror="this.src='https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=800&q=80'"><span class="badge">${esc(premiere.categorie||'')}</span> ${verifie}<h3 style="margin-top:8px">🎉 ${esc(nom)}</h3><p>🌍 ${esc(lieu)}<br><small>${annonces.length} service${annonces.length>1?'s':''}</small></p><p>${esc(desc)}...</p><button class="btn btn-dark" onclick="voirPresta('${esc(g.prestataire_id)}')">Voir le profil → Photos anciens évènements + Avis</button></div>`;
   }).join('');
 }
 function ouvrirDemande(){ document.getElementById('modalDemande').classList.add('show'); }
@@ -224,8 +226,8 @@ async function charger(){
     toutesAnnonces = (data || []).filter(estValide);
     const ids = [...new Set(toutesAnnonces.map(a=>a.prestataire_id).filter(Boolean))];
     if(ids.length){
-      const {data: profs} = await sb.from('profiles').select('id,nom,prenom,nom_entreprise,photo_profil,quartier_verifie,quartier,verifie').in('id', ids);
-      (profs||[]).forEach(p=> nomsPresta[p.id]=p);
+      const {data: profs} = await sb.from('profiles').select('id,nom,prenom,nom_entreprise,photo_profil_url,photo_profil,description_profil,quartier,ville,pays,quartier_verifie,verifie').in('id', ids);
+      (profs||[]).forEach(p=> profilsMap[p.id]=p);
     }
     construireFiltres(); afficher();
   }catch(e){ console.log('ROCY evenement erreur:', e); box.innerHTML = `<div class="empty"><b>Erreur de connexion</b><br><button class="btn" onclick="charger()">Réessayer</button></div>`; }
