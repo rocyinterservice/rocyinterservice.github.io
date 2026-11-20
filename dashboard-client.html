@@ -155,13 +155,8 @@ async function charger(){
   const user = await getUtilisateurSecurise();
   if(!user){ location.href='connexion.html'; return; }
   uid = user.id;
-  const {data: profil, error: errProfil} = await sb.from('profiles')
-    .select('id, nom, nom_entreprise, type_fournisseur, type_compte, quartier, ville')
-    .eq('id', uid).maybeSingle();
-  if(errProfil){
-    document.getElementById('listeCommandes').innerHTML = `<div class="empty">Erreur profil : ${esc(errProfil.message)}</div>`;
-    return;
-  }
+  const {data: profil, error: errProfil} = await sb.from('profiles').select('id, nom, nom_entreprise, type_fournisseur, type_compte, quartier, ville').eq('id', uid).maybeSingle();
+  if(errProfil){ document.getElementById('listeCommandes').innerHTML = `<div class="empty">Erreur profil : ${esc(errProfil.message)}</div>`; return; }
   if(!profil){
     document.getElementById('nomUser').textContent = 'Client';
     document.getElementById('profilNom').textContent = 'Mon Profil';
@@ -178,15 +173,11 @@ async function charger(){
   document.getElementById('profilNom').textContent = profil.nom || 'Mon Profil';
   document.getElementById('profilQuartier').textContent = '📍 Quartier : ' + (quartier || 'Non rempli');
   document.getElementById('profilBadge').textContent = quartier ? '📍 ' + quartier : '📍 Quartier non rempli';
-  const {data: cmds, error: errCmds} = await sb.from('commandes')
-    .select('id, titre, prestataire_id, conversation_id, annonce_id, status, univers, commission, montant_total, montant_prestataire, localite, ville, created_at')
-    .eq('client_id', uid).order('created_at',{ascending:false});
+  const {data: cmds, error: errCmds} = await sb.from('commandes').select('id, titre, prestataire_id, conversation_id, annonce_id, status, univers, commission, montant_total, montant_prestataire, localite, ville, created_at').eq('client_id', uid).order('created_at',{ascending:false});
   const box = document.getElementById('listeCommandes');
-  if(errCmds){
-    box.innerHTML = `<div class="empty">Erreur commandes : ${esc(errCmds.message)}</div>`;
-  } else if(!cmds || cmds.length===0){
-    box.innerHTML = `<div class="empty">Aucune commande pour l'instant.<br>Trouvez un service, discutez, créez une commande.</div>`;
-  } else {
+  if(errCmds){ box.innerHTML = `<div class="empty">Erreur commandes : ${esc(errCmds.message)}</div>`; }
+  else if(!cmds || cmds.length===0){ box.innerHTML = `<div class="empty">Aucune commande pour l'instant.<br>Trouvez un service, discutez, créez une commande.</div>`; }
+  else {
     box.innerHTML = cmds.map(c=>`
     <div class="card">
       ${badgeStatus(c.status)}
@@ -205,16 +196,12 @@ async function charger(){
       <button class="btn btn-dark" onclick="voirConversation('${esc(c.conversation_id)}','${esc(c.annonce_id)}')">Ouvrir le chat</button>
     </div>`).join('');
   }
-  const {data: convsBrutes, error: errConvs} = await sb.from('conversations')
-    .select('id, client_id, prestataire_id, annonce_id, created_at')
-    .eq('client_id', uid).order('created_at',{ascending:false});
+  const {data: convsBrutes, error: errConvs} = await sb.from('conversations').select('id, client_id, prestataire_id, annonce_id, created_at').eq('client_id', uid).order('created_at',{ascending:false});
   const convs = (convsBrutes||[]).filter(cv => String(cv.client_id)!==String(cv.prestataire_id));
   const boxV = document.getElementById('listeConvs');
-  if(errConvs){
-    boxV.innerHTML = `<div class="empty">Erreur conversations : ${esc(errConvs.message)}</div>`;
-  } else if(!convs || convs.length===0){
-    boxV.innerHTML = `<div class="empty">Aucune conversation pour l'instant.</div>`;
-  } else {
+  if(errConvs){ boxV.innerHTML = `<div class="empty">Erreur conversations : ${esc(errConvs.message)}</div>`; }
+  else if(!convs || convs.length===0){ boxV.innerHTML = `<div class="empty">Aucune conversation pour l'instant.</div>`; }
+  else {
     let titres = {};
     const annonceIds = [...new Set(convs.map(cv=>cv.annonce_id).filter(Boolean))];
     if(annonceIds.length){
