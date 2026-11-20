@@ -48,8 +48,15 @@ h1,h2,h3{font-family:'Plus Jakarta Sans','Inter',sans-serif;letter-spacing:-0.02
 .bandeau-visiteur{background:#fef3c7;color:#92400e}
 .bandeau-client{background:#dcfce7;color:#166534}
 .bandeau-presta{background:#dbeafe;color:#1e40af}
-.ticker{background:#fef3c7;border:1px solid #fde68a;margin:0 16px 16px;border-radius:12px;overflow:hidden;display:none}
-.ticker-inner{display:flex;gap:32px;white-space:nowrap;padding:10px 12px;font-size:13px;font-weight:600;color:#92400e;animation:defile 30s linear infinite;width:max-content}
+/* === INFO DU JOUR - COULEUR MONDIALE CORRIGÉE === */
+/* Avant : jaune pâle + marron = site local */
+/* Après : bleu nuit premium + blanc + doré = Airbnb / Booking / Uber */
+.ticker{background:#0f172a;border:1px solid #1e293b;margin:0 16px 16px;border-radius:14px;overflow:hidden;display:none;box-shadow:0 4px 18px rgba(15,23,42,.18)}
+.ticker-inner{display:flex;gap:36px;white-space:nowrap;padding:12px 14px;font-size:13.5px;font-weight:500;color:#e2e8f0;animation:defile 32s linear infinite;width:max-content}
+.ticker-inner b{color:#fff;font-weight:700}
+.ticker-inner .pill-admin{background:#f59e0b;color:#0f172a;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.04em}
+.ticker-inner .pill-vendeur{background:rgba(255,255,255,.14);color:#fff;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid rgba(255,255,255,.22)}
+.ticker-inner .sep{color:#f59e0b;font-weight:800}
 @keyframes defile{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 .bloc-univers{padding:0 16px 20px}
 .bloc-univers-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
@@ -172,18 +179,42 @@ async function afficherBandeauRole(){
     box.innerHTML = `<div class="bandeau-role bandeau-client">🛒 ${esc(t('bandeauClient'))}</div>`;
   }
 }
-// === CORRIGE : respect de la durée, Admin en premier, Client jamais ===
+// === CORRIGÉ : Lecture publique infos_du_jour + Couleur mondiale ===
+// Tout le monde voit : visiteur, client, admin, vendeur. Avant le choix du pays.
 async function chargerInfosEntreprises(){
   const box=document.getElementById('tickerInfos'); const inner=document.getElementById('tickerInner');
   if(!box||!inner) return;
   try{
-    const {data,error}=await sb.from('profiles')
+    // 1. NOUVEAU : table publique, lisible même déconnecté
+    const {data, error} = await sb.from('infos_du_jour')
+      .select('nom_entreprise, message, expire_at, created_at')
+      .gt('expire_at', new Date().toISOString())
+      .order('created_at', {ascending:false})
+      .limit(30);
+    if(!error && data && data.length){
+      // Admin / Rocyinter en premier
+      const tries = [...data].sort((a,b)=>{
+        const aAdmin = String(a.nom_entreprise||'').toLowerCase().includes('rocyinter') ? 0 : 1;
+        const bAdmin = String(b.nom_entreprise||'').toLowerCase().includes('rocyinter') ? 0 : 1;
+        return aAdmin - bAdmin;
+      });
+      const items = tries.map(p=>{
+        const isAdmin = String(p.nom_entreprise||'').toLowerCase().includes('rocyinter');
+        const pill = isAdmin ? `<span class="pill-admin">🛡️ ROCYINTER</span>` : `<span class="pill-vendeur">📢 ${esc(p.nom_entreprise||'Entreprise')}</span>`;
+        return `${pill} <b>${esc(p.message)}</b>`;
+      }).join('<span class="sep"> • </span>');
+      inner.innerHTML = items + '<span class="sep"> • </span>' + items;
+      box.style.display='block';
+      return;
+    }
+    // 2. SECOURS : si table pas encore créée, ancien système profiles
+    const {data: old, error: errOld} = await sb.from('profiles')
       .select('nom,nom_entreprise,message_entreprise,message_expire_at,type_compte,type_fournisseur')
       .not('message_entreprise','is',null).neq('message_entreprise','')
       .gt('message_expire_at', new Date().toISOString())
       .limit(30);
-    if(error||!data||!data.length){ box.style.display='none'; return; }
-    const valides = data.filter(p=>{
+    if(errOld || !old || !old.length){ box.style.display='none'; return; }
+    const valides = old.filter(p=>{
       const r = String(p.type_compte || p.type_fournisseur || '').toLowerCase().trim();
       return r !== 'client';
     });
@@ -193,12 +224,12 @@ async function chargerInfosEntreprises(){
       const rb = String(b.type_compte || b.type_fournisseur || '').toLowerCase().trim();
       return (ra==='admin'?0:1) - (rb==='admin'?0:1);
     });
-    const items = valides.map(p=>{
+    const items2 = valides.map(p=>{
       const r = String(p.type_compte || p.type_fournisseur || '').toLowerCase().trim();
-      if(r==='admin') return `🛡️ <b>Rocyinter</b> : ${esc(p.message_entreprise)}`;
-      return `📢 <b>${esc(p.nom_entreprise||p.nom||'Entreprise')}</b> : ${esc(p.message_entreprise)}`;
-    }).join('<span> • </span>');
-    inner.innerHTML = items + '<span> • </span>' + items;
+      if(r==='admin') return `<span class="pill-admin">🛡️ ROCYINTER</span> <b>${esc(p.message_entreprise)}</b>`;
+      return `<span class="pill-vendeur">📢 ${esc(p.nom_entreprise||p.nom||'Entreprise')}</span> <b>${esc(p.message_entreprise)}</b>`;
+    }).join('<span class="sep"> • </span>');
+    inner.innerHTML = items2 + '<span class="sep"> • </span>' + items2;
     box.style.display='block';
   }catch(e){ box.style.display='none'; }
 }
