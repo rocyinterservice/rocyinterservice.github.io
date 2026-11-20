@@ -42,12 +42,6 @@
   const CODE_API = { fr:'fr', en:'en', yo:'yo', ig:'ig', ha:'ha', fon:'fon', wo:'wo', bm:'bm', ee:'ee', tw:'tw', ln:'ln', sw:'sw', am:'am', so:'so', es:'es', pt:'pt', ar:'ar', de:'de', it:'it', nl:'nl', ru:'ru', tr:'tr', zh:'zh-CN', ja:'ja', ko:'ko', hi:'hi' };
   const BASE_FR = {
     accueil:'Accueil', connexion:'Connexion', devenir:'Devenir Prestataire', espace:'Mon espace', bonjour:'Bonjour', visiteur:'Bienvenue, visiteur', compte:'MON COMPTE', seConnecter:'🔑 Se connecter', creerCompte:'📝 Créer un compte', favoris:'❤️ Mes Favoris', panier:'🛒 Mon Panier', notif:'🔔 Notifications', deconnexion:'🚪 Déconnexion', services:'SERVICES', immobilier:'🏘️ Immobilier', livreurs:'🛵 Livreurs', escrow:'🔒 Mon Escrow', abonnement:'⭐ Abonnement Prestataire', aide:'AIDE', comment:'❓ Comment ça marche ?', faq:'💬 Aide / FAQ', contact:'📞 Contact', tarifs:'💰 Tarifs', cgu:'📄 CGU', conf:'🔐 Confidentialité', fermer:'✕ Fermer', proposer:'➕ Créer une annonce',
-    heroTitre1:'Trouvez un vrai service', heroTitre2:'près de chez vous',
-    heroSous:'Des prestataires vérifiés près de chez vous. Découvrez leurs services, comparez leurs offres, discutez directement et commandez en toute sécurité avec le paiement Escrow.',
-    bandeauVisiteur:'Découvrez les entreprises et leurs services. Connectez-vous pour discuter et commander.',
-    bandeauClient:'Découvrez les entreprises, discutez, comparez et commandez en toute sécurité avec le paiement Escrow.',
-    bandeauPresta:'Gérez vos activités et vos annonces. Vos services sont visibles par tous les clients et visiteurs.',
-    bandeauAdmin:'Vous contrôlez et validez les annonces et les prestataires.',
     pasConnexion:'Pas de connexion', erreurConnexion:'Erreur de connexion', reessayer:'Réessayer',
     pays:'PAYS', ville:'VILLE / LOCALITÉ', rechercher:'RECHERCHER UN SERVICE', villePh:'Ex: Calavi, Cotonou, Godomey...', searchPh:'Ex: Plombier, Traiteur, Nettoyage...',
     tous:'Tous', manger:'Se nourrir', domicile:'Domicile', pro:'Services professionnels', sejour:'Séjour', immo:'Immobilier', livreursTitre:'Livreurs', evenement:'Évènement',
