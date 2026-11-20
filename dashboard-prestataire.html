@@ -84,7 +84,6 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px}
 <p style="font-size:11px;color:#64748b;margin:-10px 0 14px">* Seulement les commandes payées / en cours / validées. Les commandes en attente ne comptent pas.</p>
 <button class="btn" id="btnCreer" onclick="location.href='creer-annonce.html'">➕ Créer une nouvelle annonce</button>
 <button class="btn btn-dark" onclick="location.href='abonnement.html'">💳 Voir / Renouveler mon abonnement</button>
-
 <div class="section" id="sectionReglages" style="display:none"><h2>⚙️ Mes réglages rapides</h2>
 <div class="card">
   <p id="texteReglages">Ce que le client voit dans ta fiche.</p>
@@ -102,7 +101,6 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:14px}
   </div>
 </div>
 </div>
-
 <div class="section" id="sectionLivreurDemandes" style="display:none"><h2>🛵 Demandes de livraison en attente</h2><div id="listeDemandesLivreur"></div></div>
 <div class="section"><h2>📋 Mes annonces</h2><div id="listeAnnonces"></div></div>
 <div class="section"><h2>💰 Mes commandes</h2><div id="listeCommandes"></div></div>
@@ -123,8 +121,6 @@ async function getUtilisateurSecurise(){
   const {data:{user}} = await sb.auth.getUser(); return user || null;
 }
 async function deconnecter(){ await sb.auth.signOut(); const langue=localStorage.getItem('rocy_langue'); localStorage.clear(); if(langue) localStorage.setItem('rocy_langue',langue); location.href='index.html'; }
-
-// CORRIGÉ MONDIAL : rang réel parmi les prestataires, pas un count approximatif
 async function estDans30Premiers(profil){
   if(!profil.created_at) return false;
   const {data} = await sb.from('profiles').select('id,created_at').neq('type_compte','client').neq('type_compte','admin').order('created_at',{ascending:true}).limit(30);
@@ -181,7 +177,6 @@ function setToggle(key, val){
   if(key==='auj'){ document.getElementById('tgAujOui').classList.toggle('on', val); document.getElementById('tgAujNon').classList.toggle('on', !val); }
   if(key==='maint'){ document.getElementById('tgMaintOui').classList.toggle('on', val); document.getElementById('tgMaintNon').classList.toggle('on', !val); }
 }
-// CORRIGÉ : 1 dashboard, affichage par activité. Jamais tout mélangé.
 function afficherReglagesParActivite(universSet, categories){
   const has = (...u) => u.some(x => universSet.has(x));
   const cat = (categories||[]).join(' ').toLowerCase();
@@ -191,13 +186,11 @@ function afficherReglagesParActivite(universSet, categories){
   const isDomicile = has('domicile');
   const isEvent = has('evenement');
   const show = (id, ok) => { const el=document.getElementById(id); if(el) el.style.display = ok ? '' : 'none'; };
-  // RÈGLE N°1 MONDIAL : pas d'annonce = pas de réglages. On ne devine pas.
   if(universSet.size===0){
     document.getElementById('sectionReglages').style.display = 'none';
     document.getElementById('sectionLivreurDemandes').style.display = 'none';
     return;
   }
-  // RÈGLE N°2 : Hôtel / Restaurant / Immo seuls = tout est dans l'annonce, pas de réglages rapides
   const seulementAnnonce = !isGuide && !isPro && !isDomicile && !isLivreur && !isEvent;
   document.getElementById('sectionReglages').style.display = seulementAnnonce ? 'none' : '';
   if(seulementAnnonce){ document.getElementById('sectionLivreurDemandes').style.display = 'none'; return; }
@@ -237,7 +230,6 @@ async function majAnnonce(id, champ, valeur){
   if(error){ alert('Erreur : '+error.message); return; }
   return true;
 }
-// CORRIGÉ : 1 seule sauvegarde par annonce, pas 2 appels
 async function sauvegarderAnnonceComplete(a){
   const getVal = (id) => document.getElementById(id)?.value;
   const payload = {};
@@ -286,7 +278,6 @@ async function voirConversation(convId, annonceId){
   if(String(data.client_id)===String(data.prestataire_id)){ alert('Conversation invalide.'); return; }
   location.href = 'chat.html?conversation=' + encodeURIComponent(convId) + '&annonce=' + encodeURIComponent(annonceId || '');
 }
-// Gestion par annonce, 100% par activité - c'est ici que chaque métier gère son métier
 function gestionParAnnonce(a){
   if(a.univers==='manger'){
     return `<div class="gestion"><label>🍽️ PLAT - PRIX (FCFA)</label><input id="prix-${a.id}" type="number" value="${a.prix_indicatif||''}"><label>⏱️ TEMPS DE PRÉPARATION (minutes)</label><input id="temps-${a.id}" type="number" value="${a.temps_preparation_minutes ?? ''}" placeholder="Ex: 30"><label>DISPONIBLE ?</label><select id="dispo-${a.id}"><option value="true" ${a.disponible!==false?'selected':''}>Oui - Disponible</option><option value="false" ${a.disponible===false?'selected':''}>Non - Pas dispo</option></select><button class="btn btn-green" onclick="sauvegarderAnnonceComplete({id:'${a.id}'})">💾 Sauvegarder le plat</button></div>`;
@@ -303,15 +294,12 @@ function gestionParAnnonce(a){
   if(a.univers==='livreur'){
     return `<div class="gestion"><label>💰 PRIX LIVRAISON (FCFA)</label><input id="prix-${a.id}" type="number" value="${a.prix_indicatif||''}"><label>DISPONIBLE ?</label><select id="dispo-${a.id}"><option value="true" ${a.disponible!==false?'selected':''}>Oui - Dispo maintenant</option><option value="false" ${a.disponible===false?'selected':''}>Non</option></select><button class="btn btn-green" onclick="sauvegarderAnnonceComplete({id:'${a.id}'})">💾 Sauvegarder</button></div>`;
   }
-  // Guide / PRO / Domicile : prix + dispo, les détails sont dans les réglages rapides
   return `<div class="gestion"><label>💰 PRIX INDICATIF (FCFA)</label><input id="prix-${a.id}" type="number" value="${a.prix_indicatif||''}"><label>DISPONIBLE ?</label><select id="dispo-${a.id}"><option value="true" ${a.disponible!==false?'selected':''}>Oui</option><option value="false" ${a.disponible===false?'selected':''}>Non</option></select><button class="btn btn-green" onclick="sauvegarderAnnonceComplete({id:'${a.id}'})">💾 Sauvegarder le prix</button></div>`;
 }
 async function charger(){
   const user = await getUtilisateurSecurise(); if(!user){ location.href='connexion.html'; return; }
   uid = user.id;
-  const {data: profil, error: errProfil} = await sb.from('profiles')
-    .select('id, nom, nom_entreprise, type_compte, type_fournisseur, quartier, ville, pays, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert, portfolio_url, langues, lieux_connus, vehicule, travaille_distance, disponible_aujourd_hui, disponible_maintenant, photo_profil_url, quartier_verifie, verification_statut, created_at')
-    .eq('id', uid).maybeSingle();
+  const {data: profil, error: errProfil} = await sb.from('profiles').select('id, nom, nom_entreprise, type_compte, type_fournisseur, quartier, ville, pays, abonnement_actif, abonnement_statut, abonnement_fin, abonnement_offert, premier_mois_offert, portfolio_url, langues, lieux_connus, vehicule, travaille_distance, disponible_aujourd_hui, disponible_maintenant, photo_profil_url, quartier_verifie, verification_statut, created_at').eq('id', uid).maybeSingle();
   if(errProfil){ document.getElementById('infoUser').textContent = 'Erreur chargement profil : ' + errProfil.message; document.getElementById('bannerStatut').innerHTML = '<div class="banner attente">⚠️ Erreur : '+esc(errProfil.message)+'</div>'; return; }
   if(!profil){ document.getElementById('infoUser').textContent = 'Aucun profil trouvé pour ce compte.'; document.getElementById('bannerStatut').innerHTML = '<div class="banner attente">⚠️ Ton compte existe mais ton profil est introuvable. ID : '+uid+'</div>'; return; }
   let roleReel = String(profil.type_compte || profil.type_fournisseur || '').toLowerCase().trim();
