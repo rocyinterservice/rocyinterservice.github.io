@@ -89,10 +89,7 @@ async function init(){
   const {data:p}=await sb.from('profiles').select('type_compte, type_fournisseur').eq('id',uid).maybeSingle();
   monRole = String(p?.type_compte||p?.type_fournisseur||'').toLowerCase();
   if(monRole==='admin'){ location.href='admin.html'; return; }
-  if(paiementType==='visite' || paiementType==='achat_immobilier'){
-    chargerImmo();
-    return;
-  }
+  if(paiementType==='visite' || paiementType==='achat_immobilier'){ chargerImmo(); return; }
   if(!commandeId){ document.getElementById('resume').innerHTML = 'Aucune commande à payer. Va dans Mes commandes.'; document.getElementById('blocPaiement').style.display='none'; return; }
   charger();
 }
@@ -116,27 +113,14 @@ async function chargerImmo(){
   if(paiementType==='visite'){
     document.getElementById('sousTitre').innerHTML = 'Visite Rocyinter : tu paies 2 000 FCFA à Rocyinter. Argent pour notre caisse, non remboursable. Le bien reste en ligne après la visite, même si tu n\'aimes pas.';
     document.getElementById('commentMarche').innerHTML = '1. Tu paies 2 000 FCFA ici<br>2. Rocyinter te donne la facture<br>3. Tu vas visiter<br>4. Si tu aimes, tu reviens payer le vrai prix<br>5. Si tu n\'aimes pas, le bien reste en ligne pour les autres';
-    document.getElementById('resume').innerHTML = `
-      <h3>📍 Visite - ${esc(a.titre)}</h3>
-      <div class="row"><span>📍 Lieu</span><b>${esc(a.localite)} - ${esc(a.ville)}</b></div>
-      <div class="row"><span>Pour qui ?</span><b>Rocyinter (notre caisse)</b></div>
-      <div class="row"><span>Bien reste en ligne ?</span><b>Oui, il reste</b></div>
-      <div class="row total"><span>Tu paies maintenant</span><b>${fmt(2000)}</b></div>
-    `;
+    document.getElementById('resume').innerHTML = `<h3>📍 Visite - ${esc(a.titre)}</h3><div class="row"><span>📍 Lieu</span><b>${esc(a.localite)} - ${esc(a.ville)}</b></div><div class="row"><span>Pour qui ?</span><b>Rocyinter (notre caisse)</b></div><div class="row"><span>Bien reste en ligne ?</span><b>Oui, il reste</b></div><div class="row total"><span>Tu paies maintenant</span><b>${fmt(2000)}</b></div>`;
   } else {
     const cat = String(a.categorie||'').toLowerCase();
     const estParcelle = cat.includes('parcelle') || cat.includes('terrain');
     const commission = estParcelle ? Math.min(200000, Math.round(Number(a.prix_indicatif||0)*0.02)) : Math.round(Number(a.prix_indicatif||0)*0.5);
     document.getElementById('sousTitre').innerHTML = 'Achat Immobilier : tu paies le vrai prix. Après paiement, le bien disparaît du site.';
     document.getElementById('commentMarche').innerHTML = '1. Tu paies le vrai prix ici<br>2. Rocyinter bloque l\'argent<br>3. Tu vérifies les papiers / tu visites<br>4. Tu valides<br>5. Rocyinter libère au vendeur moins la commission<br><br><b>Après paiement, le bien disparaît du site.</b>';
-    document.getElementById('resume').innerHTML = `
-      <h3>🛒 ${esc(a.titre)}</h3>
-      <div class="row"><span>📍 Lieu</span><b>${esc(a.localite)} - ${esc(a.ville)}</b></div>
-      <div class="row"><span>Prix du bien</span><b>${fmt(a.prix_indicatif||0)}</b></div>
-      <div class="row"><span>Commission Rocyinter ${estParcelle ? '(2% plafonné 200 000)' : '(50% un mois location)'}</span><b>${fmt(commission)}</b></div>
-      <div class="row"><span>Vendeur recevra</span><b>${fmt(Number(a.prix_indicatif||0)-commission)}</b></div>
-      <div class="row total"><span>Tu paies maintenant</span><b>${fmt(a.prix_indicatif||0)}</b></div>
-    `;
+    document.getElementById('resume').innerHTML = `<h3>🛒 ${esc(a.titre)}</h3><div class="row"><span>📍 Lieu</span><b>${esc(a.localite)} - ${esc(a.ville)}</b></div><div class="row"><span>Prix du bien</span><b>${fmt(a.prix_indicatif||0)}</b></div><div class="row"><span>Commission Rocyinter ${estParcelle ? '(2% plafonné 200 000)' : '(50% un mois location)'}</span><b>${fmt(commission)}</b></div><div class="row"><span>Vendeur recevra</span><b>${fmt(Number(a.prix_indicatif||0)-commission)}</b></div><div class="row total"><span>Tu paies maintenant</span><b>${fmt(a.prix_indicatif||0)}</b></div>`;
   }
 }
 async function charger(){
@@ -158,15 +142,7 @@ async function charger(){
   }
   const supplement = data.univers === 'manger' ? 500 : 0;
   const total = Number(data.montant_total) + supplement;
-  document.getElementById('resume').innerHTML = `
-    <h3>${esc(data.titre)}</h3>
-    <div class="row"><span>📍 Lieu</span><b>${esc(data.localite)} - ${esc(data.ville)}</b></div>
-    <div class="row"><span>Montant convenu</span><b>${fmt(data.montant_total)}</b></div>
-    ${supplement ? `<div class="row"><span>Supplément espèces livraison</span><b>${fmt(500)}</b></div>` : ''}
-    <div class="row"><span>${esc(texteCommission(data))} (prélevée à la libération)</span><b>${fmt(data.commission)}</b></div>
-    <div class="row"><span>Prestataire recevra</span><b>${fmt(data.montant_prestataire)}</b></div>
-    <div class="row total"><span>Tu paies maintenant</span><b>${fmt(total)}</b></div>
-  `;
+  document.getElementById('resume').innerHTML = `<h3>${esc(data.titre)}</h3><div class="row"><span>📍 Lieu</span><b>${esc(data.localite)} - ${esc(data.ville)}</b></div><div class="row"><span>Montant convenu</span><b>${fmt(data.montant_total)}</b></div>${supplement ? `<div class="row"><span>Supplément espèces livraison</span><b>${fmt(500)}</b></div>` : ''}<div class="row"><span>${esc(texteCommission(data))} (prélevée à la libération)</span><b>${fmt(data.commission)}</b></div><div class="row"><span>Prestataire recevra</span><b>${fmt(data.montant_prestataire)}</b></div><div class="row total"><span>Tu paies maintenant</span><b>${fmt(total)}</b></div>`;
   if(data.univers === 'manger') document.getElementById('zoneEspeces').style.display = 'block';
   if(data.univers === 'evenement'){
     document.getElementById('sousTitre').innerHTML = '🎉 Évènement : tu paies le montant convenu. Rocyinter bloque l\'argent. Le prestataire prépare ton évènement. Tu valides après l\'évènement, on libère.';
