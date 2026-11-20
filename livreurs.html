@@ -17,7 +17,11 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:12px;line-height:1.5}
 .filters{background:#fff;padding:14px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.08);display:grid;gap:10px;margin-bottom:12px}
 .filters label{font-size:12px;font-weight:700;color:#475569}
 .filters select,.filters input{width:100%;padding:11px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;background:#fff}
+.filtres{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px}
+.filtres button{white-space:nowrap;background:#fff;border:1px solid #e2e8f0;padding:8px 12px;border-radius:999px;cursor:pointer;font-size:13px}
+.filtres button.active{background:#0f172a;color:#fff}
 .card{background:#fff;border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.card img{width:100%;height:140px;object-fit:cover;border-radius:12px;background:#e2e8f0;margin-bottom:10px}
 .card h3{font-size:15px} .card p{font-size:13px;color:#64748b;margin:6px 0;line-height:1.5}
 .btn{width:100%;background:#f59e0b;border:none;padding:11px;border-radius:10px;font-weight:800;cursor:pointer;margin-top:8px}
 .btn-dark{background:#0f172a;color:#fff}
@@ -45,26 +49,23 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:12px;line-height:1.5}
 <div class="top">
 <div class="back" onclick="location.href='index.html'">← <span data-i18n="accueil">Accueil</span></div>
 <h1>🛵 Livreurs</h1>
-<p class="sub">2 options comme Uber / Bolt / Jumia Food. Tu choisis.</p>
+<p class="sub">Tous les livreurs validés par Rocyinter. 1 livreur = 1 carte. 2 options comme Uber / Bolt / Jumia Food. Tu choisis.</p>
 <div class="info">💡 <b>Option 1 :</b> Je cherche moi-même mon livreur.<br><b>Option 2 :</b> Je lance une demande, le premier livreur qui accepte prend.<br>💰 Livreur 80% / Rocyinter 20%. Paiement par le site.</div>
 <div id="bandeauRole"></div>
-
 <div class="tabs">
   <button id="tab1" class="active" onclick="setTab('chercher')">🔍 Option 1 - Je cherche</button>
   <button id="tab2" onclick="setTab('demande')">📣 Option 2 - Je lance une demande</button>
 </div>
-
 <div id="vueChercher">
   <button class="btn btn-green" onclick="ouvrirDemande()" style="margin-bottom:12px">📣 Ou lancer une demande rapide →</button>
   <div class="filters">
     <div><label>PAYS</label><select id="filtrePays" onchange="charger()"><option value="">Tous les pays</option></select></div>
     <div><label>VILLE / LOCALITÉ</label><input id="search" placeholder="Ex: Calavi, Godomey, Cotonou..." oninput="afficher()"></div>
-    <div><label>VEHICULE</label><select id="filtreVehicule" onchange="afficher()"><option value="">Tous</option><option value="moto">🛵 Moto</option><option value="voiture">🚗 Voiture</option></select></div>
     <div><label>DISPONIBLE</label><select id="filtreDispo" onchange="afficher()"><option value="">Tous</option><option value="oui">🟢 Disponible maintenant seulement</option></select></div>
   </div>
+  <div class="filtres" id="filtres"><button class="active" data-cat="" onclick="setVehicule('')">Tous</button><button data-cat="moto" onclick="setVehicule('moto')">🛵 Moto</button><button data-cat="voiture" onclick="setVehicule('voiture')">🚗 Voiture</button></div>
   <div id="liste">Chargement...</div>
 </div>
-
 <div id="vueDemande" style="display:none">
   <button class="btn btn-green" onclick="ouvrirDemande()">📣 + Lancer une demande de livreur</button>
   <h3 style="margin:14px 0 8px">📋 Demandes en cours près de toi</h3>
@@ -73,7 +74,6 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:12px;line-height:1.5}
   <button class="btn btn-gris" onclick="chargerDemandes()">🔄 Actualiser les demandes</button>
 </div>
 </div>
-
 <div class="modal" id="modalDemande">
   <div class="modal-box">
     <h3>📣 Demander un livreur</h3>
@@ -89,13 +89,12 @@ p.sub{color:#64748b;font-size:13px;margin-bottom:12px;line-height:1.5}
     <button style="background:#f1f5f9;border:none;padding:12px;border-radius:12px;cursor:pointer" onclick="fermerDemande()">Annuler</button>
   </div>
 </div>
-
 <script>
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 let sb = null;
 try{ sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); window.supabaseClient = sb; }catch(e){}
-let tous=[]; let moiId=''; let monRole=''; let demandes=[];
+let tous=[]; let moiId=''; let monRole=''; let demandes=[]; let vehiculeActuel='';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function remplirPays(){
   const sel=document.getElementById('filtrePays');
@@ -119,16 +118,16 @@ function setTab(t){
   document.getElementById('vueDemande').style.display = t==='demande' ? 'block' : 'none';
   if(t==='demande') chargerDemandes();
 }
+function setVehicule(v){ vehiculeActuel = v; document.querySelectorAll('#filtres button').forEach(b=> b.classList.toggle('active', b.dataset.cat === v)); afficher(); }
 function afficher(){
   const q=(document.getElementById('search').value||'').trim().toLowerCase();
   const pays=document.getElementById('filtrePays')?document.getElementById('filtrePays').value:'';
-  const vehicule=document.getElementById('filtreVehicule')?document.getElementById('filtreVehicule').value:'';
   const dispo=document.getElementById('filtreDispo')?document.getElementById('filtreDispo').value:'';
   const box=document.getElementById('liste');
   let list=tous;
   if(pays) list=list.filter(l=>(l.pays||'')===pays);
-  if(q) list=list.filter(l=>((l.nom||'')+' '+(l.ville||'')+' '+(l.quartier||'')+' '+(l.description_profil||'')).toLowerCase().includes(q));
-  if(vehicule) list=list.filter(l=>String(l.vehicule||'').toLowerCase().includes(vehicule));
+  if(q) list=list.filter(l=>((l.nom||'')+' '+(l.prenom||'')+' '+(l.ville||'')+' '+(l.quartier||'')+' '+(l.description_profil||'')).toLowerCase().includes(q));
+  if(vehiculeActuel) list=list.filter(l=>String(l.vehicule||'').toLowerCase().includes(vehiculeActuel));
   if(dispo==='oui') list=list.filter(l=>l.disponible_maintenant===true);
   if(!list.length){box.innerHTML=`<div class="empty"><b>Aucun livreur</b><br>Essaie une autre ville.<br><br><button class="btn" onclick="location.href='inscription.html'">Devenir livreur</button></div>`;return;}
   box.innerHTML=list.map(l=>{
@@ -136,8 +135,9 @@ function afficher(){
     const cestMoi = moiId && String(l.id)===String(moiId);
     const dispoTxt = l.disponible_maintenant ? `<span class="badge">🟢 Disponible maintenant</span>` : `<span class="badge-orange">⚪ Pas dispo maintenant</span>`;
     const veh = l.vehicule ? `🛵 / 🚗 ${esc(l.vehicule)}` : 'Véhicule : à voir dans la fiche';
+    const img = l.photo_profil_url || 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&q=80';
     const btnChat = cestMoi ? `<button class="btn btn-gris" disabled>C'est toi</button>` : `<button class="btn btn-dark" onclick="discuter('${esc(l.id)}')">💬 Discuter / Lancer la course</button>`;
-    return `<div class="card">${dispoTxt} <span class="badge">✅ Vérifié</span><h3 style="margin-top:8px">🛵 ${esc(l.nom)} ${esc(l.prenom||'')}</h3><p>📍 ${esc(lieu)}<br>${esc(veh)}<br>${esc(l.description_profil||'Livreur Rocyinter.')}<br><b>💬 Prix à discuter dans le chat</b></p><button class="btn btn-gris" onclick="voirPresta('${esc(l.id)}')">Voir le livreur + Avis</button>${btnChat}</div>`;
+    return `<div class="card">${dispoTxt} <span class="badge">✅ Vérifié</span><img src="${esc(img)}" onclick="voirPresta('${esc(l.id)}')" style="cursor:pointer" onerror="this.src='https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&q=80'"><h3 style="margin-top:8px">🛵 ${esc(l.nom)} ${esc(l.prenom||'')}</h3><p>📍 ${esc(lieu)}<br>${esc(veh)}<br>${esc(l.description_profil||'Livreur Rocyinter.')}<br><b>💬 Prix à discuter dans le chat</b></p><button class="btn btn-gris" onclick="voirPresta('${esc(l.id)}')">Voir le livreur + Avis</button>${btnChat}</div>`;
   }).join('');
   if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 }
