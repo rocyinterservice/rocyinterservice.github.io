@@ -25,6 +25,7 @@ textarea{height:80px;resize:none}
 .btn-orange{background:#f59e0b;color:#000}
 .btn-dark{background:#0f172a;color:#fff}
 .btn-grey{background:#f1f5f9;color:#111}
+.btn-rouge{background:#fee2e2;color:#991b1b}
 .badge{display:inline-block;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:700;margin-top:8px}
 .badge.ok{background:#dcfce7;color:#166534}
 .badge.wait{background:#fef3c7;color:#92400e}
@@ -35,8 +36,10 @@ textarea{height:80px;resize:none}
 .photos img{width:100%;height:130px;object-fit:cover;border-radius:10px;border:1px solid #e2e8f0}
 .photos small{display:block;text-align:center;color:#64748b;font-size:11px;margin-top:4px}
 #msg{text-align:center;margin-top:10px;font-size:13px;font-weight:700}
+#msgInfo{text-align:center;margin-top:10px;font-size:13px;font-weight:700}
 .row{display:flex;gap:8px}
 .row .btn{flex:1}
+.card-info{border:2px solid #f59e0b}
 </style>
 </head>
 <body>
@@ -60,10 +63,8 @@ textarea{height:80px;resize:none}
   <h3>👤 Mon profil</h3>
   <p>Informations déjà remplies à l'inscription. Clique sur Modifier seulement si tu t'es trompé.</p>
   <div id="msg"></div>
-
   <label>Nom de la personne OU Nom Hôtel / Restaurant / Entreprise</label>
   <input id="nom" disabled>
-
   <label>Type de compte</label>
   <select id="type_compte" disabled>
     <option value="client">Client - Je cherche un service</option>
@@ -73,7 +74,6 @@ textarea{height:80px;resize:none}
     <option value="livreur">Livreur</option>
     <option value="admin">Admin - Rocyinter</option>
   </select>
-
   <label>Catégorie / Métier</label>
   <select id="categorie_prestataire" disabled>
     <option value="">-- Choisir --</option>
@@ -94,10 +94,8 @@ textarea{height:80px;resize:none}
     <option>Immobilier</option>
     <option>Autre</option>
   </select>
-
   <label>WhatsApp</label>
   <input id="whatsapp" disabled>
-
   <label>Quartier</label>
   <select id="quartier" disabled>
     <option value="">-- Choisir --</option>
@@ -141,28 +139,39 @@ textarea{height:80px;resize:none}
     <option>Abomey-Calavi</option>
     <option>Autre</option>
   </select>
-
   <label>Ville</label>
   <input id="ville" disabled>
   <label>Pays</label>
   <input id="pays" disabled>
-
   <label>Photo de profil / Logo entreprise (lien)</label>
   <input id="photo_profil_url" disabled>
-
   <label>Description de ton activité</label>
   <textarea id="description_profil" disabled></textarea>
-
-  <!-- CORRIGE : Message du jour - Prestataire / Entreprise / Livreur / Pro + ADMIN, JAMAIS Client -->
-  <div id="blocMessageEntreprise" style="display:none">
-    <label id="labelMessageEntreprise">📢 Message du jour - pour l'accueil</label>
-    <input id="message_entreprise" disabled maxlength="120" placeholder="Ex: Fermé aujourd'hui, on rouvre demain 11h">
-    <small id="aideMessageEntreprise" style="display:block;color:#64748b;font-size:12px;margin-top:4px">Ce message défile sur l'accueil. Laisse vide pour ne rien afficher. Max 120 caractères.</small>
-  </div>
-
   <button id="btnModifier" class="btn btn-dark" onclick="activerModification()">✏️ Modifier mon profil</button>
   <button id="btnEnregistrer" class="btn btn-orange" onclick="sauvegarder()" style="display:none">💾 Enregistrer mes modifications</button>
   <button id="btnAnnuler" class="btn btn-grey" onclick="chargerProfil()" style="display:none">Annuler</button>
+</div>
+
+<!-- BLOC A PART, ENTIEREMENT SEPARE DU PROFIL : INFO DU JOUR -->
+<div class="card card-info" id="blocInfoJour" style="display:none">
+  <h3 id="titreInfoJour">📢 Info du jour - pour l'accueil</h3>
+  <p id="texteInfoJour">Ton message défile sur l'accueil. Il s'efface tout seul quand la durée est finie.</p>
+  <div id="msgInfo"></div>
+  <div id="infoEnCours" style="display:none;background:#fef3c7;border-radius:10px;padding:10px;margin-top:10px;font-size:13px;line-height:1.5"></div>
+  <label>Ton message</label>
+  <input id="message_entreprise" maxlength="120" placeholder="Ex: Fermé aujourd'hui, on rouvre demain 11h">
+  <label>Durée d'affichage</label>
+  <select id="dureeInfo">
+    <option value="6">6 heures</option>
+    <option value="12">12 heures</option>
+    <option value="24" selected>24 heures - 1 jour</option>
+    <option value="72">3 jours</option>
+    <option value="168">7 jours</option>
+    <option value="720">30 jours</option>
+  </select>
+  <button class="btn btn-orange" onclick="publierInfo()">📢 Publier mon info</button>
+  <button class="btn btn-rouge" onclick="effacerInfo()" id="btnEffacerInfo" style="display:none">🗑️ Arrêter mon info maintenant</button>
+  <small style="display:block;color:#64748b;font-size:12px;margin-top:8px;text-align:center">Max 120 caractères. Après la durée, ça disparaît tout seul.</small>
 </div>
 
 <div class="card">
@@ -190,7 +199,7 @@ let userId = null;
 let monRole = '';
 function esc(v){ return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function setDisabled(dis){
-  ['nom','type_compte','categorie_prestataire','whatsapp','quartier','ville','pays','photo_profil_url','description_profil','message_entreprise'].forEach(id=>{
+  ['nom','type_compte','categorie_prestataire','whatsapp','quartier','ville','pays','photo_profil_url','description_profil'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.disabled = dis;
   });
 }
@@ -211,7 +220,7 @@ async function chargerProfil(){
   const {data:{user}} = await sb.auth.getUser();
   if(!user){ window.location.href='connexion.html'; return; }
   userId = user.id;
-  const {data: p, error: errP} = await sb.from('profiles').select('id, nom, nom_entreprise, type_compte, type_fournisseur, categorie_prestataire, whatsapp, quartier, ville, pays, description_profil, photo_profil_url, photo_piece_url, photo_atelier_url, quartier_verifie, verification_quartier, statut_validation, message_entreprise').eq('id', userId).single();
+  const {data: p, error: errP} = await sb.from('profiles').select('id, nom, nom_entreprise, type_compte, type_fournisseur, categorie_prestataire, whatsapp, quartier, ville, pays, description_profil, photo_profil_url, photo_piece_url, photo_atelier_url, quartier_verifie, verification_quartier, statut_validation, message_entreprise, message_expire_at').eq('id', userId).single();
   if(errP){
     document.getElementById('nomAffiche').textContent = 'Erreur : ' + errP.message;
     document.getElementById('msg').textContent = '❌ ' + errP.message;
@@ -220,20 +229,31 @@ async function chargerProfil(){
   }
   if(!p) return;
   monRole = String(p.type_compte || p.type_fournisseur || '').toLowerCase();
-  // CORRIGE : Client = caché, Admin + Prestataire / Pro / Entreprise / Livreur = visible
-  const peutMessage = ['prestataire','professionnel','entreprise','livreur','fournisseur','pro','admin'].includes(monRole);
-  document.getElementById('blocMessageEntreprise').style.display = peutMessage ? 'block' : 'none';
-  // Libellé différent pour Admin
+  // BLOC INFO A PART : Client = caché, Admin + Prestataire / Pro / Entreprise / Livreur = visible
+  const peutInfo = ['prestataire','professionnel','entreprise','livreur','fournisseur','pro','admin'].includes(monRole);
+  document.getElementById('blocInfoJour').style.display = peutInfo ? 'block' : 'none';
   if(monRole==='admin'){
-    document.getElementById('labelMessageEntreprise').textContent = '📢 Message Rocyinter pour tous - affiché sur l\'accueil';
-    document.getElementById('message_entreprise').placeholder = 'Ex: Rocyinter : Maintenance ce soir 22h, Nouvelle fonction disponible...';
-    document.getElementById('aideMessageEntreprise').textContent = 'Ce message défile en premier sur l\'accueil pour tous les visiteurs. Laisse vide pour ne rien afficher. Max 120 caractères.';
+    document.getElementById('titreInfoJour').textContent = '📢 Info Rocyinter pour tous';
+    document.getElementById('texteInfoJour').textContent = 'Ton message passe en premier sur l\'accueil pour tous les visiteurs. Il s\'efface tout seul quand la durée est finie.';
+    document.getElementById('message_entreprise').placeholder = 'Ex: Rocyinter : Maintenance ce soir 22h';
   } else {
-    document.getElementById('labelMessageEntreprise').textContent = '📢 Message du jour - pour l\'accueil';
+    document.getElementById('titreInfoJour').textContent = '📢 Info du jour - pour l\'accueil';
+    document.getElementById('texteInfoJour').textContent = 'Ton message défile sur l\'accueil. Il s\'efface tout seul quand la durée est finie.';
     document.getElementById('message_entreprise').placeholder = 'Ex: Fermé aujourd\'hui, on rouvre demain 11h';
-    document.getElementById('aideMessageEntreprise').textContent = 'Ce message défile sur l\'accueil. Laisse vide pour ne rien afficher. Max 120 caractères.';
   }
-  document.getElementById('message_entreprise').value = p.message_entreprise || "";
+  const infoBox = document.getElementById('infoEnCours');
+  const expire = p.message_expire_at ? new Date(p.message_expire_at) : null;
+  const encoreValide = p.message_entreprise && expire && expire > new Date();
+  if(encoreValide){
+    infoBox.style.display='block';
+    infoBox.innerHTML = '<b>✅ En ce moment sur l\'accueil :</b><br>"' + esc(p.message_entreprise) + '"<br><small>Fin : ' + expire.toLocaleString('fr-FR') + '</small>';
+    document.getElementById('message_entreprise').value = p.message_entreprise;
+    document.getElementById('btnEffacerInfo').style.display='block';
+  } else {
+    infoBox.style.display='none';
+    document.getElementById('message_entreprise').value = '';
+    document.getElementById('btnEffacerInfo').style.display='none';
+  }
   const btnDash = document.getElementById('btnDashboard');
   if(monRole==='admin'){ btnDash.textContent='🛡️ Aller au Panel Admin →'; btnDash.onclick=()=>window.location.href='admin.html'; btnDash.style.display='block'; }
   else if(['prestataire','professionnel','entreprise','livreur','fournisseur','pro'].includes(monRole)){ btnDash.textContent='📊 Aller à mon Dashboard Prestataire →'; btnDash.onclick=()=>window.location.href='dashboard-prestataire.html'; btnDash.style.display='block'; }
@@ -283,6 +303,22 @@ async function chargerProfil(){
     verifDetail.textContent = "Envoie ta pièce + photo de ton lieu pour avoir le badge ✅";
   }
 }
+async function publierInfo(){
+  const msgEl = document.getElementById('msgInfo');
+  const texte = document.getElementById('message_entreprise').value.trim();
+  if(!texte){ msgEl.textContent='❌ Écris ton message d\'abord'; msgEl.style.color='red'; return; }
+  const heures = Number(document.getElementById('dureeInfo').value || 24);
+  const fin = new Date(Date.now() + heures*3600*1000);
+  msgEl.textContent='Publication...'; msgEl.style.color='#f59e0b';
+  const {error} = await sb.from('profiles').update({message_entreprise: texte, message_expire_at: fin.toISOString()}).eq('id', userId);
+  if(error){ msgEl.textContent='❌ '+error.message; msgEl.style.color='red'; }
+  else{ msgEl.textContent='✅ Info publiée jusqu\'au '+fin.toLocaleString('fr-FR'); msgEl.style.color='green'; chargerProfil(); }
+}
+async function effacerInfo(){
+  if(!confirm('Arrêter ton info maintenant ?')) return;
+  const {error} = await sb.from('profiles').update({message_entreprise: null, message_expire_at: null}).eq('id', userId);
+  if(error){ alert('❌ '+error.message); } else { chargerProfil(); }
+}
 async function sauvegarder(){
   const msg = document.getElementById('msg');
   msg.textContent = "Enregistrement..."; msg.style.color = "#f59e0b";
@@ -300,10 +336,6 @@ async function sauvegarder(){
     photo_profil_url: document.getElementById('photo_profil_url').value.trim() || null,
     description_profil: document.getElementById('description_profil').value.trim() || null,
   };
-  // CORRIGE : Message enregistré pour Admin aussi, jamais pour Client
-  if(['prestataire','professionnel','entreprise','livreur','fournisseur','pro','admin'].includes(monRole)){
-    updates.message_entreprise = document.getElementById('message_entreprise').value.trim() || null;
-  }
   const {error} = await sb.from('profiles').update(updates).eq('id', userId);
   if(error){ msg.textContent = "❌ " + error.message; msg.style.color="red"; }
   else{
