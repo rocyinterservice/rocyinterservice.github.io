@@ -172,32 +172,30 @@ async function afficherBandeauRole(){
     box.innerHTML = `<div class="bandeau-role bandeau-client">🛒 ${esc(t('bandeauClient'))}</div>`;
   }
 }
-// === CORRIGE : Admin Rocyinter TOUJOURS en premier, Client jamais ===
+// === CORRIGE : respect de la durée, Admin en premier, Client jamais ===
 async function chargerInfosEntreprises(){
   const box=document.getElementById('tickerInfos'); const inner=document.getElementById('tickerInner');
   if(!box||!inner) return;
   try{
-    const {data,error}=await sb.from('profiles').select('nom,nom_entreprise,message_entreprise,type_compte,type_fournisseur').not('message_entreprise','is',null).neq('message_entreprise','').limit(30);
+    const {data,error}=await sb.from('profiles')
+      .select('nom,nom_entreprise,message_entreprise,message_expire_at,type_compte,type_fournisseur')
+      .not('message_entreprise','is',null).neq('message_entreprise','')
+      .gt('message_expire_at', new Date().toISOString())
+      .limit(30);
     if(error||!data||!data.length){ box.style.display='none'; return; }
-    // On enlève les clients, au cas où
     const valides = data.filter(p=>{
       const r = String(p.type_compte || p.type_fournisseur || '').toLowerCase().trim();
       return r !== 'client';
     });
     if(!valides.length){ box.style.display='none'; return; }
-    // Tri : Admin d'abord, puis les autres
     valides.sort((a,b)=>{
       const ra = String(a.type_compte || a.type_fournisseur || '').toLowerCase().trim();
       const rb = String(b.type_compte || b.type_fournisseur || '').toLowerCase().trim();
-      const pa = ra==='admin' ? 0 : 1;
-      const pb = rb==='admin' ? 0 : 1;
-      return pa - pb;
+      return (ra==='admin'?0:1) - (rb==='admin'?0:1);
     });
     const items = valides.map(p=>{
       const r = String(p.type_compte || p.type_fournisseur || '').toLowerCase().trim();
-      if(r==='admin'){
-        return `🛡️ <b>Rocyinter</b> : ${esc(p.message_entreprise)}`;
-      }
+      if(r==='admin') return `🛡️ <b>Rocyinter</b> : ${esc(p.message_entreprise)}`;
       return `📢 <b>${esc(p.nom_entreprise||p.nom||'Entreprise')}</b> : ${esc(p.message_entreprise)}`;
     }).join('<span> • </span>');
     inner.innerHTML = items + '<span> • </span>' + items;
