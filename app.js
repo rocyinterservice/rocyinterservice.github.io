@@ -36,7 +36,7 @@ function creerSelectPays(){
     <div style="background:#fff;border:1px solid #D8E2F0;border-radius:16px;padding:14px;max-width:860px;margin:0 auto 16px;box-shadow:0 6px 20px rgba(10,26,51,.08)">
       <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
         <select id="selectPays" onchange="changerPays(this.value)" style="flex:1;min-width:180px;padding:12px;border-radius:10px;border:1px solid #D8E2F0;font-size:15px;font-weight:700">
-          <option value="">🌍 Tous les pays</option>
+          <option value=""> Tous les pays</option>
           ${optionsPays}
         </select>
         <select id="selectVille" onchange="changerVille(this.value)" style="flex:1;min-width:180px;padding:12px;border-radius:10px;border:1px solid #D8E2F0;font-size:15px;font-weight:700">
@@ -56,7 +56,7 @@ function creerSelectPays(){
 function majInfoPays(){
   const info = document.getElementById('infoPays');
   if(!info) return;
-  if(!PAYS && !VILLE && !QUARTIER) info.textContent = "🌍 Tu vois tous les pays. Choisis un pays pour voir seulement ses prestataires.";
+  if(!PAYS && !VILLE && !QUARTIER) info.textContent = "Tu vois tous les pays. Choisis un pays pour voir seulement ses prestataires.";
   else {
     let txt = "📍 Résultats pour : ";
     if(PAYS) txt += PAYS;
