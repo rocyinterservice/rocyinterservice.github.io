@@ -15,7 +15,6 @@ body{background:#0f172a;color:#fff;padding:16px}
 header{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 header b{font-size:22px} header b span{color:#f59e0b}
 .header-btns{display:flex;gap:8px;flex-wrap:wrap}
-/* === COULEURS BOUTONS REFAITES === */
 header button,.btn-top{background:#fff;color:#0f172a;border:none;padding:9px 13px;border-radius:999px;cursor:pointer;font-size:12px;font-weight:700}
 .btn-profil{background:#f59e0b !important;color:#000 !important}
 .btn-profil-info{background:#1e293b !important;color:#fff !important;border:1px solid #334155 !important}
@@ -59,12 +58,10 @@ header button,.btn-top{background:#fff;color:#0f172a;border:none;padding:9px 13p
 <header>
   <b>Rocy<span>inter</span> Admin</b>
   <div class="header-btns">
-    <!-- NOUVEAU : Bouton Profil -->
     <button type="button" class="btn-profil" onclick="window.location.href='profil.html'">👤 Mon Profil</button>
     <button type="button" onclick="window.location.href='index.html'">👁️ Voir le site</button>
   </div>
 </header>
-
 <div class="login" id="loginBox">
   <h2 style="text-align:center">🔐 Admin Rocyinter</h2>
   <p style="text-align:center;color:#64748b;font-size:13px">Accès réservé à <b>rocyinter@gmail.com</b>.<br>Connecte-toi avec ce compte.</p>
@@ -73,12 +70,10 @@ header button,.btn-top{background:#fff;color:#0f172a;border:none;padding:9px 13p
   <button type="button" style="background:#f1f5f9" onclick="window.location.href='index.html'">Retour au site</button>
   <button type="button" style="background:#fff;border:1px solid #e2e8f0" onclick="deconnecterAdmin()">Se déconnecter / Changer de compte</button>
 </div>
-
 <div id="main">
   <div class="barre-admin">
     <span>✅ Connecté Admin : <b id="adminEmailAffiche">rocyinter@gmail.com</b></span>
     <span style="display:flex;gap:6px;flex-wrap:wrap">
-      <!-- NOUVEAU : accès rapide Profil + Info du jour -->
       <button type="button" class="btn-mini-orange" onclick="window.location.href='profil.html'">👤 Mon Profil</button>
       <button type="button" class="btn-mini" onclick="window.location.href='profil.html'">📢 Mon Info du jour</button>
       <button type="button" class="btn-mini" onclick="deconnecterAdmin()">Déconnexion</button>
@@ -105,7 +100,6 @@ header button,.btn-top{background:#fff;color:#0f172a;border:none;padding:9px 13p
   <div id="contenu"></div>
 </div>
 </div>
-
 <script>
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
@@ -207,37 +201,14 @@ async function chargerTout(){
       }
       box.innerHTML = enAttente.map(a=>{
         const pr = nomsPresta[a.prestataire_id] || {};
-        return `
-        <div class="card">
-          <span class="badge attente">⏳ En attente</span>
-          <h3 style="margin-top:8px">${esc(a.titre)}</h3>
-          <p><b>Prestataire :</b> ${esc(pr.nom_entreprise || pr.nom || '-')} • WhatsApp : ${esc(pr.whatsapp || '-')}<br>
-          <b>Catégorie :</b> ${esc(a.categorie)} • ${esc(a.univers)}<br>
-          <b>Lieu :</b> ${esc(a.localite || a.quartier)} - ${esc(a.ville)} - ${esc(a.pays)}<br>
-          <b>Prix :</b> ${a.prix_fixe ? fmt(a.prix_indicatif||0)+' fixe' : 'À discuter'}<br>
-          <b>Description :</b> ${esc(a.description)}</p>
-          <div class="actions">
-            <button type="button" class="btn-val" onclick="validerAnnonce('${esc(a.id)}')">✅ Valider</button>
-            <button type="button" class="btn-rej" onclick="rejeterAnnonce('${esc(a.id)}')">❌ Rejeter</button>
-          </div>
-        </div>`;
+        return `<div class="card"><span class="badge attente">⏳ En attente</span><h3 style="margin-top:8px">${esc(a.titre)}</h3><p><b>Prestataire :</b> ${esc(pr.nom_entreprise || pr.nom || '-')} • WhatsApp : ${esc(pr.whatsapp || '-')}<br><b>Catégorie :</b> ${esc(a.categorie)} • ${esc(a.univers)}<br><b>Lieu :</b> ${esc(a.localite || a.quartier)} - ${esc(a.ville)} - ${esc(a.pays)}<br><b>Prix :</b> ${a.prix_fixe ? fmt(a.prix_indicatif||0)+' fixe' : 'À discuter'}<br><b>Description :</b> ${esc(a.description)}</p><div class="actions"><button type="button" class="btn-val" onclick="validerAnnonce('${esc(a.id)}')">✅ Valider</button><button type="button" class="btn-rej" onclick="rejeterAnnonce('${esc(a.id)}')">❌ Rejeter</button></div></div>`;
       }).join('');
     }
     if(tabActuel==='autre'){
       const {data} = await sb.from('annonces').select('id, titre, categorie, univers, quartier, localite, ville, pays, prix_indicatif, prix_fixe, devise, status, prestataire_id, description').order('created_at',{ascending:false});
       const autres = (data||[]).filter(a=> String(a.categorie||'').toLowerCase().includes('autre') || String(a.univers||'').toLowerCase().includes('autre'));
       if(!autres.length){ box.innerHTML = `<div class="empty">✅ Aucune annonce "Autre" à classer.</div>`; return; }
-      box.innerHTML = autres.map(a=>`
-        <div class="card">
-          <span class="badge attente">🏷️ À classer - Autre</span>
-          <h3 style="margin-top:8px">${esc(a.titre)}</h3>
-          <p><b>Actuel :</b> ${esc(a.univers)} / ${esc(a.categorie)}<br><b>Lieu :</b> ${esc(a.localite||a.quartier)} - ${esc(a.ville)}<br>${esc(a.description||'')}</p>
-          <label style="font-size:12px;font-weight:700">NOUVEL UNIVERS</label>
-          <select id="uni-${a.id}"><option value="domicile">🏠 Domicile</option><option value="pro">💼 Pro</option><option value="manger">🍽️ Manger</option><option value="sejour">✈️ Séjour</option><option value="evenement">🎉 Évènement</option><option value="immobilier">🏘️ Immobilier</option></select>
-          <label style="font-size:12px;font-weight:700">NOUVELLE CATÉGORIE</label>
-          <input id="cat-${a.id}" placeholder="Ex: Décorateur, DJ, Plombier..." value="${esc(a.categorie)}">
-          <div class="actions"><button type="button" class="btn-val" onclick="classerAutre('${esc(a.id)}')">✅ Classer + Valider</button><button type="button" class="btn-rej" onclick="rejeterAnnonce('${esc(a.id)}')">❌ Rejeter</button></div>
-        </div>`).join('');
+      box.innerHTML = autres.map(a=>`<div class="card"><span class="badge attente">🏷️ À classer - Autre</span><h3 style="margin-top:8px">${esc(a.titre)}</h3><p><b>Actuel :</b> ${esc(a.univers)} / ${esc(a.categorie)}<br><b>Lieu :</b> ${esc(a.localite||a.quartier)} - ${esc(a.ville)}<br>${esc(a.description||'')}</p><label style="font-size:12px;font-weight:700">NOUVEL UNIVERS</label><select id="uni-${a.id}"><option value="domicile">🏠 Domicile</option><option value="pro">💼 Pro</option><option value="manger">🍽️ Manger</option><option value="sejour">✈️ Séjour</option><option value="evenement">🎉 Évènement</option><option value="immobilier">🏘️ Immobilier</option></select><label style="font-size:12px;font-weight:700">NOUVELLE CATÉGORIE</label><input id="cat-${a.id}" placeholder="Ex: Décorateur, DJ, Plombier..." value="${esc(a.categorie)}"><div class="actions"><button type="button" class="btn-val" onclick="classerAutre('${esc(a.id)}')">✅ Classer + Valider</button><button type="button" class="btn-rej" onclick="rejeterAnnonce('${esc(a.id)}')">❌ Rejeter</button></div></div>`).join('');
     }
     if(tabActuel==='terrains'){
       const {data} = await sb.from('annonces').select('id, titre, categorie, univers, quartier, localite, ville, pays, prix_indicatif, prix_fixe, devise, status, prestataire_id, description').eq('univers','immobilier').order('created_at',{ascending:false});
@@ -248,12 +219,8 @@ async function chargerTout(){
       let html = '';
       if(doublons.length){
         html += `<div class="card" style="border:2px solid #fca5a5"><h3>🚨 Doublons possibles - Même parcelle vendue 2 fois ?</h3><p>Vérifie avant de valider. Contacte les 2 vendeurs, demande les papiers.</p></div>`;
-        doublons.forEach(g=>{
-          html += g.map(a=>`<div class="card"><span class="badge doublon">🚨 DOUBLON POSSIBLE</span><h3 style="margin-top:8px">${esc(a.titre)}</h3><p>📍 ${esc(a.localite||a.quartier)} - ${esc(a.ville)} - ${esc(a.pays)}<br>Prix : ${fmt(a.prix_indicatif||0)}<br>Statut : ${esc(a.status)} • Prestataire : ${esc(a.prestataire_id||'')}</p><div class="actions"><button type="button" class="btn-val" onclick="validerAnnonce('${esc(a.id)}')">✅ Valider ce terrain</button><button type="button" class="btn-rej" onclick="rejeterAnnonce('${esc(a.id)}')">❌ Rejeter - Doublon / Faux</button></div></div>`).join('');
-        });
-      } else {
-        html += `<div class="empty">✅ Aucun doublon détecté sur les parcelles.</div>`;
-      }
+        doublons.forEach(g=>{ html += g.map(a=>`<div class="card"><span class="badge doublon">🚨 DOUBLON POSSIBLE</span><h3 style="margin-top:8px">${esc(a.titre)}</h3><p>📍 ${esc(a.localite||a.quartier)} - ${esc(a.ville)} - ${esc(a.pays)}<br>Prix : ${fmt(a.prix_indicatif||0)}<br>Statut : ${esc(a.status)} • Prestataire : ${esc(a.prestataire_id||'')}</p><div class="actions"><button type="button" class="btn-val" onclick="validerAnnonce('${esc(a.id)}')">✅ Valider ce terrain</button><button type="button" class="btn-rej" onclick="rejeterAnnonce('${esc(a.id)}')">❌ Rejeter - Doublon / Faux</button></div></div>`).join(''); });
+      } else { html += `<div class="empty">✅ Aucun doublon détecté sur les parcelles.</div>`; }
       html += `<h3 style="margin:16px 0 10px">🏞️ Toutes les parcelles / terrains</h3>`;
       html += (parcelles.length ? parcelles.map(a=>`<div class="card"><span class="badge ${a.status==='valide'?'valide':'attente'}">${esc(a.status)}</span><h3 style="margin-top:8px">${esc(a.titre)}</h3><p>${esc(a.categorie)} • 📍 ${esc(a.localite||a.quartier)} - ${esc(a.ville)}<br>${esc(a.description||'')}</p><div class="actions"><button type="button" class="btn-val" onclick="validerAnnonce('${esc(a.id)}')">✅ Valider terrain</button><button type="button" class="btn-rej" onclick="rejeterAnnonce('${esc(a.id)}')">❌ Refuser</button></div></div>`).join('') : `<div class="empty">Aucune parcelle.</div>`);
       box.innerHTML = html;
@@ -277,16 +244,7 @@ async function chargerTout(){
       if(!enAttente.length){ box.innerHTML = `<div class="empty">✅ Aucun prestataire en attente.</div>`; return; }
       box.innerHTML = enAttente.map(u=>{
         const labelType = u.type_compte==='entreprise' ? '🏢 Entreprise' : u.type_compte==='professionnel' ? '👨‍🔧 Professionnel' : u.type_compte==='livreur' ? '🛵 Livreur' : '💼 Fournisseur';
-        return `
-        <div class="card">
-          <span class="badge attente">⏳ ${labelType} en attente</span>
-          <h3 style="margin-top:8px">${esc(u.nom_entreprise || u.nom)}</h3>
-          <p>Contact : ${esc(u.nom)} • WhatsApp : ${esc(u.whatsapp)} • 📍 ${esc(u.quartier)} - ${esc(u.ville)} - ${esc(u.pays)}<br>${esc(u.description_profil || '')}<br><b>Catégorie :</b> ${esc(u.categorie_prestataire || '-')} • <b>Type :</b> ${esc(u.type_compte)}</p>
-          <div class="actions">
-            <button type="button" class="btn-val" onclick="validerPrestataire('${esc(u.id)}')">✅ Valider le compte</button>
-            <button type="button" class="btn-rej" onclick="rejeterPrestataire('${esc(u.id)}')">❌ Refuser</button>
-          </div>
-        </div>`;
+        return `<div class="card"><span class="badge attente">⏳ ${labelType} en attente</span><h3 style="margin-top:8px">${esc(u.nom_entreprise || u.nom)}</h3><p>Contact : ${esc(u.nom)} • WhatsApp : ${esc(u.whatsapp)} • 📍 ${esc(u.quartier)} - ${esc(u.ville)} - ${esc(u.pays)}<br>${esc(u.description_profil || '')}<br><b>Catégorie :</b> ${esc(u.categorie_prestataire || '-')} • <b>Type :</b> ${esc(u.type_compte)}</p><div class="actions"><button type="button" class="btn-val" onclick="validerPrestataire('${esc(u.id)}')">✅ Valider le compte</button><button type="button" class="btn-rej" onclick="rejeterPrestataire('${esc(u.id)}')">❌ Refuser</button></div></div>`;
       }).join('');
     }
     if(tabActuel==='quartiers'){
@@ -297,20 +255,7 @@ async function chargerTout(){
         const photoPiece = u.photo_piece_url || '';
         const photoAtelier = u.photo_atelier_url || '';
         const labelType = u.type_compte==='entreprise' ? '🏢 Entreprise' : u.type_compte==='professionnel' ? '👨‍🔧 Professionnel' : u.type_compte==='livreur' ? '🛵 Livreur' : u.type_compte==='client' ? '🛒 Client' : '💼 Fournisseur';
-        return `
-        <div class="card">
-          <span class="badge attente">📍 Vérification quartier - ${esc(quartier)}</span>
-          <h3 style="margin-top:8px">${esc(u.nom_entreprise || u.nom)} - ${labelType} - ${esc(u.categorie_prestataire||'')}</h3>
-          <p>WhatsApp : ${esc(u.whatsapp)} • 📍 ${esc(u.quartier)} - ${esc(u.ville)} - ${esc(u.pays)}<br><b>Quartier déclaré :</b> ${esc(quartier)}<br>${esc(u.description_profil || '')}</p>
-          <div class="photos">
-            <div>${photoPiece ? `<img src="${photoPiece}" onclick="window.open('${photoPiece}','_blank')"><small>🪪 Pièce d'identité - Clique pour agrandir</small>` : '<small>Aucune photo pièce</small>'}</div>
-            <div>${photoAtelier ? `<img src="${photoAtelier}" onclick="window.open('${photoAtelier}','_blank')"><small>🏪 Photo atelier - Clique pour agrandir</small>` : '<small>Aucune photo atelier</small>'}</div>
-          </div>
-          <div class="actions">
-            <button type="button" class="btn-val" onclick="validerQuartier('${esc(u.id)}','${esc(quartier)}')">✅ Valider quartier - Donner badge</button>
-            <button type="button" class="btn-rej" onclick="rejeterQuartier('${esc(u.id)}')">❌ Refuser - Photos pas bonnes</button>
-          </div>
-        </div>`;
+        return `<div class="card"><span class="badge attente">📍 Vérification quartier - ${esc(quartier)}</span><h3 style="margin-top:8px">${esc(u.nom_entreprise || u.nom)} - ${labelType} - ${esc(u.categorie_prestataire||'')}</h3><p>WhatsApp : ${esc(u.whatsapp)} • 📍 ${esc(u.quartier)} - ${esc(u.ville)} - ${esc(u.pays)}<br><b>Quartier déclaré :</b> ${esc(quartier)}<br>${esc(u.description_profil || '')}</p><div class="photos"><div>${photoPiece ? `<img src="${photoPiece}" onclick="window.open('${photoPiece}','_blank')"><small>🪪 Pièce d'identité - Clique pour agrandir</small>` : '<small>Aucune photo pièce</small>'}</div><div>${photoAtelier ? `<img src="${photoAtelier}" onclick="window.open('${photoAtelier}','_blank')"><small>🏪 Photo atelier - Clique pour agrandir</small>` : '<small>Aucune photo atelier</small>'}</div></div><div class="actions"><button type="button" class="btn-val" onclick="validerQuartier('${esc(u.id)}','${esc(quartier)}')">✅ Valider quartier - Donner badge</button><button type="button" class="btn-rej" onclick="rejeterQuartier('${esc(u.id)}')">❌ Refuser - Photos pas bonnes</button></div></div>`;
       }).join('');
     }
     if(tabActuel==='commandes'){
@@ -321,36 +266,18 @@ async function chargerTout(){
         if(c.status==='valide') action = `<div class="actions"><button type="button" class="btn-val" onclick="liberer('${esc(c.id)}')">💰 Libérer l'argent au prestataire</button></div>`;
         if(c.status==='paye') action = `<p style="color:#1e40af">💳 Payé - Bloqué en escrow. En attente du service.</p>`;
         if(c.status==='litige') action = `<p style="color:#991b1b">⚠️ Litige - Va dans l'onglet Litiges pour trancher.</p>`;
-        return `<div class="card">
-          <b>${esc(c.titre)}</b> • <span class="badge attente">${esc(c.status)}</span>
-          <p>Total : ${fmt(c.montant_total||0)} • ${texteCommission(c)} : <b>${fmt(c.commission||0)}</b> • Prestataire : ${fmt(c.montant_prestataire||0)}<br>
-          📍 ${esc(c.localite)} - ${esc(c.ville)} • ${c.created_at ? new Date(c.created_at).toLocaleDateString('fr-FR') : ''}</p>${action}
-        </div>`;
+        return `<div class="card"><b>${esc(c.titre)}</b> • <span class="badge attente">${esc(c.status)}</span><p>Total : ${fmt(c.montant_total||0)} • ${texteCommission(c)} : <b>${fmt(c.commission||0)}</b> • Prestataire : ${fmt(c.montant_prestataire||0)}<br>📍 ${esc(c.localite)} - ${esc(c.ville)} • ${c.created_at ? new Date(c.created_at).toLocaleDateString('fr-FR') : ''}</p>${action}</div>`;
       }).join('');
     }
     if(tabActuel==='litiges'){
       const {data} = await sb.from('commandes').select('id, titre, client_id, prestataire_id, conversation_id, annonce_id, status, univers, commission, montant_total, montant_prestataire, localite, ville, litige_raison, created_at').eq('status','litige').order('created_at',{ascending:false});
       if(!data || data.length===0){ box.innerHTML = `<div class="empty">✅ Aucun litige. Tout va bien !</div>`; return; }
-      box.innerHTML = data.map(c=>`
-        <div class="card">
-          <span class="badge litige">⚠️ Litige - Argent bloqué</span>
-          <h3 style="margin-top:8px">${esc(c.titre)}</h3>
-          <p>Total : ${fmt(c.montant_total||0)} • Prestataire devait recevoir : ${fmt(c.montant_prestataire||0)}<br>
-          <b>Raison :</b> ${esc(c.litige_raison || 'Non précisée')}<br>📍 ${esc(c.localite)} - ${esc(c.ville)}</p>
-          <div class="actions">
-            <button type="button" class="btn-val" onclick="trancherLitige('${esc(c.id)}','libere')">✅ Donner raison au prestataire - Libérer</button>
-            <button type="button" class="btn-rej" onclick="trancherLitige('${esc(c.id)}','rembourse')">💰 Donner raison au client - Rembourser</button>
-            <button type="button" class="btn-chat" onclick="voirChatLitige('${esc(c.conversation_id)}','${esc(c.id)}')">💬 Voir le chat (lecture seule)</button>
-          </div>
-          <div id="chat-${esc(c.id)}" style="display:none"></div>
-        </div>`).join('');
+      box.innerHTML = data.map(c=>`<div class="card"><span class="badge litige">⚠️ Litige - Argent bloqué</span><h3 style="margin-top:8px">${esc(c.titre)}</h3><p>Total : ${fmt(c.montant_total||0)} • Prestataire devait recevoir : ${fmt(c.montant_prestataire||0)}<br><b>Raison :</b> ${esc(c.litige_raison || 'Non précisée')}<br>📍 ${esc(c.localite)} - ${esc(c.ville)}</p><div class="actions"><button type="button" class="btn-val" onclick="trancherLitige('${esc(c.id)}','libere')">✅ Donner raison au prestataire - Libérer</button><button type="button" class="btn-rej" onclick="trancherLitige('${esc(c.id)}','rembourse')">💰 Donner raison au client - Rembourser</button><button type="button" class="btn-chat" onclick="voirChatLitige('${esc(c.conversation_id)}','${esc(c.id)}')">💬 Voir le chat (lecture seule)</button></div><div id="chat-${esc(c.id)}" style="display:none"></div></div>`).join('');
     }
     if(tabActuel==='users'){
       const {data} = await sb.from('profiles').select('id, nom, nom_entreprise, whatsapp, type_compte, type_fournisseur, statut_validation, categorie_prestataire, description_profil, quartier, ville, pays, quartier_verifie').order('created_at',{ascending:false}).limit(100);
       if(!data || data.length===0){ box.innerHTML = `<div class="empty">Aucun utilisateur.</div>`; return; }
-      box.innerHTML = data.map(u=>`
-        <div class="card"><b>${esc(u.nom_entreprise || u.nom)}</b> • ${esc(u.type_compte)} ${['prestataire','professionnel','entreprise','livreur'].includes(String(u.type_compte||'').toLowerCase()) ? '• ' + esc(u.categorie_prestataire||'') + ' • Statut : ' + esc(u.statut_validation||'en_attente') : ''}
-        <p>WhatsApp : ${esc(u.whatsapp)} • 📍 ${esc(u.quartier)} - ${esc(u.ville)} - ${esc(u.pays)} • Quartier : ${esc(u.quartier||'-')} ${u.quartier_verifie ? '✅ Vérifié' : ''}<br>${esc(u.description_profil || '')}</p></div>`).join('');
+      box.innerHTML = data.map(u=>`<div class="card"><b>${esc(u.nom_entreprise || u.nom)}</b> • ${esc(u.type_compte)} ${['prestataire','professionnel','entreprise','livreur'].includes(String(u.type_compte||'').toLowerCase()) ? '• ' + esc(u.categorie_prestataire||'') + ' • Statut : ' + esc(u.statut_validation||'en_attente') : ''}<p>WhatsApp : ${esc(u.whatsapp)} • 📍 ${esc(u.quartier)} - ${esc(u.ville)} - ${esc(u.pays)} • Quartier : ${esc(u.quartier||'-')} ${u.quartier_verifie ? '✅ Vérifié' : ''}<br>${esc(u.description_profil || '')}</p></div>`).join('');
     }
     if(tabActuel==='avis'){
       const {data, error: errAvis} = await sb.from('avis').select('id, note, commentaire, created_at').order('created_at',{ascending:false}).limit(50);
