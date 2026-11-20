@@ -115,7 +115,7 @@ function visiter(){
   localStorage.setItem('paiement_annonce', a.id);
   localStorage.setItem('paiement_type', 'visite');
   localStorage.setItem('paiement_montant', '2000');
-  localStorage.setItem('paiement_dest', 'rocyinter'); // Argent pour notre caisse
+  localStorage.setItem('paiement_dest', 'rocyinter');
   location.href='paiement.html';
 }
 function payerBien(){
@@ -123,7 +123,7 @@ function payerBien(){
   localStorage.setItem('paiement_annonce', a.id);
   localStorage.setItem('paiement_type', 'achat_immobilier');
   localStorage.setItem('paiement_montant', String(a.prix_indicatif||0));
-  localStorage.setItem('paiement_dest', 'vendeur'); // Vrai prix, pour le vendeur
+  localStorage.setItem('paiement_dest', 'vendeur');
   location.href='paiement.html';
 }
 async function discuter(){
