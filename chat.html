@@ -90,13 +90,16 @@ const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 window.supabaseClient = sb;
 let moiId = ''; let monRole = '';
-// CORRIGÉ 1 : on lit ?conversation_id=... dans le lien de la notification, avant localStorage
+// VRAIE CORRECTION : on ne fait PLUS confiance à localStorage pour la conversation.
+// Seul le lien ?conversation_id=... compte. Sinon on cherche la vraie conversation de l'annonce.
 const paramsUrl = new URLSearchParams(window.location.search);
 const convIdUrl = paramsUrl.get('conversation_id') || paramsUrl.get('id') || paramsUrl.get('conversation');
+const clientVouluUrl = paramsUrl.get('client_id') || paramsUrl.get('client');
 if(convIdUrl) localStorage.setItem('chat_conversation_id', convIdUrl);
+if(clientVouluUrl) localStorage.setItem('chat_client', clientVouluUrl);
 const prestataireId = localStorage.getItem('chat_prestataire');
 const annonceId = localStorage.getItem('chat_annonce');
-const convIdDirect = convIdUrl || localStorage.getItem('chat_conversation_id');
+const convIdDirect = convIdUrl || null;
 let conversationId = convIdDirect || null; let annonceData = null; let clientIdFinal = null;
 const fmt = n => window.rocyFormatPrix ? window.rocyFormatPrix(Number(n||0)) : Number(n||0).toLocaleString()+' FCFA';
 function prixFixeUnivers(u){ return ['manger','sejour','immobilier'].includes(String(u||'').toLowerCase()); }
@@ -188,28 +191,19 @@ async function init(){
   const {data:profMoi} = await sb.from('profiles').select('type_compte, type_fournisseur').eq('id', moiId).maybeSingle();
   monRole = String(profMoi?.type_compte || profMoi?.type_fournisseur || '').toLowerCase();
   if(monRole==='admin'){ alert('Admin : tu ne peux pas chatter, tu gères dans Admin.'); location.href='admin.html'; return; }
+  // Seulement si on vient d'une notification avec un ID dans le lien, on l'utilise direct
   if(conversationId){
-    const {data: conv, error: errConv} = await sb.from('conversations').select('*').eq('id', conversationId).maybeSingle();
-    console.log('ROCY chat conv directe:', conv, errConv);
-    if(conv){
-      // Sécurité : cette conversation est bien à moi ?
-      if(String(conv.client_id)!==String(moiId) && String(conv.prestataire_id)!==String(moiId)){
-        document.getElementById('annonceBar').textContent = 'Cette conversation ne t\'appartient pas.';
-        bloquerChat('⛔ Cette conversation ne t\'appartient pas.');
-        return;
-      }
+    const {data: conv} = await sb.from('conversations').select('*').eq('id', conversationId).maybeSingle();
+    if(conv && (String(conv.client_id)===String(moiId) || String(conv.prestataire_id)===String(moiId))){
       clientIdFinal = conv.client_id;
-      const {data: ann2} = await sb.from('annonces').select('id, titre, categorie, univers, prix_fixe, prix_indicatif, devise, localite, ville, pays, status, prestataire_id').eq('id', conv.annonce_id).maybeSingle();
-      if(ann2){ annonceData = ann2; }
       localStorage.setItem('chat_prestataire', conv.prestataire_id);
       if(conv.annonce_id) localStorage.setItem('chat_annonce', conv.annonce_id);
+      localStorage.setItem('chat_conversation_id', conv.id);
       return await initAvecAnnonce(conv.annonce_id, conv.prestataire_id, conv);
-    } else {
-      console.log('ROCY chat : conv directe introuvable, on repart sur annonce');
-      conversationId = null;
-      localStorage.removeItem('chat_conversation_id');
     }
+    conversationId = null;
   }
+  // Sinon : on ouvre par annonce / dashboard, on cherche la vraie conversation dans initAvecAnnonce
   if(!prestataireId || !annonceId){ location.href='index.html'; return; }
   return await initAvecAnnonce(annonceId, prestataireId, null);
 }
@@ -243,22 +237,31 @@ async function initAvecAnnonce(annId, prestaId, convExistante){
   if(!jeSuisPresta && ann.univers==='immobilier') document.getElementById('btnVisit').style.display = 'block';
   if(convExistante){ conversationId = convExistante.id; clientIdFinal = convExistante.client_id; }
   else {
-    const {data: convs, error: errConvs} = await sb.from('conversations').select('*').eq('annonce_id', annId);
-    console.log('ROCY chat convs existantes:', convs, errConvs);
-    // CORRIGÉ 3 : pour le prestataire, on cherche une conversation où il est prestataire et où le client n'est pas lui-même
-    const bonne = (convs||[]).find(c => (String(c.client_id)===String(moiId) && String(c.prestataire_id)===String(prestaId)) || (String(c.prestataire_id)===String(moiId) && String(c.client_id)!==String(moiId)));
-    let cible = bonne;
-    if(!cible && jeSuisPresta){
-      const mesConvs = (convs||[]).filter(c => String(c.prestataire_id)===String(moiId) && c.client_id && String(c.client_id)!==String(c.prestataire_id));
-      if(mesConvs.length===1) cible = mesConvs[0];
-      else if(mesConvs.length>1){ cible = mesConvs.sort((a,b)=> new Date(b.created_at)-new Date(a.created_at))[0]; }
+    const {data: convs} = await sb.from('conversations').select('*').eq('annonce_id', annId);
+    console.log('ROCY chat convs existantes:', convs);
+    let cible = null;
+    if(jeSuisPresta){
+      const mesConvs = (convs||[]).filter(c => String(c.prestataire_id)===String(moiId) && String(c.client_id)!==String(moiId));
+      const clientVoulu = localStorage.getItem('chat_client');
+      if(clientVoulu) cible = mesConvs.find(c => String(c.client_id)===String(clientVoulu));
+      if(!cible && mesConvs.length===1) cible = mesConvs[0];
+      if(!cible && mesConvs.length>1){
+        // On prend la conversation qui a le DERNIER message, pas la plus récente en création
+        let derniere = null; let derniereDate = null;
+        for(const c of mesConvs){
+          const {data: m} = await sb.from('messages').select('created_at').eq('conversation_id', c.id).order('created_at',{ascending:false}).limit(1).maybeSingle();
+          if(m && (!derniereDate || new Date(m.created_at) > new Date(derniereDate))){ derniere = c; derniereDate = m.created_at; }
+        }
+        cible = derniere || mesConvs.sort((a,b)=> new Date(b.created_at)-new Date(a.created_at))[0];
+      }
+    } else {
+      cible = (convs||[]).find(c => String(c.client_id)===String(moiId) && String(c.prestataire_id)===String(prestaId));
     }
     if(cible){ conversationId = cible.id; clientIdFinal = cible.client_id; }
     else if(!jeSuisPresta){
       clientIdFinal = moiId;
       const {data: nv, error} = await sb.from('conversations').insert([{client_id: moiId, prestataire_id: prestaId, annonce_id: annId}]).select().single();
-      console.log('ROCY chat création conversation:', nv, error);
-      if(error){ alert('Erreur conversation : '+error.message + ' - Vérifie la RLS dans Supabase.'); document.getElementById('annonceBar').textContent = 'Erreur conversation : ' + error.message; return; }
+      if(error){ alert('Erreur conversation : '+error.message); return; }
       if(nv) conversationId = nv.id;
     } else { bloquerChat("⏳ En attente qu'un client te parle sur cette annonce."); document.getElementById('btnProp').style.display='none'; return; }
   }
@@ -266,7 +269,7 @@ async function initAvecAnnonce(annId, prestaId, convExistante){
   if(conversationId) localStorage.setItem('chat_conversation_id', conversationId);
   debloquerChat();
   afficherCommandeDepuisFiche();
-  chargerMessages();
+  await chargerMessages();
   setInterval(chargerMessages, 3000);
 }
 function payerVisite(){
@@ -314,29 +317,14 @@ async function envoyer(){
   const inp = document.getElementById('inputMsg');
   const btn = document.getElementById('btnEnvoyer');
   const txt = inp.value.trim();
-  console.log('ROCY envoyer clic, txt:', txt, 'conversationId:', conversationId, 'moiId:', moiId);
-  if(!txt){
-    alert('Écris un message d’abord.');
-    return;
-  }
+  if(!txt){ alert('Écris un message d’abord.'); return; }
   if(!conversationId){
-    console.log('ROCY envoyer : pas de conversation, tentative de recréation');
-    if(!annonceData || !prestataireId || !annonceId){
-      alert('Conversation introuvable. Retourne sur l’annonce et clique à nouveau sur Discuter.');
-      return;
-    }
+    if(!annonceData || !prestataireId || !annonceId){ alert('Conversation introuvable. Retourne sur l’annonce et clique à nouveau sur Discuter.'); return; }
     const jeSuisPresta = String(moiId) === String(prestataireId);
-    if(jeSuisPresta){
-      alert('En attente qu’un client te parle sur cette annonce.');
-      return;
-    }
+    if(jeSuisPresta){ alert('En attente qu’un client te parle sur cette annonce.'); return; }
     const {data: nv, error: errNv} = await sb.from('conversations').insert([{client_id: moiId, prestataire_id: prestataireId, annonce_id: annonceId}]).select().single();
-    if(errNv || !nv){
-      alert('Impossible de créer la conversation : ' + (errNv?.message || 'erreur inconnue') + ' - Vérifie la RLS conversations dans Supabase.');
-      return;
-    }
-    conversationId = nv.id;
-    clientIdFinal = moiId;
+    if(errNv || !nv){ alert('Impossible de créer la conversation : ' + (errNv?.message || 'erreur inconnue')); return; }
+    conversationId = nv.id; clientIdFinal = moiId;
     localStorage.setItem('chat_conversation_id', conversationId);
   }
   if(txt.length>2000){ alert('Message trop long (max 2000).'); return; }
@@ -347,16 +335,11 @@ async function envoyer(){
   btn.disabled = true; btn.textContent = 'Envoi...';
   const {error} = await sb.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: txt, type: 'texte'}]);
   btn.disabled = false; btn.textContent = 'Envoyer';
-  if(error){
-    console.log('ROCY envoyer erreur:', error);
-    alert('Erreur envoi : '+error.message + ' - Vérifie la RLS messages dans Supabase.');
-    return;
-  }
+  if(error){ alert('Erreur envoi : '+error.message); return; }
   inp.value = '';
   if(window.rocyLog) window.rocyLog('envoyer_message', 'messages', conversationId, { annonce_id: annonceId });
   const prestaActuel = localStorage.getItem('chat_prestataire') || prestataireId;
   const autreId = String(moiId)===String(prestaActuel) ? clientIdFinal : prestaActuel;
-  // CORRIGÉ 2 : la notification porte l'ID de la conversation
   await notifier(autreId, 'Nouveau message', txt, 'message', `chat.html?conversation_id=${conversationId}`);
   chargerMessages();
 }
