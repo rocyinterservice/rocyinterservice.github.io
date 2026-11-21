@@ -104,7 +104,7 @@ let prestataireId = prestaUrl || localStorage.getItem('chat_prestataire');
 let annonceId = annonceUrl || localStorage.getItem('chat_annonce');
 const convIdDirect = convIdUrl || null;
 let conversationId = convIdDirect || null; let annonceData = null; let clientIdFinal = null;
-const fmt = n => window.rocyFormatPrix ? window.rocyFormatPrix(Number(n||0)) : Number(n||0).toLocaleString()+' FCFA';
+const fmt = n => { try{ return window.rocyFormatPrix ? window.rocyFormatPrix(Number(n||0)) : Number(n||0).toLocaleString()+' FCFA'; }catch(e){ return Number(n||0).toLocaleString()+' FCFA'; } };
 function prixFixeUnivers(u){ return ['manger','sejour','immobilier'].includes(String(u||'').toLowerCase()); }
 async function notifier(destinataire, titre, message, type, lien){
   try{
@@ -130,18 +130,20 @@ function calculerCommission(univers, montant, annonce){
   return Math.round(montant * 0.12);
 }
 function texteCommission(univers, annonce){
-  if(univers==='domicile') return 'Commission Rocyinter : 8% - prélevée à la libération, pas avant.';
-  if(univers==='pro') return 'Commission Rocyinter : 5 000 FCFA pour débloquer le contact.';
-  if(univers==='manger') return 'Prix affiché par le restaurant. Commission 12% incluse. Pas de négociation.';
-  if(univers==='sejour') return 'Prix affiché par l\'hôtel. Commission 12% incluse. Pas de négociation.';
-  if(univers==='evenement') return 'Commission Rocyinter : 12% - Devis dans le chat.';
-  if(univers==='livreur') return 'Livreur 80% / Rocyinter 20%. Prix à discuter dans le chat.';
-  if(univers==='immobilier'){
-    const cat = String(annonce?.categorie||'').toLowerCase();
-    if(cat.includes('parcelle') || cat.includes('vente')) return 'Parcelle : 2% plafonné 200 000 FCFA. Visite 2 000 FCFA pour Rocyinter, à part.';
-    return "Location : 50% d'un mois. Visite 2 000 FCFA pour Rocyinter, à part.";
-  }
-  return 'Commission Rocyinter prélevée à la libération.';
+  try{
+    if(univers==='domicile') return 'Commission Rocyinter : 8% - prélevée à la libération, pas avant.';
+    if(univers==='pro') return 'Commission Rocyinter : 5 000 FCFA pour débloquer le contact.';
+    if(univers==='manger') return 'Prix affiché par le restaurant. Commission 12% incluse. Pas de négociation.';
+    if(univers==='sejour') return 'Prix affiché par l\'hôtel. Commission 12% incluse. Pas de négociation.';
+    if(univers==='evenement') return 'Commission Rocyinter : 12% - Devis dans le chat.';
+    if(univers==='livreur') return 'Livreur 80% / Rocyinter 20%. Prix à discuter dans le chat.';
+    if(univers==='immobilier'){
+      const cat = String(annonce?.categorie||'').toLowerCase();
+      if(cat.includes('parcelle') || cat.includes('vente')) return 'Parcelle : 2% plafonné 200 000 FCFA. Visite 2 000 FCFA pour Rocyinter, à part.';
+      return "Location : 50% d'un mois. Visite 2 000 FCFA pour Rocyinter, à part.";
+    }
+    return 'Commission Rocyinter prélevée à la libération.';
+  }catch(e){ return 'Commission Rocyinter prélevée à la libération.'; }
 }
 function contientNumero(txt){
   const t = String(txt||'').toLowerCase();
@@ -163,30 +165,32 @@ function debloquerChat(){
   document.getElementById('btnEnvoyer').disabled = false;
 }
 function afficherCommandeDepuisFiche(){
-  const type = localStorage.getItem('commande_type');
-  if(!type || !annonceData) return;
-  const bar = document.getElementById('commandeBar');
-  const prixUnit = Number(annonceData.prix_indicatif||0);
-  if(type==='plat'){
-    const qty = Number(localStorage.getItem('commande_quantite')||1);
-    const total = prixUnit * qty;
-    bar.style.display = 'block';
-    bar.innerHTML = `<b>🍽️ Commande depuis le menu : ${qty} x ${annonceData.titre} = ${fmt(total)}</b><small>Prix déjà connu. Pas de négociation. Clique sur Créer la commande en bas.</small>`;
-    document.getElementById('cmdTitre').value = `${qty} x ${annonceData.titre}`;
-    document.getElementById('cmdMontant').value = total;
-    document.getElementById('inputMsg').value = `Bonjour, je veux commander ${qty} x ${annonceData.titre} = ${fmt(total)}.`;
-  } else if(type==='sejour'){
-    const date = localStorage.getItem('commande_date')||'';
-    const nuits = Number(localStorage.getItem('commande_nuits')||1);
-    const chambres = Number(localStorage.getItem('commande_chambres')||1);
-    const total = prixUnit * nuits * chambres;
-    bar.style.display = 'block';
-    bar.innerHTML = `<b>📅 Réservation depuis la fiche : ${annonceData.titre} - Arrivée ${date}, ${nuits} nuit(s), ${chambres} chambre(s) = ${fmt(total)}</b><small>Prix déjà connu. Pas de négociation. Clique sur Créer la commande en bas.</small>`;
-    document.getElementById('cmdTitre').value = `${annonceData.titre} - ${date} - ${nuits} nuit(s) - ${chambres} chambre(s)`;
-    document.getElementById('cmdMontant').value = total;
-    document.getElementById('inputMsg').value = `Bonjour, je veux réserver ${annonceData.titre} - Arrivée ${date}, ${nuits} nuit(s), ${chambres} chambre(s) = ${fmt(total)}.`;
-  }
-  localStorage.removeItem('commande_type'); localStorage.removeItem('commande_quantite'); localStorage.removeItem('commande_date'); localStorage.removeItem('commande_nuits'); localStorage.removeItem('commande_chambres');
+  try{
+    const type = localStorage.getItem('commande_type');
+    if(!type || !annonceData) return;
+    const bar = document.getElementById('commandeBar');
+    const prixUnit = Number(annonceData.prix_indicatif||0);
+    if(type==='plat'){
+      const qty = Number(localStorage.getItem('commande_quantite')||1);
+      const total = prixUnit * qty;
+      bar.style.display = 'block';
+      bar.innerHTML = `<b>🍽️ Commande depuis le menu : ${qty} x ${annonceData.titre} = ${fmt(total)}</b><small>Prix déjà connu. Pas de négociation. Clique sur Créer la commande en bas.</small>`;
+      document.getElementById('cmdTitre').value = `${qty} x ${annonceData.titre}`;
+      document.getElementById('cmdMontant').value = total;
+      document.getElementById('inputMsg').value = `Bonjour, je veux commander ${qty} x ${annonceData.titre} = ${fmt(total)}.`;
+    } else if(type==='sejour'){
+      const date = localStorage.getItem('commande_date')||'';
+      const nuits = Number(localStorage.getItem('commande_nuits')||1);
+      const chambres = Number(localStorage.getItem('commande_chambres')||1);
+      const total = prixUnit * nuits * chambres;
+      bar.style.display = 'block';
+      bar.innerHTML = `<b>📅 Réservation depuis la fiche : ${annonceData.titre} - Arrivée ${date}, ${nuits} nuit(s), ${chambres} chambre(s) = ${fmt(total)}</b><small>Prix déjà connu. Pas de négociation. Clique sur Créer la commande en bas.</small>`;
+      document.getElementById('cmdTitre').value = `${annonceData.titre} - ${date} - ${nuits} nuit(s) - ${chambres} chambre(s)`;
+      document.getElementById('cmdMontant').value = total;
+      document.getElementById('inputMsg').value = `Bonjour, je veux réserver ${annonceData.titre} - Arrivée ${date}, ${nuits} nuit(s), ${chambres} chambre(s) = ${fmt(total)}.`;
+    }
+    localStorage.removeItem('commande_type'); localStorage.removeItem('commande_quantite'); localStorage.removeItem('commande_date'); localStorage.removeItem('commande_nuits'); localStorage.removeItem('commande_chambres');
+  }catch(e){ console.log('Commande depuis fiche non bloquante:', e); }
 }
 async function init(){
   const {data:{user}} = await sb.auth.getUser();
@@ -218,13 +222,10 @@ async function init(){
   return await initAvecAnnonce(annonceId, prestataireId, null);
 }
 async function initAvecAnnonce(annId, prestaId, convExistante){
-  // CORRIGE PRINCIPAL : on fixe d'abord la conversation, puis on charge les messages.
-  // Plus AUCUN return sur l'annonce avant chargerMessages(), sinon écran blanc.
   if(convExistante){
     conversationId = convExistante.id;
     clientIdFinal = convExistante.client_id;
   } else if(String(moiId)!==String(prestaId)){
-    // Client sans conversation_id : on cherche ou on crée sa conversation
     const {data: convs} = await sb.from('conversations').select('*').eq('annonce_id', annId);
     const cible = (convs||[]).find(c => String(c.client_id)===String(moiId) && String(c.prestataire_id)===String(prestaId));
     if(cible){ conversationId = cible.id; clientIdFinal = cible.client_id; }
@@ -235,7 +236,6 @@ async function initAvecAnnonce(annId, prestaId, convExistante){
       if(nv) conversationId = nv.id;
     }
   } else {
-    // Prestataire sans conversation_id : on ne devine pas, on bloque avec un message visible
     bloquerChat("⚠️ Passe par ton dashboard et clique sur Répondre sur la bonne conversation.");
     return;
   }
@@ -243,39 +243,39 @@ async function initAvecAnnonce(annId, prestaId, convExistante){
     bloquerChat("⚠️ Conversation introuvable. Retourne au dashboard et re-clique sur Répondre.");
     return;
   }
-  if(!String(moiId)===String(prestaId)) clientIdFinal = moiId;
+  // CORRIGE : la ligne bizarre qui faussait clientIdFinal est supprimée
   if(String(moiId)!==String(prestaId)) clientIdFinal = moiId;
   localStorage.setItem('chat_conversation_id', conversationId);
   debloquerChat();
-  // On charge les messages TOUT DE SUITE, avant même l'annonce
   await chargerMessages();
   if(timerMessages) clearInterval(timerMessages);
   timerMessages = setInterval(chargerMessages, 3000);
-  // Ensuite, on charge l'annonce en "au mieux", sans jamais bloquer les messages
+  // Annonce : on affiche l'erreur exacte au lieu de cacher
+  if(!annId || annId==='null' || annId==='undefined'){
+    document.getElementById('annonceBar').textContent = 'Discussion - annonce_id vide dans la conversation (annId=' + annId + '). Messages OK, mais titre manquant.';
+    return;
+  }
   try{
-    const {data: ann} = await sb.from('annonces').select('id, titre, categorie, univers, prix_fixe, prix_indicatif, devise, localite, ville, pays, status, prestataire_id').eq('id', annId).maybeSingle();
-    if(!ann){
-      document.getElementById('annonceBar').textContent = 'Annonce introuvable, mais tu peux quand même discuter.';
+    const {data: ann, error: errAnn} = await sb.from('annonces').select('*').eq('id', annId).maybeSingle();
+    if(errAnn){
+      console.log('Erreur annonce:', errAnn);
+      document.getElementById('annonceBar').textContent = 'Discussion - annonce non chargée, erreur Supabase : ' + errAnn.message + ' (annonce_id=' + annId + ')';
       return;
     }
-    // CORRIGE : si le prestataire ne correspond pas, on affiche un avertissement,
-    // on ne bloque PLUS les messages et on ne fait PLUS de return blanc.
-    if(String(ann.prestataire_id || '') !== String(prestaId)){
-      document.getElementById('annonceBar').textContent = ann.titre + ' - Avertissement : prestataire différent dans le lien.';
-    }
-    if(!estValideAnnonce(ann)){
-      document.getElementById('annonceBar').textContent = ann.titre + ' - Annonce en cours de vérification.';
+    if(!ann){
+      document.getElementById('annonceBar').textContent = 'Discussion - annonce introuvable en base pour id=' + annId + ', mais tu peux discuter. Vérifie dans Supabase table annonces si cet id existe.';
+      return;
     }
     annonceData = ann;
     const {data: prof} = await sb.from('profiles').select('nom, nom_entreprise, quartier').eq('id', prestaId).maybeSingle();
     let nomPresta = prof?.nom_entreprise || prof?.nom || 'Prestataire';
     let badgeQ = prof?.quartier ? ` 📍 ${prof.quartier}` : '';
     const bar = document.getElementById('annonceBar'); bar.innerHTML='';
-    const b = document.createElement('b'); b.textContent = ann.titre; bar.appendChild(b);
+    const b = document.createElement('b'); b.textContent = ann.titre || 'Discussion'; bar.appendChild(b);
     const s = document.createElement('small'); s.textContent = `📍 ${ann.localite||''} - ${ann.ville||''} • 👤 ${nomPresta}${badgeQ} • ${ann.prix_fixe ? fmt(ann.prix_indicatif||0) : 'Prix à discuter'} - ${texteCommission(ann.univers, ann)}`; bar.appendChild(s);
     document.getElementById('nomAutre').textContent = nomPresta + badgeQ;
     document.getElementById('infoAutre').textContent = `${ann.categorie||''} • ${ann.ville||''} - ${ann.localite||''}`;
-    document.getElementById('cmdTitre').value = ann.titre;
+    document.getElementById('cmdTitre').value = ann.titre || '';
     document.getElementById('cmdMontant').value = ann.prix_indicatif || '';
     document.getElementById('texteCommission').textContent = texteCommission(ann.univers, ann);
     const jeSuisPresta = (String(moiId)===String(prestaId));
@@ -287,7 +287,7 @@ async function initAvecAnnonce(annId, prestaId, convExistante){
     afficherCommandeDepuisFiche();
   }catch(e){
     console.log('Annonce non bloquante:', e);
-    document.getElementById('annonceBar').textContent = 'Discussion - annonce non chargée, mais tu peux discuter.';
+    document.getElementById('annonceBar').textContent = 'Discussion - annonce non chargée, erreur JS : ' + (e.message || e) + ' (annonce_id=' + annId + ')';
   }
 }
 function payerVisite(){
