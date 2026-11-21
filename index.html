@@ -65,6 +65,8 @@ h1,h2,h3{font-family:'Plus Jakarta Sans','Inter',sans-serif;letter-spacing:-0.02
 .dots{display:flex;gap:5px;justify-content:center;margin-top:8px}
 .dots span{width:6px;height:6px;border-radius:50%;background:#e2e8f0}
 .dots span.on{background:#f59e0b;width:18px;border-radius:99px}
+.footer-apdp{padding:20px 16px 30px;text-align:center;font-size:11px;color:#94a3b8;line-height:1.6}
+.footer-apdp a{color:#0f172a;font-weight:700}
 </style>
 </head>
 <body>
@@ -87,18 +89,23 @@ h1,h2,h3{font-family:'Plus Jakarta Sans','Inter',sans-serif;letter-spacing:-0.02
   <div><label data-i18n="rechercher">RECHERCHER UN SERVICE</label><input id="filtreSearch" placeholder="Ex: Plombier, Traiteur, Nettoyage..." oninput="chargerAnnonces()"></div>
 </div>
 <div class="univers">
-  <div class="card-u" onclick="location.href='manger.html'"><div class="ico">🍽️</div><b data-i18n="manger">Se nourrir</b></div>
-  <div class="card-u" onclick="location.href='services-domicile.html'"><div class="ico">🏠</div><b data-i18n="domicile">Domicile</b></div>
-  <div class="card-u" onclick="location.href='services-pro.html'"><div class="ico">💼</div><b data-i18n="pro">Services professionnels</b></div>
-  <div class="card-u" onclick="location.href='sejour.html'"><div class="ico">✈️</div><b data-i18n="sejour">Séjour</b></div>
-  <div class="card-u" onclick="location.href='evenement.html'"><div class="ico">🎉</div><b>Évènement</b></div>
-  <div class="card-u" onclick="location.href='immobilier.html'"><div class="ico">🏘️</div><b data-i18n="immo">Immobilier</b></div>
-  <div class="card-u" onclick="location.href='livreurs.html'"><div class="ico">🛵</div><b data-i18n="livreursTitre">Livreurs</b></div>
+  <div class="card-u" onclick="logUnivers('manger');location.href='manger.html'"><div class="ico">🍽️</div><b data-i18n="manger">Se nourrir</b></div>
+  <div class="card-u" onclick="logUnivers('domicile');location.href='services-domicile.html'"><div class="ico">🏠</div><b data-i18n="domicile">Domicile</b></div>
+  <div class="card-u" onclick="logUnivers('pro');location.href='services-pro.html'"><div class="ico">💼</div><b data-i18n="pro">Services professionnels</b></div>
+  <div class="card-u" onclick="logUnivers('sejour');location.href='sejour.html'"><div class="ico">✈️</div><b data-i18n="sejour">Séjour</b></div>
+  <div class="card-u" onclick="logUnivers('evenement');location.href='evenement.html'"><div class="ico">🎉</div><b>Évènement</b></div>
+  <div class="card-u" onclick="logUnivers('immobilier');location.href='immobilier.html'"><div class="ico">🏘️</div><b data-i18n="immo">Immobilier</b></div>
+  <div class="card-u" onclick="logUnivers('livreur');location.href='livreurs.html'"><div class="ico">🛵</div><b data-i18n="livreursTitre">Livreurs</b></div>
   <div class="card-u proposer" onclick="rocyProposerService()"><div class="ico">➕</div><b data-i18n="proposerTitre">Proposer un service</b></div>
 </div>
 <div class="section" id="sectionAnnonces">
   <h2 id="titreSection" data-i18n="annoncesTitre">Annonces réelles près de vous</h2>
   <div id="listeAnnonces" class="grid"></div>
+</div>
+<div class="footer-apdp">
+  <a href="confidentialite.html">🔒 Confidentialité APDP</a> • <a href="connexion.html">Connexion</a><br>
+  Rocyinter - Abomey-Calavi, Bénin<br>
+  Activités enregistrées pour la sécurité, conformément à l'APDP Bénin.
 </div>
 <script>
 const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
@@ -106,6 +113,18 @@ const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 let sb = window.supabaseClient || null;
 try{ if(!sb){ sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } window.supabaseClient = sb; }catch(e){}
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function logIndex(action, cible_type, cible_id, details){
+  try{ if(window.rocyLog) window.rocyLog(action, cible_type, cible_id, { ...details, page: 'index.html', apdp: 'index' }); }catch(e){}
+}
+function logUnivers(univers){ logIndex('voir_univers', 'univers', univers, { univers }); }
+function rocyProposerService(){
+  logIndex('clic_proposer_service', 'action', 'proposer_service', {});
+  const uid = localStorage.getItem('rocy_user_id');
+  const role = localStorage.getItem('rocy_role') || localStorage.getItem('rocy_user_type') || 'visiteur';
+  if(!uid){ location.href='connexion.html'; return; }
+  if(['prestataire','livreur','professionnel','entreprise','fournisseur','pro'].includes(role)){ location.href='creer-annonce.html'; }
+  else { location.href='devenir-fournisseur.html'; }
+}
 let moiId=''; let monRole='';
 let profilsMapGlobal = {};
 let indexRotation = {};
@@ -182,54 +201,69 @@ async function afficherBandeauRole(){
     box.innerHTML = `<div class="bandeau-role bandeau-client">🛒 ${esc(t('bandeauClient'))}</div>`;
   }
 }
+// === CORRIGÉ : Ticker visible pour les VISITEURS ===
 async function chargerInfosEntreprises(){
   const box=document.getElementById('tickerInfos'); const inner=document.getElementById('tickerInner');
   if(!box||!inner) return;
+  const afficher = (liste) => {
+    if(!liste || !liste.length) return false;
+    // ROCYINTER en premier
+    const tries = [...liste].sort((a,b)=>{
+      const aAdmin = String(a.nom_entreprise||'').toLowerCase().includes('rocyinter') ? 0 : 1;
+      const bAdmin = String(b.nom_entreprise||'').toLowerCase().includes('rocyinter') ? 0 : 1;
+      return aAdmin - bAdmin;
+    });
+    const items = tries.map(p=>{
+      const isAdmin = String(p.nom_entreprise||'').toLowerCase().includes('rocyinter');
+      const pill = isAdmin ? `<span class="pill-admin">🛡️ ROCYINTER</span>` : `<span class="pill-vendeur">📢 ${esc(p.nom_entreprise||'Entreprise')}</span>`;
+      return `${pill} <b>${esc(p.message)}</b>`;
+    }).join('<span class="sep"> • </span>');
+    inner.innerHTML = items + '<span class="sep"> • </span>' + items;
+    box.style.display='block';
+    return true;
+  };
   try{
+    // 1. On récupère SANS filtre .gt() dans Supabase, on filtre en JS
+    // C'est ça qui bloquait les visiteurs
     const {data, error} = await sb.from('infos_du_jour')
       .select('nom_entreprise, message, expire_at, created_at')
-      .gt('expire_at', new Date().toISOString())
       .order('created_at', {ascending:false})
       .limit(30);
+    console.log('ROCY ticker infos_du_jour:', data, error);
     if(!error && data && data.length){
-      const tries = [...data].sort((a,b)=>{
-        const aAdmin = String(a.nom_entreprise||'').toLowerCase().includes('rocyinter') ? 0 : 1;
-        const bAdmin = String(b.nom_entreprise||'').toLowerCase().includes('rocyinter') ? 0 : 1;
-        return aAdmin - bAdmin;
+      const maintenant = new Date();
+      const valides = data.filter(p => {
+        if(!p.message) return false;
+        if(!p.expire_at) return true;
+        return new Date(p.expire_at) > maintenant;
       });
-      const items = tries.map(p=>{
-        const isAdmin = String(p.nom_entreprise||'').toLowerCase().includes('rocyinter');
-        const pill = isAdmin ? `<span class="pill-admin">🛡️ ROCYINTER</span>` : `<span class="pill-vendeur">📢 ${esc(p.nom_entreprise||'Entreprise')}</span>`;
-        return `${pill} <b>${esc(p.message)}</b>`;
-      }).join('<span class="sep"> • </span>');
-      inner.innerHTML = items + '<span class="sep"> • </span>' + items;
-      box.style.display='block';
-      return;
+      console.log('ROCY ticker valides:', valides.length);
+      if(afficher(valides)) return;
     }
+    // 2. Fallback ancien système profiles, aussi sans .gt()
     const {data: old, error: errOld} = await sb.from('profiles')
       .select('nom,nom_entreprise,message_entreprise,message_expire_at,type_compte,type_fournisseur')
       .not('message_entreprise','is',null).neq('message_entreprise','')
-      .gt('message_expire_at', new Date().toISOString())
       .limit(30);
-    if(errOld || !old || !old.length){ box.style.display='none'; return; }
-    const valides = old.filter(p=>{
-      const r = String(p.type_compte || p.type_fournisseur || '').toLowerCase().trim();
-      return r !== 'client';
-    });
-    if(!valides.length){ box.style.display='none'; return; }
-    valides.sort((a,b)=>{
-      const ra = String(a.type_compte || a.type_fournisseur || '').toLowerCase().trim();
-      const rb = String(b.type_compte || b.type_fournisseur || '').toLowerCase().trim();
-      return (ra==='admin'?0:1) - (rb==='admin'?0:1);
-    });
-    const items2 = valides.map(p=>{
-      const r = String(p.type_compte || p.type_fournisseur || '').toLowerCase().trim();
-      if(r==='admin') return `<span class="pill-admin">🛡️ ROCYINTER</span> <b>${esc(p.message_entreprise)}</b>`;
-      return `<span class="pill-vendeur">📢 ${esc(p.nom_entreprise||p.nom||'Entreprise')}</span> <b>${esc(p.message_entreprise)}</b>`;
-    }).join('<span class="sep"> • </span>');
-    inner.innerHTML = items2 + '<span class="sep"> • </span>' + items2;
+    console.log('ROCY ticker fallback profiles:', old, errOld);
+    if(!errOld && old && old.length){
+      const maintenant = new Date();
+      const valides2 = old.filter(p => {
+        if(String(p.type_compte||p.type_fournisseur||'').toLowerCase().trim() === 'client') return false;
+        if(!p.message_expire_at) return true;
+        return new Date(p.message_expire_at) > maintenant;
+      }).map(p => ({ nom_entreprise: p.nom_entreprise || p.nom, message: p.message_entreprise }));
+      if(afficher(valides2)) return;
+    }
+    // 3. Si vraiment rien, on affiche quand même un message par défaut
+    // Pour que le visiteur voie que le bandeau marche
+    inner.innerHTML = `<span class="pill-admin">🛡️ ROCYINTER</span> <b>Bienvenue sur Rocyinter - Des pros vérifiés près de chez vous</b><span class="sep"> • </span><span class="pill-admin">🛡️ ROCYINTER</span> <b>Bienvenue sur Rocyinter - Des pros vérifiés près de chez vous</b>`;
     box.style.display='block';
-  }catch(e){ box.style.display='none'; }
+  }catch(e){
+    console.log('ROCY ticker erreur', e);
+    inner.innerHTML = `<span class="pill-admin">🛡️ ROCYINTER</span> <b>Bienvenue sur Rocyinter</b>`;
+    box.style.display='block';
+  }
 }
 const BLOCS_UNIVERS=[
   {univers:'manger',titre:'🍽️ À manger en ce moment',page:'manger.html'},
@@ -240,7 +274,6 @@ const BLOCS_UNIVERS=[
   {univers:'pro',titre:'💼 Pros',page:'services-pro.html'},
   {univers:'domicile',titre:'🏠 Domicile',page:'services-domicile.html'},
 ];
-// === N°7 : Grouper par entreprise ===
 function grouperParEntreprise(liste){
   const map = {};
   liste.forEach(a=>{
@@ -250,7 +283,6 @@ function grouperParEntreprise(liste){
   });
   return Object.values(map);
 }
-// === N°7 : Carte ENTREPRISE seulement, jamais le produit ===
 function carteEntreprise(groupe, univers){
   const presta = groupe.presta || {};
   const annonces = groupe.annonces || [];
@@ -272,7 +304,6 @@ function carteEntreprise(groupe, univers){
   const photosAttr = esc(JSON.stringify(photos));
   return `<div class="card"><img src="${esc(imgDefaut)}" data-photos="${photosAttr}" data-idx="0" class="img-entreprise" onclick="voirProfil('${esc(groupe.prestataire_id)}')" style="cursor:pointer" onerror="this.src='https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&q=80'"><div class="card-body"><span class="badge">${esc(premiere.univers||univers)} ${presta.quartier_verifie ? '• ✅ Vérifié' : ''}</span><h3 style="margin-top:8px">🏢 ${esc(nom)}</h3><p>🌍 ${esc(lieu)}<br><small>${sousInfo}</small></p><p>${esc(desc)}...</p><div class="card-actions"><button type="button" class="btn-chat" onclick="voirProfil('${esc(groupe.prestataire_id)}')">Voir l'entreprise →</button></div></div></div>`;
 }
-// === Photo entreprise qui défile : chambre 1, chambre 2... toutes les 2 secondes ===
 function lancerDiaporama(){
   setInterval(()=>{
     document.querySelectorAll('.img-entreprise').forEach(img=>{
@@ -288,7 +319,6 @@ function lancerDiaporama(){
   }, 2000);
 }
 lancerDiaporama();
-// === N°8 : Affichage 4 par 4 en boucle ===
 function afficherBloc(b, filtres){
   const list = filtres.filter(a=>String(a.univers||'').toLowerCase()===b.univers);
   if(!list.length) return '';
@@ -328,6 +358,7 @@ function lancerRotation(){
     box.innerHTML = BLOCS_UNIVERS.map(b=>afficherBloc(b, dernierFiltres)).join('');
   }, 6000);
 }
+let dernierLogRecherche = 0;
 async function chargerAnnonces(){
   const box = document.getElementById('listeAnnonces'); if(!box) return;
   const t = window.rocyT || (k=>k);
@@ -337,6 +368,10 @@ async function chargerAnnonces(){
     const quartier = document.getElementById('filtreQuartier').value.trim().toLowerCase();
     const search = document.getElementById('filtreSearch').value.trim().toLowerCase();
     const enRecherche = !!(pays||ville||quartier||search);
+    if(enRecherche && Date.now() - dernierLogRecherche > 2000){
+      dernierLogRecherche = Date.now();
+      logIndex('recherche', 'recherche', search || 'filtre', { recherche: search, pays, ville, quartier });
+    }
     if(!sb){ box.innerHTML = `<div class="empty"><b>${esc(t('pasConnexion'))}</b><br><button type="button" class="btn" onclick="chargerAnnonces()">${esc(t('reessayer'))}</button></div>`; return; }
     let q = sb.from('annonces').select('id, titre, categorie, univers, description, prix_fixe, prix_indicatif, devise, photo_url, localite, ville, pays, status, prestataire_id, quartier').order('created_at',{ascending:false});
     if(pays) q = q.eq('pays', pays);
@@ -379,6 +414,7 @@ async function chargerAnnonces(){
   }
 }
 async function allerChat(prestataireId, annonceId){
+  logIndex('clic_chat', 'chat', annonceId, { prestataire_id: prestataireId, annonce_id: annonceId });
   const {data:{user}} = await sb.auth.getUser();
   const uid = user?.id;
   const t = window.rocyT || (k=>k);
@@ -393,6 +429,7 @@ async function allerChat(prestataireId, annonceId){
 }
 function voirProfil(prestataireId){
   if(!prestataireId) return;
+  logIndex('voir_profil', 'profiles', prestataireId, { prestataire_id: prestataireId });
   localStorage.setItem('fiche_prestataire_id', prestataireId);
   location.href = 'fiche-prestataire.html';
 }
