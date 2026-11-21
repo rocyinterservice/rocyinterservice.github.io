@@ -92,6 +92,7 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:8p
       <div><label>⏰ TEMPS DE PRÉPARATION (min)</label><input id="tempsPreparation" type="number" placeholder="Ex: 30 - Temps pour préparer le plat"></div>
       <div><label>🛵 LIVRAISON DISPONIBLE ?</label><select id="livraisonDispo"><option value="true">Oui - On livre</option><option value="false">Non - Sur place seulement</option></select></div>
       <div><label>⏱️ DÉLAI DE LIVRAISON (min) - Si livraison</label><input id="delaiLivraison" type="number" placeholder="Ex: 45 - On vous livre dans 45 min"></div>
+      <div><label>🛵 FRAIS DE LIVRAISON (FCFA) - Si livraison, sinon 0</label><input id="fraisLivraison" type="number" min="0" placeholder="Ex: 500 à Cotonou, 1500 à Abidjan... 0 si retrait"><small style="text-align:left">C'est toi qui fixes ton prix. Le client le verra AVANT de payer. Si tu mets 0, le client vient chercher.</small></div>
     </div>
     <div id="compSejour" style="display:none">
       <div><label>🛏️ CHAMBRES RESTANTES</label><input id="chambresRestantes" type="number" min="0" placeholder="Ex: 3"></div>
@@ -386,6 +387,7 @@ function resetPourAutrePlat(){
   document.getElementById('prix').value='';
   document.getElementById('tempsPreparation').value='';
   document.getElementById('delaiLivraison').value='';
+  const f = document.getElementById('fraisLivraison'); if(f) f.value='';
   photoFileChoisi=null;
   document.getElementById('photoFile').value='';
   document.getElementById('previewPhoto').style.display='none';
@@ -453,6 +455,9 @@ async function publier(ajouterAutre){
     comp.temps_preparation_minutes = document.getElementById('tempsPreparation').value ? Number(document.getElementById('tempsPreparation').value) : null;
     comp.livraison_disponible = document.getElementById('livraisonDispo').value==='true';
     comp.delai_livraison = document.getElementById('delaiLivraison').value ? Number(document.getElementById('delaiLivraison').value) : null;
+    comp.frais_livraison = document.getElementById('fraisLivraison')?.value ? Number(document.getElementById('fraisLivraison').value) : 0;
+    if(!comp.livraison_disponible) comp.frais_livraison = 0;
+    if(comp.frais_livraison < 0) comp.frais_livraison = 0;
   }
   if(universChoisi==='sejour' && !isGuide){
     comp.chambres_restantes = document.getElementById('chambresRestantes').value ? Number(document.getElementById('chambresRestantes').value) : null;
@@ -507,14 +512,17 @@ async function publier(ajouterAutre){
     temps_preparation_minutes: comp.temps_preparation_minutes ?? null,
     livraison_disponible: comp.livraison_disponible ?? null,
     delai_livraison: comp.delai_livraison ?? null,
+    frais_livraison: comp.frais_livraison ?? 0,
     travaille_distance: comp.travaille_distance ?? null,
     portfolio_url: comp.portfolio_url || null
   };
   let insertAvecPhotos = {...baseInsert, photos: photoUrls, photo_urls: photoUrls};
   let {error} = await sb.from('annonces').insert([insertAvecPhotos]).select('id').single();
-  if(error && (String(error.message||'').toLowerCase().includes('photos') || String(error.message||'').toLowerCase().includes('column'))){
-    const r2 = await sb.from('annonces').insert([baseInsert]).select('id').single();
+  if(error && (String(error.message||'').toLowerCase().includes('photos') || String(error.message||'').toLowerCase().includes('column') || String(error.message||'').toLowerCase().includes('frais_livraison'))){
+    const {frais_livraison, ...sansFrais} = baseInsert;
+    const r2 = await sb.from('annonces').insert([sansFrais]).select('id').single();
     error = r2.error;
+    if(error) showMsg('⚠️ Ajoute la colonne frais_livraison dans Supabase : ALTER TABLE annonces ADD COLUMN frais_livraison numeric DEFAULT 0;', false);
   }
   if(error){ showMsg('Erreur : ' + error.message, false); btn.disabled = false; btn.textContent = 'Publier mon annonce →'; return; }
   const majProfil = {};
