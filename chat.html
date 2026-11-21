@@ -43,6 +43,9 @@ header b{font-size:16px} header small{display:block;opacity:.7;font-size:11px;fo
 .modal-box label{font-size:12px;font-weight:700;color:#475569}
 .modal-box input{width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:10px}
 .warn-chat{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:8px 12px;font-size:12px;text-align:center}
+.toggle2{display:flex;gap:8px}
+.toggle2 button{flex:1;padding:12px;border:2px solid #e2e8f0;background:#fff;border-radius:10px;cursor:pointer;font-weight:700;font-size:13px}
+.toggle2 button.active{border-color:#0f172a;background:#0f172a;color:#fff}
 </style>
 </head>
 <body>
@@ -79,7 +82,16 @@ header b{font-size:16px} header small{display:block;opacity:.7;font-size:11px;fo
     <h3>✅ <span data-i18n="creerCommande">Créer la commande</span></h3>
     <p style="font-size:13px;color:#64748b" id="texteCommissionEl">Vous êtes d'accord sur le prix ? Créez la commande.</p>
     <div><label>TITRE DE LA COMMANDE</label><input id="cmdTitre" placeholder="Ex: Réparation fuite cuisine"></div>
-    <div><label>MONTANT TOTAL CONVENU (FCFA)</label><input id="cmdMontant" type="number" placeholder="Ex: 20000"></div>
+    <div><label>MONTANT TOTAL CONVENU (FCFA)</label><input id="cmdMontant" type="number" placeholder="Ex: 20000" oninput="majTotalCommande()"></div>
+    <div id="blocLivraison" style="display:none">
+      <label>🛵 LIVRAISON OU RETRAIT ? - Choisis AVANT de payer</label>
+      <div class="toggle2">
+        <button type="button" id="btnRetrait" onclick="setModeLivraison('retrait')">🚶 Je viens chercher<br><small>0 FCFA</small></button>
+        <button type="button" id="btnLivraison" onclick="setModeLivraison('livraison')">🛵 Livraison chez moi<br><small id="texteFraisLivraison">0 FCFA</small></button>
+      </div>
+      <p style="font-size:12px;color:#64748b;margin-top:6px">Si tu choisis Livraison, le livreur t'apporte chez toi. Tu paies le total une seule fois, pas d'argent à donner au livreur.</p>
+    </div>
+    <div id="resumeTotalCmd" style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;padding:10px;font-size:13px;line-height:1.6"></div>
     <button style="background:#16a34a;color:#fff;border:none;padding:14px;border-radius:12px;font-weight:800;cursor:pointer" onclick="creerCommande()">Créer la commande →</button>
     <button style="background:#f1f5f9;border:none;padding:12px;border-radius:12px;cursor:pointer" onclick="fermerCommande()">Annuler</button>
   </div>
@@ -104,9 +116,11 @@ let prestataireId = prestaUrl || localStorage.getItem('chat_prestataire');
 let annonceId = annonceUrl || localStorage.getItem('chat_annonce');
 const convIdDirect = convIdUrl || null;
 let conversationId = convIdDirect || null; let annonceData = null; let clientIdFinal = null;
+// NOUVEAU : livraison choisie AVANT le paiement
+let modeLivraison = 'retrait';
+let fraisLivraisonAnnonce = 0;
 const fmt = n => { try{ return window.rocyFormatPrix ? window.rocyFormatPrix(Number(n||0)) : Number(n||0).toLocaleString()+' FCFA'; }catch(e){ return Number(n||0).toLocaleString()+' FCFA'; } };
 function prixFixeUnivers(u){ return ['manger','sejour','immobilier'].includes(String(u||'').toLowerCase()); }
-// CORRIGE : renommé pour ne plus entrer en collision avec l'élément id="texteCommission"
 function texteCommissionTxt(univers, annonce){
   try{
     if(univers==='domicile') return 'Commission Rocyinter : 8% - prélevée à la libération, pas avant.';
@@ -166,6 +180,23 @@ function debloquerChat(){
   const i = el('inputMsg'); if(i) i.disabled = false;
   const b = el('btnEnvoyer'); if(b) b.disabled = false;
 }
+// --- LIVRAISON : AVANT LE PAIEMENT ---
+function setModeLivraison(mode){
+  modeLivraison = mode;
+  const bR = el('btnRetrait'); const bL = el('btnLivraison');
+  if(bR) bR.classList.toggle('active', mode==='retrait');
+  if(bL) bL.classList.toggle('active', mode==='livraison');
+  majTotalCommande();
+}
+function majTotalCommande(){
+  const montant = Number(el('cmdMontant')?.value || 0);
+  const frais = modeLivraison==='livraison' ? fraisLivraisonAnnonce : 0;
+  const total = montant + frais;
+  const box = el('resumeTotalCmd');
+  if(!box) return;
+  if(!montant){ box.innerHTML = 'Entre le montant pour voir le total.'; return; }
+  box.innerHTML = `Service : ${fmt(montant)}<br>${modeLivraison==='livraison' ? `🛵 Livraison : ${fmt(frais)}<br>` : `🚶 Retrait : 0 FCFA - Tu viens chercher<br>`}<b>Total à payer : ${fmt(total)}</b><br><small>Tu paies une seule fois dans Paiement. Pas d'argent à donner au livreur.</small>`;
+}
 async function chargerNoms(){
   try{
     const ids = [moiId, prestataireId, clientIdFinal].filter(Boolean);
@@ -178,7 +209,6 @@ async function chargerNoms(){
     });
   }catch(e){}
 }
-// 1. Depuis la fiche : commande créée toute seule + message envoyé tout seul
 async function gererCommandeDepuisFiche(){
   try{
     const type = localStorage.getItem('commande_type');
@@ -208,10 +238,11 @@ async function gererCommandeDepuisFiche(){
       conversation_id: conversationId, univers, titre: titreCmd,
       montant: montantCmd, devise: 'FCFA', montant_total: montantCmd,
       commission, montant_prestataire: montantCmd - commission,
+      frais_livraison: 0, mode_livraison: 'retrait',
       status: 'en_attente', ville: annonceData?.ville, localite: annonceData?.localite
     }]).select().single();
     if(errCmd){ alert('Erreur commande : ' + errCmd.message); return; }
-    await sb.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: texteMsg, type: 'texte'}]);
+    await sb.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: texteMsg + ' (Retrait - si tu veux la livraison, dis-le dans le chat avant de payer, on refera le total.)', type: 'texte'}]);
     await notifier(prestataireId, 'Nouvelle commande 🛒', `${titreCmd} - ${fmt(montantCmd)}. En attente de ton acceptation.`, 'commande', `chat.html?conversation_id=${conversationId}`);
     await chargerMessages();
     await afficherBarreCommandeExistante();
@@ -223,19 +254,22 @@ async function afficherBarreCommandeExistante(){
   const {data: cmd} = await sb.from('commandes').select('*').eq('conversation_id', conversationId).order('created_at',{ascending:false}).limit(1).maybeSingle();
   if(!cmd){ bar.style.display='none'; return; }
   const jeSuisPresta = String(moiId)===String(prestataireId);
+  const frais = Number(cmd.frais_livraison || 0);
+  const total = Number(cmd.montant_total || 0) + frais;
+  const ligneLiv = frais>0 ? `🛵 Livraison ${fmt(frais)} incluse - Total ${fmt(total)}` : `🚶 Retrait - Total ${fmt(total)}`;
   bar.style.display='block';
   if(cmd.status==='en_attente' && jeSuisPresta){
-    bar.innerHTML = `<b>🛒 Nouvelle commande : ${cmd.titre} - ${fmt(cmd.montant_total)}</b><br><small>Le client attend ton acceptation.</small><br><button onclick="accepterCommande('${cmd.id}')" style="background:#16a34a;color:#fff;border:none;padding:12px 16px;border-radius:10px;font-weight:800;margin-top:8px;cursor:pointer">✅ Accepter la commande</button> <button onclick="refuserCommande('${cmd.id}')" style="background:#fee2e2;border:none;padding:12px 16px;border-radius:10px;font-weight:800;margin-top:8px;cursor:pointer">❌ Refuser</button>`;
+    bar.innerHTML = `<b>🛒 Nouvelle commande : ${cmd.titre} - ${fmt(total)}</b><br><small>${ligneLiv} - Le client attend ton acceptation.</small><br><button onclick="accepterCommande('${cmd.id}')" style="background:#16a34a;color:#fff;border:none;padding:12px 16px;border-radius:10px;font-weight:800;margin-top:8px;cursor:pointer">✅ Accepter la commande</button> <button onclick="refuserCommande('${cmd.id}')" style="background:#fee2e2;border:none;padding:12px 16px;border-radius:10px;font-weight:800;margin-top:8px;cursor:pointer">❌ Refuser</button>`;
   } else if(cmd.status==='en_attente' && !jeSuisPresta){
-    bar.innerHTML = `<b>🛒 Commande créée : ${cmd.titre} - ${fmt(cmd.montant_total)}</b><br><small>⏳ En attente que le prestataire accepte. Tu peux déjà discuter en bas.</small>`;
+    bar.innerHTML = `<b>🛒 Commande créée : ${cmd.titre} - ${fmt(total)}</b><br><small>${ligneLiv} - ⏳ En attente que le prestataire accepte. Tu peux déjà discuter en bas.</small>`;
   } else if(cmd.status==='accepte' && !jeSuisPresta){
-    bar.innerHTML = `<b>✅ Commande acceptée : ${cmd.titre} - ${fmt(cmd.montant_total)}</b><br><small>Le prestataire a accepté. Tu peux payer en escrow sécurisé.</small><br><button onclick="location.href='dashboard-client.html'" style="background:#f59e0b;border:none;padding:12px 16px;border-radius:10px;font-weight:800;margin-top:8px;cursor:pointer">💳 Aller payer →</button>`;
+    bar.innerHTML = `<b>✅ Commande acceptée : ${cmd.titre} - ${fmt(total)}</b><br><small>${ligneLiv} - Le prestataire a accepté. Tu peux payer en escrow sécurisé.</small><br><button onclick="location.href='dashboard-client.html'" style="background:#f59e0b;border:none;padding:12px 16px;border-radius:10px;font-weight:800;margin-top:8px;cursor:pointer">💳 Aller payer →</button>`;
   } else if(cmd.status==='accepte' && jeSuisPresta){
-    bar.innerHTML = `<b>✅ Tu as accepté : ${cmd.titre} - ${fmt(cmd.montant_total)}</b><br><small>En attente du paiement du client.</small>`;
+    bar.innerHTML = `<b>✅ Tu as accepté : ${cmd.titre} - ${fmt(total)}</b><br><small>${ligneLiv} - En attente du paiement du client.</small>`;
   } else if(cmd.status==='refuse'){
-    bar.innerHTML = `<b>❌ Commande refusée : ${cmd.titre} - ${fmt(cmd.montant_total)}</b>`;
+    bar.innerHTML = `<b>❌ Commande refusée : ${cmd.titre} - ${fmt(total)}</b>`;
   } else {
-    bar.innerHTML = `<b>🛒 Commande : ${cmd.titre} - ${fmt(cmd.montant_total)}</b><br><small>Statut : ${cmd.status}</small>`;
+    bar.innerHTML = `<b>🛒 Commande : ${cmd.titre} - ${fmt(total)}</b><br><small>${ligneLiv} - Statut : ${cmd.status}</small>`;
   }
   setVal('cmdTitre', cmd.titre || '');
   setVal('cmdMontant', cmd.montant_total || '');
@@ -333,6 +367,7 @@ async function initAvecAnnonce(annId, prestaId, convExistante){
       return;
     }
     annonceData = ann;
+    fraisLivraisonAnnonce = Number(ann.frais_livraison || 0);
     const {data: prof} = await sb.from('profiles').select('nom, nom_entreprise, quartier').eq('id', prestaId).maybeSingle();
     let nomPresta = prof?.nom_entreprise || prof?.nom || 'Prestataire';
     let badgeQ = prof?.quartier ? ` 📍 ${prof.quartier}` : '';
@@ -341,7 +376,7 @@ async function initAvecAnnonce(annId, prestaId, convExistante){
     if(bar){
       bar.innerHTML='';
       const b = document.createElement('b'); b.textContent = ann.titre || 'Discussion'; bar.appendChild(b);
-      const s = document.createElement('small'); s.textContent = `📍 ${ann.localite||''} - ${ann.ville||''} • 👤 ${nomPresta}${badgeQ} • ${ann.prix_fixe ? fmt(ann.prix_indicatif||0) : 'Prix à discuter'} - ${texteCommissionTxt(ann.univers, ann)}`; bar.appendChild(s);
+      const s = document.createElement('small'); s.textContent = `📍 ${ann.localite||''} - ${ann.ville||''} • 👤 ${nomPresta}${badgeQ} • ${ann.prix_fixe ? fmt(ann.prix_indicatif||0) : 'Prix à discuter'}${ann.univers==='manger' && ann.livraison_disponible ? ` • 🛵 Livraison ${fmt(fraisLivraisonAnnonce)}` : ann.univers==='manger' ? ' • 🚶 Sur place seulement' : ''} - ${texteCommissionTxt(ann.univers, ann)}`; bar.appendChild(s);
     }
     setText('nomAutre', nomPresta + badgeQ);
     setText('infoAutre', `${ann.categorie||''} • ${ann.ville||''} - ${ann.localite||''}`);
@@ -443,7 +478,20 @@ function ouvrirProposition(){
   const prestaActuel = annonceData?.prestataire_id || prestataireId; if(String(moiId)!==String(prestaActuel)){ alert('Seul le prestataire propose un prix.'); return; } const m = el('modalProp'); if(m) m.classList.add('show');
 }
 function fermerProposition(){ const m = el('modalProp'); if(m) m.classList.remove('show'); }
-function ouvrirCommande(){ const prestaActuel = annonceData?.prestataire_id || prestataireId; if(String(moiId)===String(prestaActuel)){ alert('Seul le client crée la commande.'); return; } const m = el('modalCmd'); if(m) m.classList.add('show'); }
+function ouvrirCommande(){
+  const prestaActuel = annonceData?.prestataire_id || prestataireId;
+  if(String(moiId)===String(prestaActuel)){ alert('Seul le client crée la commande.'); return; }
+  const m = el('modalCmd'); if(m) m.classList.add('show');
+  // Affiche livraison seulement si Manger + livraison dispo
+  const isManger = String(annonceData?.univers||'').toLowerCase()==='manger';
+  const livDispo = annonceData?.livraison_disponible !== false;
+  setShow('blocLivraison', isManger && livDispo);
+  fraisLivraisonAnnonce = Number(annonceData?.frais_livraison || 0);
+  const txtFrais = el('texteFraisLivraison'); if(txtFrais) txtFrais.textContent = fmt(fraisLivraisonAnnonce);
+  if(!isManger || !livDispo) modeLivraison = 'retrait';
+  else if(fraisLivraisonAnnonce===0) modeLivraison = 'retrait';
+  setModeLivraison(modeLivraison);
+}
 function fermerCommande(){ const m = el('modalCmd'); if(m) m.classList.remove('show'); }
 async function envoyerProposition(){
   if(prixFixeUnivers(annonceData?.univers)){ alert('Prix déjà affiché. Pas de proposition pour Manger / Séjour / Immobilier.'); return; }
@@ -483,14 +531,17 @@ async function creerCommande(){
   if(!clientIdFinal){ alert('Erreur : client introuvable. Recharge la page.'); return; }
   if(String(clientIdFinal)===String(prestaActuel)){ alert('Erreur : client = prestataire. Impossible.'); return; }
   const univers = annonceData?.univers || 'domicile';
+  const isManger = univers==='manger';
+  const fraisLiv = isManger && modeLivraison==='livraison' ? fraisLivraisonAnnonce : 0;
+  const total = montant + fraisLiv;
   const commission = calculerCommission(univers, montant, annonceData);
-  const montantPresta = montant - commission;
+  const montantPresta = (montant - commission) + fraisLiv;
   if(montantPresta < 0){ alert('Erreur commission > montant.'); return; }
-  const {error} = await sb.from('commandes').insert([{client_id: clientIdFinal, prestataire_id: prestaActuel, annonce_id: annonceData?.id || annonceId, conversation_id: conversationId, univers: univers, titre, montant: montant, devise: 'FCFA', montant_total: montant, commission, montant_prestataire: montantPresta, status: 'en_attente', ville: annonceData?.ville, localite: annonceData?.localite}]).select().single();
+  const {error} = await sb.from('commandes').insert([{client_id: clientIdFinal, prestataire_id: prestaActuel, annonce_id: annonceData?.id || annonceId, conversation_id: conversationId, univers: univers, titre, montant: montant, devise: 'FCFA', montant_total: montant, commission, montant_prestataire: montantPresta, frais_livraison: fraisLiv, mode_livraison: isManger ? modeLivraison : 'retrait', status: 'en_attente', ville: annonceData?.ville, localite: annonceData?.localite}]).select().single();
   if(error){ alert('Erreur : ' + error.message); return; }
-  await notifier(prestaActuel, 'Nouvelle commande 🛒', `${titre} - ${fmt(montant)}. En attente de paiement.`, 'commande', 'dashboard-prestataire.html');
-  await sb.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: `✅ COMMANDE CRÉÉE : ${titre} - ${fmt(montant)} (Commission ${fmt(commission)}). En attente de paiement sécurisé en escrow.`, type: 'texte'}]);
-  fermerCommande(); alert('✅ Commande créée ! Elle est dans ton dashboard. Va payer dans Paiement.'); chargerMessages(); await afficherBarreCommandeExistante();
+  await notifier(prestaActuel, 'Nouvelle commande 🛒', `${titre} - ${fmt(total)}. En attente de paiement.`, 'commande', 'dashboard-prestataire.html');
+  await sb.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: `✅ COMMANDE CRÉÉE : ${titre} - Service ${fmt(montant)}${fraisLiv>0 ? ` + Livraison ${fmt(fraisLiv)}` : ' + Retrait gratuit'} = Total ${fmt(total)} (Commission ${fmt(commission)}). En attente de paiement sécurisé en escrow.`, type: 'texte'}]);
+  fermerCommande(); alert(`✅ Commande créée ! Total ${fmt(total)}. Elle est dans ton dashboard. Va payer dans Paiement.`); chargerMessages(); await afficherBarreCommandeExistante();
 }
 init();
 if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
