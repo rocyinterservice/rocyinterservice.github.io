@@ -270,10 +270,14 @@ async function voirConversation(convId, annonceId){
   if(!convId || convId==='null' || convId==='undefined'){ alert('Conversation introuvable.'); return; }
   const user = await getUtilisateurSecurise();
   if(!user) return;
-  const {data} = await sb.from('conversations').select('id, client_id, prestataire_id').eq('id', convId).eq('client_id', user.id).single();
+  const {data} = await sb.from('conversations').select('id, client_id, prestataire_id, annonce_id').eq('id', convId).eq('client_id', user.id).single();
   if(!data){ alert('Conversation introuvable.'); return; }
   if(String(data.client_id)===String(data.prestataire_id)){ alert('Conversation invalide.'); return; }
-  location.href = 'chat.html?conversation=' + encodeURIComponent(convId) + '&annonce=' + encodeURIComponent(annonceId || '');
+  localStorage.setItem('chat_prestataire', data.prestataire_id);
+  localStorage.setItem('chat_annonce', data.annonce_id || annonceId || '');
+  localStorage.setItem('chat_client', data.client_id);
+  localStorage.setItem('chat_conversation_id', data.id);
+  location.href = 'chat.html?conversation_id=' + encodeURIComponent(data.id) + '&annonce_id=' + encodeURIComponent(data.annonce_id || annonceId || '') + '&prestataire_id=' + encodeURIComponent(data.prestataire_id);
 }
 charger();
 </script>
