@@ -147,6 +147,10 @@ function bloquerChat(msg){
   document.getElementById('inputMsg').disabled = true;
   document.getElementById('btnEnvoyer').disabled = true;
 }
+function debloquerChat(){
+  document.getElementById('inputMsg').disabled = false;
+  document.getElementById('btnEnvoyer').disabled = false;
+}
 function afficherCommandeDepuisFiche(){
   const type = localStorage.getItem('commande_type');
   if(!type || !annonceData) return;
@@ -181,7 +185,8 @@ async function init(){
   monRole = String(profMoi?.type_compte || profMoi?.type_fournisseur || '').toLowerCase();
   if(monRole==='admin'){ alert('Admin : tu ne peux pas chatter, tu gères dans Admin.'); location.href='admin.html'; return; }
   if(conversationId){
-    const {data: conv} = await sb.from('conversations').select('*').eq('id', conversationId).maybeSingle();
+    const {data: conv, error: errConv} = await sb.from('conversations').select('*').eq('id', conversationId).maybeSingle();
+    console.log('ROCY chat conv directe:', conv, errConv);
     if(conv){
       clientIdFinal = conv.client_id;
       const {data: ann2} = await sb.from('annonces').select('id, titre, categorie, univers, prix_fixe, prix_indicatif, devise, localite, ville, pays, status, prestataire_id').eq('id', conv.annonce_id).maybeSingle();
@@ -189,6 +194,9 @@ async function init(){
       localStorage.setItem('chat_prestataire', conv.prestataire_id);
       if(conv.annonce_id) localStorage.setItem('chat_annonce', conv.annonce_id);
       return await initAvecAnnonce(conv.annonce_id, conv.prestataire_id, conv);
+    } else {
+      console.log('ROCY chat : conv directe introuvable, on repart sur annonce');
+      conversationId = null;
     }
   }
   if(!prestataireId || !annonceId){ location.href='index.html'; return; }
@@ -218,14 +226,14 @@ async function initAvecAnnonce(annId, prestaId, convExistante){
   document.getElementById('texteCommission').textContent = texteCommission(ann.univers, ann);
   const jeSuisPresta = (String(moiId)===String(prestaId));
   const isFixe = prixFixeUnivers(ann.univers);
-  // REGLE PRINCIPALE : prix fixe = pas de proposition. Prix à discuter = proposition.
   if(jeSuisPresta && !isFixe) document.getElementById('btnProp').style.display = 'block';
   else document.getElementById('btnProp').style.display = 'none';
   if(!jeSuisPresta) document.getElementById('btnCmd').style.display = 'block';
   if(!jeSuisPresta && ann.univers==='immobilier') document.getElementById('btnVisit').style.display = 'block';
   if(convExistante){ conversationId = convExistante.id; clientIdFinal = convExistante.client_id; }
   else {
-    const {data: convs} = await sb.from('conversations').select('*').eq('annonce_id', annId);
+    const {data: convs, error: errConvs} = await sb.from('conversations').select('*').eq('annonce_id', annId);
+    console.log('ROCY chat convs existantes:', convs, errConvs);
     const bonne = (convs||[]).find(c => (String(c.client_id)===String(moiId) && String(c.prestataire_id)===String(prestaId)) || (String(c.prestataire_id)===String(moiId) && String(c.client_id)===String(prestaId)));
     let cible = bonne;
     if(!cible && jeSuisPresta){
@@ -237,11 +245,13 @@ async function initAvecAnnonce(annId, prestaId, convExistante){
     else if(!jeSuisPresta){
       clientIdFinal = moiId;
       const {data: nv, error} = await sb.from('conversations').insert([{client_id: moiId, prestataire_id: prestaId, annonce_id: annId}]).select().single();
-      if(error){ alert('Erreur conversation : '+error.message); return; }
+      console.log('ROCY chat création conversation:', nv, error);
+      if(error){ alert('Erreur conversation : '+error.message + ' - Vérifie la RLS dans Supabase.'); document.getElementById('annonceBar').textContent = 'Erreur conversation : ' + error.message; return; }
       if(nv) conversationId = nv.id;
     } else { bloquerChat("⏳ En attente qu'un client te parle sur cette annonce."); document.getElementById('btnProp').style.display='none'; return; }
   }
   if(!jeSuisPresta) clientIdFinal = moiId;
+  debloquerChat();
   afficherCommandeDepuisFiche();
   chargerMessages();
   setInterval(chargerMessages, 3000);
@@ -256,7 +266,8 @@ function payerVisite(){
 }
 async function chargerMessages(){
   if(!conversationId) return;
-  const {data} = await sb.from('messages').select('*').eq('conversation_id', conversationId).order('created_at',{ascending:true});
+  const {data, error} = await sb.from('messages').select('*').eq('conversation_id', conversationId).order('created_at',{ascending:true});
+  if(error){ console.log('ROCY chat erreur chargement messages:', error); return; }
   const box = document.getElementById('messages'); box.innerHTML='';
   if(!data || data.length===0){
     const d=document.createElement('div'); d.className='msg sys'; d.textContent = prixFixeUnivers(annonceData?.univers) ? '👋 Prix déjà affiché. Clique sur Créer la commande en bas, puis paie sur Rocyinter.' : '👋 Dis bonjour ! Demande le prix, la date, le lieu. Ne paie jamais en dehors de Rocyinter.'; box.appendChild(d); return;
@@ -285,17 +296,53 @@ async function chargerMessages(){
   });
   box.scrollTop = box.scrollHeight;
 }
+// === CORRIGÉ : Envoyer ne quitte plus en silence ===
 async function envoyer(){
-  const inp = document.getElementById('inputMsg'); const txt = inp.value.trim();
-  if(!txt || !conversationId) return;
+  const inp = document.getElementById('inputMsg');
+  const btn = document.getElementById('btnEnvoyer');
+  const txt = inp.value.trim();
+  console.log('ROCY envoyer clic, txt:', txt, 'conversationId:', conversationId, 'moiId:', moiId);
+  if(!txt){
+    alert('Écris un message d’abord.');
+    return;
+  }
+  // Si pas de conversation, on essaie de la recréer tout de suite
+  if(!conversationId){
+    console.log('ROCY envoyer : pas de conversation, tentative de recréation');
+    if(!annonceData || !prestataireId || !annonceId){
+      alert('Conversation introuvable. Retourne sur l’annonce et clique à nouveau sur Discuter.');
+      return;
+    }
+    const jeSuisPresta = String(moiId) === String(prestataireId);
+    if(jeSuisPresta){
+      alert('En attente qu’un client te parle sur cette annonce.');
+      return;
+    }
+    const {data: nv, error: errNv} = await sb.from('conversations').insert([{client_id: moiId, prestataire_id: prestataireId, annonce_id: annonceId}]).select().single();
+    if(errNv || !nv){
+      alert('Impossible de créer la conversation : ' + (errNv?.message || 'erreur inconnue') + ' - Vérifie la RLS conversations dans Supabase.');
+      return;
+    }
+    conversationId = nv.id;
+    clientIdFinal = moiId;
+    localStorage.setItem('chat_conversation_id', conversationId);
+  }
   if(txt.length>2000){ alert('Message trop long (max 2000).'); return; }
   if(contientNumero(txt)){
     document.getElementById('warnChat').style.display='block';
     if(!confirm('⚠️ Tu essaies de partager un numéro / WhatsApp. Si tu paies en dehors de Rocyinter, tu perds la protection et la facture. Tu veux vraiment envoyer ?')) return;
   }
-  inp.value = '';
+  btn.disabled = true; btn.textContent = 'Envoi...';
   const {error} = await sb.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: txt, type: 'texte'}]);
-  if(error){ alert('Erreur : '+error.message); return; }
+  btn.disabled = false; btn.textContent = 'Envoyer';
+  if(error){
+    console.log('ROCY envoyer erreur:', error);
+    alert('Erreur envoi : '+error.message + ' - Vérifie la RLS messages dans Supabase.');
+    return;
+  }
+  // Succès : on vide seulement maintenant
+  inp.value = '';
+  if(window.rocyLog) window.rocyLog('envoyer_message', 'messages', conversationId, { annonce_id: annonceId });
   const prestaActuel = localStorage.getItem('chat_prestataire') || prestataireId;
   const autreId = String(moiId)===String(prestaActuel) ? clientIdFinal : prestaActuel;
   await notifier(autreId, 'Nouveau message', txt, 'message', 'chat.html');
@@ -315,6 +362,7 @@ async function envoyerProposition(){
   const montant = Number(document.getElementById('propMontant').value);
   const detail = document.getElementById('propDetail').value.trim();
   if(!montant || montant<=0){ alert('Mets un montant > 0'); return; }
+  if(!conversationId){ alert('Conversation introuvable. Recharge la page.'); return; }
   const {error} = await sb.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: detail || 'Proposition de prix pour ce service.', type: 'proposition', proposition_prix: montant, proposition_statut: 'en_attente'}]);
   if(error){ alert('Erreur : '+error.message); return; }
   await notifier(clientIdFinal, 'Nouvelle proposition de prix', `Proposition : ${fmt(montant)} - ${detail}`, 'paiement', 'chat.html');
