@@ -90,7 +90,7 @@ const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 window.supabaseClient = sb;
 let moiId = ''; let monRole = '';
-// CORRIGÉ : on lit TOUS les noms de paramètres, du lien ET du localStorage. Le lien a la priorité.
+let timerMessages = null;
 const paramsUrl = new URLSearchParams(window.location.search);
 const convIdUrl = paramsUrl.get('conversation_id') || paramsUrl.get('conversation') || paramsUrl.get('id') || paramsUrl.get('conv');
 const annonceUrl = paramsUrl.get('annonce_id') || paramsUrl.get('annonce');
@@ -151,6 +151,7 @@ function contientNumero(txt){
   return false;
 }
 function bloquerChat(msg){
+  if(timerMessages) clearInterval(timerMessages);
   document.getElementById('messages').innerHTML = '';
   const d = document.createElement('div'); d.className='msg sys'; d.textContent = msg;
   document.getElementById('messages').appendChild(d);
@@ -205,7 +206,9 @@ async function init(){
       localStorage.setItem('chat_conversation_id', conv.id);
       return await initAvecAnnonce(conv.annonce_id, conv.prestataire_id, conv);
     }
-    conversationId = null;
+    // CORRIGE : lien invalide = on bloque, on ne retombe JAMAIS sur une autre conversation
+    bloquerChat("⚠️ Ce lien de conversation est invalide. Retourne sur ton dashboard et clique à nouveau sur Répondre sur la bonne conversation.");
+    return;
   }
   if(!prestataireId || !annonceId){ location.href='index.html'; return; }
   return await initAvecAnnonce(annonceId, prestataireId, null);
@@ -241,20 +244,18 @@ async function initAvecAnnonce(annId, prestaId, convExistante){
   if(convExistante){ conversationId = convExistante.id; clientIdFinal = convExistante.client_id; }
   else {
     const {data: convs} = await sb.from('conversations').select('*').eq('annonce_id', annId);
-    console.log('ROCY chat convs existantes:', convs);
     let cible = null;
     if(jeSuisPresta){
       const mesConvs = (convs||[]).filter(c => String(c.prestataire_id)===String(moiId) && String(c.client_id)!==String(moiId));
-      const clientVoulu = localStorage.getItem('chat_client');
+      // CORRIGE : le lien a la priorité sur le localStorage qui peut être vieux
+      const clientVoulu = clientVouluUrl || localStorage.getItem('chat_client');
       if(clientVoulu) cible = mesConvs.find(c => String(c.client_id)===String(clientVoulu));
       if(!cible && mesConvs.length===1) cible = mesConvs[0];
-      if(!cible && mesConvs.length>1){
-        let derniere = null; let derniereDate = null;
-        for(const c of mesConvs){
-          const {data: m} = await sb.from('messages').select('created_at').eq('conversation_id', c.id).order('created_at',{ascending:false}).limit(1).maybeSingle();
-          if(m && (!derniereDate || new Date(m.created_at) > new Date(derniereDate))){ derniere = c; derniereDate = m.created_at; }
-        }
-        cible = derniere || mesConvs.sort((a,b)=> new Date(b.created_at)-new Date(a.created_at))[0];
+      // CORRIGE : SUPPRIME le fallback "dernière conversation qui a un message"
+      // Si on ne trouve pas, on bloque au lieu de montrer les anciens messages d'une autre conversation
+      if(!cible){
+        bloquerChat("⚠️ Conversation introuvable. Retourne sur ton dashboard et clique à nouveau sur Répondre sur la bonne conversation, ne passe pas par un vieux lien.");
+        return;
       }
     } else {
       cible = (convs||[]).find(c => String(c.client_id)===String(moiId) && String(c.prestataire_id)===String(prestaId));
@@ -272,7 +273,8 @@ async function initAvecAnnonce(annId, prestaId, convExistante){
   debloquerChat();
   afficherCommandeDepuisFiche();
   await chargerMessages();
-  setInterval(chargerMessages, 3000);
+  if(timerMessages) clearInterval(timerMessages);
+  timerMessages = setInterval(chargerMessages, 3000);
 }
 function payerVisite(){
   if(!annonceData) return;
@@ -340,21 +342,21 @@ async function envoyer(){
   if(error){ alert('Erreur envoi : '+error.message); return; }
   inp.value = '';
   if(window.rocyLog) window.rocyLog('envoyer_message', 'messages', conversationId, { annonce_id: annonceId });
-  const prestaActuel = localStorage.getItem('chat_prestataire') || prestataireId;
+  const prestaActuel = annonceData?.prestataire_id || prestataireId;
   const autreId = String(moiId)===String(prestaActuel) ? clientIdFinal : prestaActuel;
   await notifier(autreId, 'Nouveau message', txt, 'message', `chat.html?conversation_id=${conversationId}`);
   chargerMessages();
 }
 function ouvrirProposition(){
   if(prixFixeUnivers(annonceData?.univers)){ alert('Prix déjà affiché. Pas de proposition pour Manger / Séjour / Immobilier. Le client crée la commande direct.'); return; }
-  const prestaActuel = localStorage.getItem('chat_prestataire') || prestataireId; if(String(moiId)!==String(prestaActuel)){ alert('Seul le prestataire propose un prix.'); return; } document.getElementById('modalProp').classList.add('show');
+  const prestaActuel = annonceData?.prestataire_id || prestataireId; if(String(moiId)!==String(prestaActuel)){ alert('Seul le prestataire propose un prix.'); return; } document.getElementById('modalProp').classList.add('show');
 }
 function fermerProposition(){ document.getElementById('modalProp').classList.remove('show'); }
-function ouvrirCommande(){ const prestaActuel = localStorage.getItem('chat_prestataire') || prestataireId; if(String(moiId)===String(prestaActuel)){ alert('Seul le client crée la commande.'); return; } document.getElementById('modalCmd').classList.add('show'); }
+function ouvrirCommande(){ const prestaActuel = annonceData?.prestataire_id || prestataireId; if(String(moiId)===String(prestaActuel)){ alert('Seul le client crée la commande.'); return; } document.getElementById('modalCmd').classList.add('show'); }
 function fermerCommande(){ document.getElementById('modalCmd').classList.remove('show'); }
 async function envoyerProposition(){
   if(prixFixeUnivers(annonceData?.univers)){ alert('Prix déjà affiché. Pas de proposition pour Manger / Séjour / Immobilier.'); return; }
-  const prestaActuel = localStorage.getItem('chat_prestataire') || prestataireId;
+  const prestaActuel = annonceData?.prestataire_id || prestataireId;
   if(String(moiId)!==String(prestaActuel)){ alert('Seul le prestataire propose un prix.'); return; }
   const montant = Number(document.getElementById('propMontant').value);
   const detail = document.getElementById('propDetail').value.trim();
@@ -366,7 +368,7 @@ async function envoyerProposition(){
   fermerProposition(); document.getElementById('propMontant').value = ''; chargerMessages();
 }
 async function repondreProposition(msgId, rep){
-  const prestaActuel = localStorage.getItem('chat_prestataire') || prestataireId;
+  const prestaActuel = annonceData?.prestataire_id || prestataireId;
   if(String(moiId)===String(prestaActuel)){ alert('Seul le client accepte / refuse.'); return; }
   const {error} = await sb.from('messages').update({proposition_statut: rep}).eq('id', msgId).eq('conversation_id', conversationId);
   if(error){ alert('Erreur : '+error.message); return; }
@@ -382,7 +384,7 @@ async function repondreProposition(msgId, rep){
   chargerMessages();
 }
 async function creerCommande(){
-  const prestaActuel = localStorage.getItem('chat_prestataire') || prestataireId;
+  const prestaActuel = annonceData?.prestataire_id || prestataireId;
   if(String(moiId)===String(prestaActuel)){ alert('Seul le client crée la commande.'); return; }
   const titre = document.getElementById('cmdTitre').value.trim();
   const montant = Number(document.getElementById('cmdMontant').value);
