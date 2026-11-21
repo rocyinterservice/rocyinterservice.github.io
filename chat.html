@@ -77,7 +77,7 @@ header b{font-size:16px} header small{display:block;opacity:.7;font-size:11px;fo
 <div class="modal" id="modalCmd">
   <div class="modal-box">
     <h3>✅ <span data-i18n="creerCommande">Créer la commande</span></h3>
-    <p style="font-size:13px;color:#64748b" id="texteCommission">Vous êtes d'accord sur le prix ? Créez la commande.</p>
+    <p style="font-size:13px;color:#64748b" id="texteCommissionEl">Vous êtes d'accord sur le prix ? Créez la commande.</p>
     <div><label>TITRE DE LA COMMANDE</label><input id="cmdTitre" placeholder="Ex: Réparation fuite cuisine"></div>
     <div><label>MONTANT TOTAL CONVENU (FCFA)</label><input id="cmdMontant" type="number" placeholder="Ex: 20000"></div>
     <button style="background:#16a34a;color:#fff;border:none;padding:14px;border-radius:12px;font-weight:800;cursor:pointer" onclick="creerCommande()">Créer la commande →</button>
@@ -89,7 +89,7 @@ const SUPABASE_URL = "https://gdwgjsloivrpxxvggxyz.supabase.co";
 const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 window.supabaseClient = sb;
-let moiId = ''; let monRole = '';
+let moiId = ''; let monRole = ''; let nomMoi = 'Vous'; let nomAutreGlobal = 'Autre';
 let timerMessages = null;
 const paramsUrl = new URLSearchParams(window.location.search);
 const convIdUrl = paramsUrl.get('conversation_id') || paramsUrl.get('conversation') || paramsUrl.get('id') || paramsUrl.get('conv');
@@ -106,30 +106,8 @@ const convIdDirect = convIdUrl || null;
 let conversationId = convIdDirect || null; let annonceData = null; let clientIdFinal = null;
 const fmt = n => { try{ return window.rocyFormatPrix ? window.rocyFormatPrix(Number(n||0)) : Number(n||0).toLocaleString()+' FCFA'; }catch(e){ return Number(n||0).toLocaleString()+' FCFA'; } };
 function prixFixeUnivers(u){ return ['manger','sejour','immobilier'].includes(String(u||'').toLowerCase()); }
-async function notifier(destinataire, titre, message, type, lien){
-  try{
-    if(!destinataire || String(destinataire)===String(moiId)) return;
-    await sb.rpc('creer_notification', { p_user_id: destinataire, p_titre: titre, p_message: String(message||'').slice(0,120), p_type: type||'info', p_lien: lien||'chat.html' });
-  }catch(e){ console.log('Notif échouée (pas grave):', e); }
-}
-function estValideAnnonce(a){
-  const s = String(a.status || '').toLowerCase().trim();
-  if(!s) return true;
-  return s==='valide' || s==='valid' || s==='publie' || s==='publié' || s==='publiee' || s==='actif' || s==='active';
-}
-function calculerCommission(univers, montant, annonce){
-  if(univers==='domicile') return Math.round(montant * 0.08);
-  if(univers==='pro') return 5000;
-  if(univers==='manger' || univers==='sejour' || univers==='evenement') return Math.round(montant * 0.12);
-  if(univers==='immobilier'){
-    const cat = String(annonce?.categorie||'').toLowerCase();
-    if(cat.includes('parcelle') || cat.includes('vente') || cat.includes('terrain')) return Math.min(200000, Math.round(montant * 0.02));
-    return Math.round(montant * 0.50);
-  }
-  if(univers==='livreur') return Math.round(montant * 0.20);
-  return Math.round(montant * 0.12);
-}
-function texteCommission(univers, annonce){
+// CORRIGE : renommé pour ne plus entrer en collision avec l'élément id="texteCommission"
+function texteCommissionTxt(univers, annonce){
   try{
     if(univers==='domicile') return 'Commission Rocyinter : 8% - prélevée à la libération, pas avant.';
     if(univers==='pro') return 'Commission Rocyinter : 5 000 FCFA pour débloquer le contact.';
@@ -145,6 +123,7 @@ function texteCommission(univers, annonce){
     return 'Commission Rocyinter prélevée à la libération.';
   }catch(e){ return 'Commission Rocyinter prélevée à la libération.'; }
 }
+function texteCommission(u,a){ return texteCommissionTxt(u,a); }
 function contientNumero(txt){
   const t = String(txt||'').toLowerCase();
   if(t.includes('whatsapp') || t.includes('whats app') || t.includes('appel moi') || t.includes('appelle')) return true;
@@ -152,45 +131,129 @@ function contientNumero(txt){
   if(chiffres.length >= 8) return true;
   return false;
 }
+async function notifier(destinataire, titre, message, type, lien){
+  try{
+    if(!destinataire || String(destinataire)===String(moiId)) return;
+    await sb.rpc('creer_notification', { p_user_id: destinataire, p_titre: titre, p_message: String(message||'').slice(0,120), p_type: type||'info', p_lien: lien||'chat.html' });
+  }catch(e){ console.log('Notif échouée (pas grave):', e); }
+}
+function calculerCommission(univers, montant, annonce){
+  if(univers==='domicile') return Math.round(montant * 0.08);
+  if(univers==='pro') return 5000;
+  if(univers==='manger' || univers==='sejour' || univers==='evenement') return Math.round(montant * 0.12);
+  if(univers==='immobilier'){
+    const cat = String(annonce?.categorie||'').toLowerCase();
+    if(cat.includes('parcelle') || cat.includes('vente') || cat.includes('terrain')) return Math.min(200000, Math.round(montant * 0.02));
+    return Math.round(montant * 0.50);
+  }
+  if(univers==='livreur') return Math.round(montant * 0.20);
+  return Math.round(montant * 0.12);
+}
+function el(id){ return document.getElementById(id); }
+function setText(id, txt){ const e = el(id); if(e) e.textContent = txt; }
+function setVal(id, v){ const e = el(id); if(e) e.value = v; }
+function setShow(id, show){ const e = el(id); if(e) e.style.display = show ? 'block' : 'none'; }
+function marquerLu(){ try{ if(conversationId) localStorage.setItem('rocy_lu_' + conversationId, Date.now().toString()); }catch(e){} }
 function bloquerChat(msg){
   if(timerMessages) clearInterval(timerMessages);
-  document.getElementById('messages').innerHTML = '';
+  const m = el('messages'); if(m) m.innerHTML = '';
   const d = document.createElement('div'); d.className='msg sys'; d.textContent = msg;
-  document.getElementById('messages').appendChild(d);
-  document.getElementById('inputMsg').disabled = true;
-  document.getElementById('btnEnvoyer').disabled = true;
+  if(m) m.appendChild(d);
+  const i = el('inputMsg'); if(i) i.disabled = true;
+  const b = el('btnEnvoyer'); if(b) b.disabled = true;
 }
 function debloquerChat(){
-  document.getElementById('inputMsg').disabled = false;
-  document.getElementById('btnEnvoyer').disabled = false;
+  const i = el('inputMsg'); if(i) i.disabled = false;
+  const b = el('btnEnvoyer'); if(b) b.disabled = false;
 }
-function afficherCommandeDepuisFiche(){
+async function chargerNoms(){
+  try{
+    const ids = [moiId, prestataireId, clientIdFinal].filter(Boolean);
+    if(!ids.length) return;
+    const {data: profs} = await sb.from('profiles').select('id, nom, nom_entreprise').in('id', [...new Set(ids)]);
+    (profs||[]).forEach(p=>{
+      const nom = p.nom_entreprise || p.nom || 'Utilisateur';
+      if(String(p.id)===String(moiId)) nomMoi = nom;
+      else nomAutreGlobal = nom;
+    });
+  }catch(e){}
+}
+// 1. Depuis la fiche : commande créée toute seule + message envoyé tout seul
+async function gererCommandeDepuisFiche(){
   try{
     const type = localStorage.getItem('commande_type');
-    if(!type || !annonceData) return;
-    const bar = document.getElementById('commandeBar');
+    if(!type || !annonceData){ await afficherBarreCommandeExistante(); return; }
     const prixUnit = Number(annonceData.prix_indicatif||0);
+    let titreCmd = '', montantCmd = 0, texteMsg = '';
     if(type==='plat'){
       const qty = Number(localStorage.getItem('commande_quantite')||1);
-      const total = prixUnit * qty;
-      bar.style.display = 'block';
-      bar.innerHTML = `<b>🍽️ Commande depuis le menu : ${qty} x ${annonceData.titre} = ${fmt(total)}</b><small>Prix déjà connu. Pas de négociation. Clique sur Créer la commande en bas.</small>`;
-      document.getElementById('cmdTitre').value = `${qty} x ${annonceData.titre}`;
-      document.getElementById('cmdMontant').value = total;
-      document.getElementById('inputMsg').value = `Bonjour, je veux commander ${qty} x ${annonceData.titre} = ${fmt(total)}.`;
+      montantCmd = prixUnit * qty;
+      titreCmd = `${qty} x ${annonceData.titre}`;
+      texteMsg = `Bonjour, je veux commander ${qty} x ${annonceData.titre} = ${fmt(montantCmd)}.`;
     } else if(type==='sejour'){
       const date = localStorage.getItem('commande_date')||'';
       const nuits = Number(localStorage.getItem('commande_nuits')||1);
       const chambres = Number(localStorage.getItem('commande_chambres')||1);
-      const total = prixUnit * nuits * chambres;
-      bar.style.display = 'block';
-      bar.innerHTML = `<b>📅 Réservation depuis la fiche : ${annonceData.titre} - Arrivée ${date}, ${nuits} nuit(s), ${chambres} chambre(s) = ${fmt(total)}</b><small>Prix déjà connu. Pas de négociation. Clique sur Créer la commande en bas.</small>`;
-      document.getElementById('cmdTitre').value = `${annonceData.titre} - ${date} - ${nuits} nuit(s) - ${chambres} chambre(s)`;
-      document.getElementById('cmdMontant').value = total;
-      document.getElementById('inputMsg').value = `Bonjour, je veux réserver ${annonceData.titre} - Arrivée ${date}, ${nuits} nuit(s), ${chambres} chambre(s) = ${fmt(total)}.`;
+      montantCmd = prixUnit * nuits * chambres;
+      titreCmd = `${annonceData.titre} - ${date} - ${nuits} nuit(s) - ${chambres} chambre(s)`;
+      texteMsg = `Bonjour, je veux réserver ${annonceData.titre} - Arrivée ${date}, ${nuits} nuit(s), ${chambres} chambre(s) = ${fmt(montantCmd)}.`;
     }
-    localStorage.removeItem('commande_type'); localStorage.removeItem('commande_quantite'); localStorage.removeItem('commande_date'); localStorage.removeItem('commande_nuits'); localStorage.removeItem('commande_chambres');
-  }catch(e){ console.log('Commande depuis fiche non bloquante:', e); }
+    if(!montantCmd){ await afficherBarreCommandeExistante(); return; }
+    localStorage.removeItem('commande_type'); localStorage.removeItem('commande_quantite');
+    localStorage.removeItem('commande_date'); localStorage.removeItem('commande_nuits'); localStorage.removeItem('commande_chambres');
+    const univers = annonceData?.univers || 'domicile';
+    const commission = calculerCommission(univers, montantCmd, annonceData);
+    const {error: errCmd} = await sb.from('commandes').insert([{
+      client_id: moiId, prestataire_id: prestataireId, annonce_id: annonceData.id,
+      conversation_id: conversationId, univers, titre: titreCmd,
+      montant: montantCmd, devise: 'FCFA', montant_total: montantCmd,
+      commission, montant_prestataire: montantCmd - commission,
+      status: 'en_attente', ville: annonceData?.ville, localite: annonceData?.localite
+    }]).select().single();
+    if(errCmd){ alert('Erreur commande : ' + errCmd.message); return; }
+    await sb.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: texteMsg, type: 'texte'}]);
+    await notifier(prestataireId, 'Nouvelle commande 🛒', `${titreCmd} - ${fmt(montantCmd)}. En attente de ton acceptation.`, 'commande', `chat.html?conversation_id=${conversationId}`);
+    await chargerMessages();
+    await afficherBarreCommandeExistante();
+  }catch(e){ console.log('Commande depuis fiche:', e); }
+}
+async function afficherBarreCommandeExistante(){
+  const bar = el('commandeBar');
+  if(!bar || !conversationId) return;
+  const {data: cmd} = await sb.from('commandes').select('*').eq('conversation_id', conversationId).order('created_at',{ascending:false}).limit(1).maybeSingle();
+  if(!cmd){ bar.style.display='none'; return; }
+  const jeSuisPresta = String(moiId)===String(prestataireId);
+  bar.style.display='block';
+  if(cmd.status==='en_attente' && jeSuisPresta){
+    bar.innerHTML = `<b>🛒 Nouvelle commande : ${cmd.titre} - ${fmt(cmd.montant_total)}</b><br><small>Le client attend ton acceptation.</small><br><button onclick="accepterCommande('${cmd.id}')" style="background:#16a34a;color:#fff;border:none;padding:12px 16px;border-radius:10px;font-weight:800;margin-top:8px;cursor:pointer">✅ Accepter la commande</button> <button onclick="refuserCommande('${cmd.id}')" style="background:#fee2e2;border:none;padding:12px 16px;border-radius:10px;font-weight:800;margin-top:8px;cursor:pointer">❌ Refuser</button>`;
+  } else if(cmd.status==='en_attente' && !jeSuisPresta){
+    bar.innerHTML = `<b>🛒 Commande créée : ${cmd.titre} - ${fmt(cmd.montant_total)}</b><br><small>⏳ En attente que le prestataire accepte. Tu peux déjà discuter en bas.</small>`;
+  } else if(cmd.status==='accepte' && !jeSuisPresta){
+    bar.innerHTML = `<b>✅ Commande acceptée : ${cmd.titre} - ${fmt(cmd.montant_total)}</b><br><small>Le prestataire a accepté. Tu peux payer en escrow sécurisé.</small><br><button onclick="location.href='dashboard-client.html'" style="background:#f59e0b;border:none;padding:12px 16px;border-radius:10px;font-weight:800;margin-top:8px;cursor:pointer">💳 Aller payer →</button>`;
+  } else if(cmd.status==='accepte' && jeSuisPresta){
+    bar.innerHTML = `<b>✅ Tu as accepté : ${cmd.titre} - ${fmt(cmd.montant_total)}</b><br><small>En attente du paiement du client.</small>`;
+  } else if(cmd.status==='refuse'){
+    bar.innerHTML = `<b>❌ Commande refusée : ${cmd.titre} - ${fmt(cmd.montant_total)}</b>`;
+  } else {
+    bar.innerHTML = `<b>🛒 Commande : ${cmd.titre} - ${fmt(cmd.montant_total)}</b><br><small>Statut : ${cmd.status}</small>`;
+  }
+  setVal('cmdTitre', cmd.titre || '');
+  setVal('cmdMontant', cmd.montant_total || '');
+}
+async function accepterCommande(cmdId){
+  const {error} = await sb.from('commandes').update({status:'accepte'}).eq('id', cmdId).eq('prestataire_id', moiId);
+  if(error){ alert('Erreur : '+error.message); return; }
+  await sb.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: `✅ Commande acceptée ! Tu peux payer en escrow sécurisé.`, type: 'texte'}]);
+  await notifier(clientIdFinal, 'Commande acceptée ✅', 'Le prestataire a accepté ta commande. Tu peux payer.', 'validation', `chat.html?conversation_id=${conversationId}`);
+  await chargerMessages(); await afficherBarreCommandeExistante();
+}
+async function refuserCommande(cmdId){
+  if(!confirm('Refuser cette commande ?')) return;
+  const {error} = await sb.from('commandes').update({status:'refuse'}).eq('id', cmdId).eq('prestataire_id', moiId);
+  if(error){ alert('Erreur : '+error.message); return; }
+  await sb.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: `❌ Désolé, je ne peux pas accepter cette commande.`, type: 'texte'}]);
+  await notifier(clientIdFinal, 'Commande refusée ❌', 'Le prestataire a refusé la commande.', 'info', `chat.html?conversation_id=${conversationId}`);
+  await chargerMessages(); await afficherBarreCommandeExistante();
 }
 async function init(){
   const {data:{user}} = await sb.auth.getUser();
@@ -202,11 +265,11 @@ async function init(){
   if(conversationId){
     const {data: conv, error: errConv} = await sb.from('conversations').select('*').eq('id', conversationId).maybeSingle();
     if(errConv || !conv){
-      document.getElementById('messages').innerHTML = '<div class="msg sys">⚠️ Impossible de charger cette conversation : ' + (errConv?.message || 'introuvable') + '. Retourne au dashboard et re-clique sur Répondre.</div>';
+      const m = el('messages'); if(m) m.innerHTML = '<div class="msg sys">⚠️ Impossible de charger cette conversation : ' + (errConv?.message || 'introuvable') + '. Retourne au dashboard et re-clique sur Répondre.</div>';
       return;
     }
     if(String(conv.client_id)!==String(moiId) && String(conv.prestataire_id)!==String(moiId)){
-      document.getElementById('messages').innerHTML = '<div class="msg sys">⚠️ Tu ne fais pas partie de cette conversation.</div>';
+      const m = el('messages'); if(m) m.innerHTML = '<div class="msg sys">⚠️ Tu ne fais pas partie de cette conversation.</div>';
       return;
     }
     clientIdFinal = conv.client_id;
@@ -243,51 +306,57 @@ async function initAvecAnnonce(annId, prestaId, convExistante){
     bloquerChat("⚠️ Conversation introuvable. Retourne au dashboard et re-clique sur Répondre.");
     return;
   }
-  // CORRIGE : la ligne bizarre qui faussait clientIdFinal est supprimée
   if(String(moiId)!==String(prestaId)) clientIdFinal = moiId;
   localStorage.setItem('chat_conversation_id', conversationId);
   debloquerChat();
+  await chargerNoms();
   await chargerMessages();
+  marquerLu();
   if(timerMessages) clearInterval(timerMessages);
-  timerMessages = setInterval(chargerMessages, 3000);
-  // Annonce : on affiche l'erreur exacte au lieu de cacher
+  timerMessages = setInterval(()=>{ chargerMessages(); marquerLu(); }, 3000);
   if(!annId || annId==='null' || annId==='undefined'){
-    document.getElementById('annonceBar').textContent = 'Discussion - annonce_id vide dans la conversation (annId=' + annId + '). Messages OK, mais titre manquant.';
+    setText('annonceBar', 'Discussion - annonce_id vide dans la conversation (annId=' + annId + '). Messages OK, mais titre manquant.');
+    await afficherBarreCommandeExistante();
     return;
   }
   try{
     const {data: ann, error: errAnn} = await sb.from('annonces').select('*').eq('id', annId).maybeSingle();
     if(errAnn){
       console.log('Erreur annonce:', errAnn);
-      document.getElementById('annonceBar').textContent = 'Discussion - annonce non chargée, erreur Supabase : ' + errAnn.message + ' (annonce_id=' + annId + ')';
+      setText('annonceBar', 'Discussion - annonce non chargée, erreur Supabase : ' + errAnn.message + ' (annonce_id=' + annId + ')');
+      await afficherBarreCommandeExistante();
       return;
     }
     if(!ann){
-      document.getElementById('annonceBar').textContent = 'Discussion - annonce introuvable en base pour id=' + annId + ', mais tu peux discuter. Vérifie dans Supabase table annonces si cet id existe.';
+      setText('annonceBar', 'Discussion - annonce introuvable en base pour id=' + annId + ', mais tu peux discuter.');
+      await afficherBarreCommandeExistante();
       return;
     }
     annonceData = ann;
     const {data: prof} = await sb.from('profiles').select('nom, nom_entreprise, quartier').eq('id', prestaId).maybeSingle();
     let nomPresta = prof?.nom_entreprise || prof?.nom || 'Prestataire';
     let badgeQ = prof?.quartier ? ` 📍 ${prof.quartier}` : '';
-    const bar = document.getElementById('annonceBar'); bar.innerHTML='';
-    const b = document.createElement('b'); b.textContent = ann.titre || 'Discussion'; bar.appendChild(b);
-    const s = document.createElement('small'); s.textContent = `📍 ${ann.localite||''} - ${ann.ville||''} • 👤 ${nomPresta}${badgeQ} • ${ann.prix_fixe ? fmt(ann.prix_indicatif||0) : 'Prix à discuter'} - ${texteCommission(ann.univers, ann)}`; bar.appendChild(s);
-    document.getElementById('nomAutre').textContent = nomPresta + badgeQ;
-    document.getElementById('infoAutre').textContent = `${ann.categorie||''} • ${ann.ville||''} - ${ann.localite||''}`;
-    document.getElementById('cmdTitre').value = ann.titre || '';
-    document.getElementById('cmdMontant').value = ann.prix_indicatif || '';
-    document.getElementById('texteCommission').textContent = texteCommission(ann.univers, ann);
+    nomAutreGlobal = nomPresta;
+    const bar = el('annonceBar');
+    if(bar){
+      bar.innerHTML='';
+      const b = document.createElement('b'); b.textContent = ann.titre || 'Discussion'; bar.appendChild(b);
+      const s = document.createElement('small'); s.textContent = `📍 ${ann.localite||''} - ${ann.ville||''} • 👤 ${nomPresta}${badgeQ} • ${ann.prix_fixe ? fmt(ann.prix_indicatif||0) : 'Prix à discuter'} - ${texteCommissionTxt(ann.univers, ann)}`; bar.appendChild(s);
+    }
+    setText('nomAutre', nomPresta + badgeQ);
+    setText('infoAutre', `${ann.categorie||''} • ${ann.ville||''} - ${ann.localite||''}`);
+    setVal('cmdTitre', ann.titre || '');
+    setVal('cmdMontant', ann.prix_indicatif || '');
+    setText('texteCommissionEl', texteCommissionTxt(ann.univers, ann));
     const jeSuisPresta = (String(moiId)===String(prestaId));
     const isFixe = prixFixeUnivers(ann.univers);
-    if(jeSuisPresta && !isFixe) document.getElementById('btnProp').style.display = 'block';
-    else document.getElementById('btnProp').style.display = 'none';
-    if(!jeSuisPresta) document.getElementById('btnCmd').style.display = 'block';
-    if(!jeSuisPresta && ann.univers==='immobilier') document.getElementById('btnVisit').style.display = 'block';
-    afficherCommandeDepuisFiche();
+    setShow('btnProp', jeSuisPresta && !isFixe);
+    if(!jeSuisPresta) setShow('btnCmd', true);
+    if(!jeSuisPresta && ann.univers==='immobilier') setShow('btnVisit', true);
+    await gererCommandeDepuisFiche();
   }catch(e){
     console.log('Annonce non bloquante:', e);
-    document.getElementById('annonceBar').textContent = 'Discussion - annonce non chargée, erreur JS : ' + (e.message || e) + ' (annonce_id=' + annId + ')';
+    setText('annonceBar', 'Discussion - annonce non chargée, erreur JS : ' + (e.message || e) + ' (annonce_id=' + annId + ')');
   }
 }
 function payerVisite(){
@@ -300,28 +369,29 @@ function payerVisite(){
 }
 async function chargerMessages(){
   if(!conversationId){
-    document.getElementById('messages').innerHTML = '<div class="msg sys">⚠️ Conversation introuvable. Retourne au dashboard.</div>';
+    const m = el('messages'); if(m) m.innerHTML = '<div class="msg sys">⚠️ Conversation introuvable. Retourne au dashboard.</div>';
     return;
   }
   const {data, error} = await sb.from('messages').select('*').eq('conversation_id', conversationId).order('created_at',{ascending:true});
   if(error){
     console.log('ROCY chat erreur chargement messages:', error);
-    document.getElementById('messages').innerHTML = '<div class="msg sys">⚠️ Erreur chargement : ' + error.message + '</div>';
+    const m = el('messages'); if(m) m.innerHTML = '<div class="msg sys">⚠️ Erreur chargement : ' + error.message + '</div>';
     return;
   }
-  const box = document.getElementById('messages'); box.innerHTML='';
+  const box = el('messages'); if(!box) return; box.innerHTML='';
   if(!data || data.length===0){
     const d=document.createElement('div'); d.className='msg sys'; d.textContent = prixFixeUnivers(annonceData?.univers) ? '👋 Prix déjà affiché. Clique sur Créer la commande en bas, puis paie sur Rocyinter.' : '👋 Dis bonjour ! Demande le prix, la date, le lieu. Ne paie jamais en dehors de Rocyinter.'; box.appendChild(d); return;
   }
   data.forEach(m=>{
     const isMoi = String(m.sender_id)===String(moiId);
     const heure = new Date(m.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    const nomAff = isMoi ? nomMoi : nomAutreGlobal;
     if(m.type === 'proposition'){
       const statut = m.proposition_statut || 'en_attente';
       const div = document.createElement('div'); div.className='msg prop';
       const titre = document.createElement('b'); titre.textContent = `💰 Proposition de prix : ${fmt(m.proposition_prix||0)}`; div.appendChild(titre);
       const c = document.createElement('div'); c.textContent = m.contenu||''; div.appendChild(c);
-      const sm = document.createElement('small'); sm.textContent = heure; div.appendChild(sm);
+      const sm = document.createElement('small'); sm.textContent = nomAff + ' • ' + heure; div.appendChild(sm);
       const prestaActuel = annonceData?.prestataire_id || prestataireId;
       const jeSuisClient = (String(moiId)!==String(prestaActuel));
       if(statut==='en_attente' && jeSuisClient){
@@ -333,15 +403,15 @@ async function chargerMessages(){
     }
     const div=document.createElement('div'); div.className='msg '+(isMoi?'moi':'autre');
     const txt=document.createElement('div'); txt.textContent=m.contenu||''; div.appendChild(txt);
-    const sm=document.createElement('small'); sm.textContent=(isMoi?'Vous':'Autre')+' • '+heure; div.appendChild(sm);
+    const sm=document.createElement('small'); sm.textContent=nomAff+' • '+heure; div.appendChild(sm);
     box.appendChild(div);
   });
   box.scrollTop = box.scrollHeight;
 }
 async function envoyer(){
-  const inp = document.getElementById('inputMsg');
-  const btn = document.getElementById('btnEnvoyer');
-  const txt = inp.value.trim();
+  const inp = el('inputMsg');
+  const btn = el('btnEnvoyer');
+  const txt = inp?.value?.trim() || '';
   if(!txt){ alert('Écris un message d’abord.'); return; }
   if(!conversationId){
     if(!annonceData || !prestataireId || !annonceId){ alert('Conversation introuvable. Retourne sur l’annonce et clique à nouveau sur Discuter.'); return; }
@@ -354,14 +424,14 @@ async function envoyer(){
   }
   if(txt.length>2000){ alert('Message trop long (max 2000).'); return; }
   if(contientNumero(txt)){
-    document.getElementById('warnChat').style.display='block';
+    const w = el('warnChat'); if(w) w.style.display='block';
     if(!confirm('⚠️ Tu essaies de partager un numéro / WhatsApp. Si tu paies en dehors de Rocyinter, tu perds la protection et la facture. Tu veux vraiment envoyer ?')) return;
   }
-  btn.disabled = true; btn.textContent = 'Envoi...';
+  if(btn){ btn.disabled = true; btn.textContent = 'Envoi...'; }
   const {error} = await sb.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: txt, type: 'texte'}]);
-  btn.disabled = false; btn.textContent = 'Envoyer';
+  if(btn){ btn.disabled = false; btn.textContent = 'Envoyer'; }
   if(error){ alert('Erreur envoi : '+error.message); return; }
-  inp.value = '';
+  if(inp) inp.value = '';
   if(window.rocyLog) window.rocyLog('envoyer_message', 'messages', conversationId, { annonce_id: annonceId });
   const prestaActuel = annonceData?.prestataire_id || prestataireId;
   const autreId = String(moiId)===String(prestaActuel) ? clientIdFinal : prestaActuel;
@@ -370,23 +440,23 @@ async function envoyer(){
 }
 function ouvrirProposition(){
   if(prixFixeUnivers(annonceData?.univers)){ alert('Prix déjà affiché. Pas de proposition pour Manger / Séjour / Immobilier. Le client crée la commande direct.'); return; }
-  const prestaActuel = annonceData?.prestataire_id || prestataireId; if(String(moiId)!==String(prestaActuel)){ alert('Seul le prestataire propose un prix.'); return; } document.getElementById('modalProp').classList.add('show');
+  const prestaActuel = annonceData?.prestataire_id || prestataireId; if(String(moiId)!==String(prestaActuel)){ alert('Seul le prestataire propose un prix.'); return; } const m = el('modalProp'); if(m) m.classList.add('show');
 }
-function fermerProposition(){ document.getElementById('modalProp').classList.remove('show'); }
-function ouvrirCommande(){ const prestaActuel = annonceData?.prestataire_id || prestataireId; if(String(moiId)===String(prestaActuel)){ alert('Seul le client crée la commande.'); return; } document.getElementById('modalCmd').classList.add('show'); }
-function fermerCommande(){ document.getElementById('modalCmd').classList.remove('show'); }
+function fermerProposition(){ const m = el('modalProp'); if(m) m.classList.remove('show'); }
+function ouvrirCommande(){ const prestaActuel = annonceData?.prestataire_id || prestataireId; if(String(moiId)===String(prestaActuel)){ alert('Seul le client crée la commande.'); return; } const m = el('modalCmd'); if(m) m.classList.add('show'); }
+function fermerCommande(){ const m = el('modalCmd'); if(m) m.classList.remove('show'); }
 async function envoyerProposition(){
   if(prixFixeUnivers(annonceData?.univers)){ alert('Prix déjà affiché. Pas de proposition pour Manger / Séjour / Immobilier.'); return; }
   const prestaActuel = annonceData?.prestataire_id || prestataireId;
   if(String(moiId)!==String(prestaActuel)){ alert('Seul le prestataire propose un prix.'); return; }
-  const montant = Number(document.getElementById('propMontant').value);
-  const detail = document.getElementById('propDetail').value.trim();
+  const montant = Number(el('propMontant')?.value || 0);
+  const detail = (el('propDetail')?.value || '').trim();
   if(!montant || montant<=0){ alert('Mets un montant > 0'); return; }
   if(!conversationId){ alert('Conversation introuvable. Recharge la page.'); return; }
   const {error} = await sb.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: detail || 'Proposition de prix pour ce service.', type: 'proposition', proposition_prix: montant, proposition_statut: 'en_attente'}]);
   if(error){ alert('Erreur : '+error.message); return; }
   await notifier(clientIdFinal, 'Nouvelle proposition de prix', `Proposition : ${fmt(montant)} - ${detail}`, 'paiement', `chat.html?conversation_id=${conversationId}`);
-  fermerProposition(); document.getElementById('propMontant').value = ''; chargerMessages();
+  fermerProposition(); setVal('propMontant', ''); chargerMessages();
 }
 async function repondreProposition(msgId, rep){
   const prestaActuel = annonceData?.prestataire_id || prestataireId;
@@ -397,9 +467,9 @@ async function repondreProposition(msgId, rep){
   if(rep==='accepte'){
     const {data: msg} = await sb.from('messages').select('*').eq('id', msgId).single();
     if(msg){
-      document.getElementById('cmdMontant').value = msg.proposition_prix;
+      setVal('cmdMontant', msg.proposition_prix);
       await sb.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: `✅ Proposition de ${fmt(msg.proposition_prix)} acceptée. Tu peux créer la commande.`, type: 'texte'}]);
-      document.getElementById('btnCmd').style.display = 'block';
+      setShow('btnCmd', true);
     }
   }
   chargerMessages();
@@ -407,8 +477,8 @@ async function repondreProposition(msgId, rep){
 async function creerCommande(){
   const prestaActuel = annonceData?.prestataire_id || prestataireId;
   if(String(moiId)===String(prestaActuel)){ alert('Seul le client crée la commande.'); return; }
-  const titre = document.getElementById('cmdTitre').value.trim();
-  const montant = Number(document.getElementById('cmdMontant').value);
+  const titre = (el('cmdTitre')?.value || '').trim();
+  const montant = Number(el('cmdMontant')?.value || 0);
   if(!titre || !montant || montant<=0){ alert('Mets un titre + un montant > 0'); return; }
   if(!clientIdFinal){ alert('Erreur : client introuvable. Recharge la page.'); return; }
   if(String(clientIdFinal)===String(prestaActuel)){ alert('Erreur : client = prestataire. Impossible.'); return; }
@@ -420,7 +490,7 @@ async function creerCommande(){
   if(error){ alert('Erreur : ' + error.message); return; }
   await notifier(prestaActuel, 'Nouvelle commande 🛒', `${titre} - ${fmt(montant)}. En attente de paiement.`, 'commande', 'dashboard-prestataire.html');
   await sb.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: `✅ COMMANDE CRÉÉE : ${titre} - ${fmt(montant)} (Commission ${fmt(commission)}). En attente de paiement sécurisé en escrow.`, type: 'texte'}]);
-  fermerCommande(); alert('✅ Commande créée ! Elle est dans ton dashboard. Va payer dans Paiement.'); chargerMessages();
+  fermerCommande(); alert('✅ Commande créée ! Elle est dans ton dashboard. Va payer dans Paiement.'); chargerMessages(); await afficherBarreCommandeExistante();
 }
 init();
 if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
