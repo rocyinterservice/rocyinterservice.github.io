@@ -1,14 +1,58 @@
 // ============================================
-// ROCYINTER SERVICES - app.js V4 FINAL CORRIGÉ
+// ROCYINTER SERVICES - app.js V5 FINAL + LOGS PDP
 // NE FAIT PLUS header / footer / langue / devise
 // Ça c'est déjà dans rocy-layout.js - ne pas dupliquer
-// app.js = UNIQUEMENT filtre Pays > Ville > Quartier
+// app.js = Filtre Pays > Ville > Quartier + LOGS PDP Bénin
 // ============================================
 
 // --- 1. CONFIG SUPABASE - On réutilise celui de rocy-layout.js ---
-// Ne pas recréer un client. rocy-layout.js l'a déjà fait.
 function rocyGetSupabase(){
   return window.supabaseClient || null;
+}
+
+// --- 1-BIS. LOGS PDP BÉNIN - NE JAMAIS LOGGER LE MOT DE PASSE ---
+// Table : public.audit_logs
+// action : login, page_view, filtre_pays, filtre_ville, filtre_quartier, voir_piece, valider_quartier, etc.
+async function rocyLog(action, cible_type, cible_id, details = {}) {
+  try {
+    const sb = rocyGetSupabase();
+    if (!sb) return;
+    const userId = localStorage.getItem('rocy_user_id') || null;
+    const userEmail = localStorage.getItem('rocy_user_email') || null;
+    // On ne logue pas si pas connecté ET que c'est un log sensible, mais on logue les pages vues en anonyme
+    await sb.from('audit_logs').insert({
+      user_id: userId || null,
+      user_email: userEmail || 'visiteur',
+      action: action,
+      cible_type: cible_type || 'page',
+      cible_id: String(cible_id || window.location.pathname || ''),
+      details: {
+        ...details,
+        page: window.location.pathname,
+        pays_filtre: localStorage.getItem('rocy_pays') || '',
+        ville_filtre: localStorage.getItem('rocy_ville') || '',
+        quartier_filtre: localStorage.getItem('rocy_localite') || localStorage.getItem('rocy_quartier') || '',
+      },
+      navigateur: navigator.userAgent,
+    });
+  } catch(e) {
+    // On ne bloque JAMAIS le site à cause d'un log
+    console.log('log erreur', e);
+  }
+}
+// Pour appeler depuis les autres pages : logAction('voir_piece', 'piece', chemin)
+window.rocyLog = rocyLog;
+window.logAction = rocyLog;
+
+// Log de connexion : une seule fois par session
+function rocyLogLoginSiBesoin(){
+  try {
+    const userId = localStorage.getItem('rocy_user_id');
+    if (!userId) return;
+    if (sessionStorage.getItem('rocy_log_login_fait')) return;
+    sessionStorage.setItem('rocy_log_login_fait', '1');
+    rocyLog('login', 'auth', userId, { source: 'app.js' });
+  } catch(e) {}
 }
 
 // --- 2. ETAT GLOBAL - Filtre Pays / Ville / Quartier ---
@@ -20,7 +64,6 @@ let QUARTIER = localStorage.getItem('rocy_localite') || localStorage.getItem('ro
 function creerSelectPays(){
   const zone = document.getElementById('select-pays-zone');
   if(!zone) return;
-  // On utilise la vraie liste de pays.js, pas une petite liste de 35 pays
   const listePays = window.ROCY_PAYS || [];
   const optionsPays = listePays.map(p=>{
     const nom = p.nom || p;
@@ -73,6 +116,7 @@ function changerPays(val){
   localStorage.removeItem('rocy_quartier');
   creerSelectPays();
   filtrerParPays();
+  rocyLog('filtre_pays', 'filtre', val, { pays: val });
 }
 function changerVille(val){
   VILLE = val; QUARTIER='';
@@ -81,6 +125,7 @@ function changerVille(val){
   localStorage.removeItem('rocy_quartier');
   creerSelectPays();
   filtrerParPays();
+  rocyLog('filtre_ville', 'filtre', val, { pays: PAYS, ville: val });
 }
 function changerQuartier(val){
   QUARTIER = val;
@@ -88,9 +133,9 @@ function changerQuartier(val){
   localStorage.setItem('rocy_quartier', QUARTIER);
   majInfoPays();
   filtrerParPays();
+  rocyLog('filtre_quartier', 'filtre', val, { pays: PAYS, ville: VILLE, quartier: val });
 }
 function changerLocalite(val){
-  // Ancien nom, gardé pour compatibilité avec les vieilles pages
   changerQuartier(val);
 }
 function effacerFiltrePays(){
@@ -101,10 +146,10 @@ function effacerFiltrePays(){
   localStorage.removeItem('rocy_quartier');
   creerSelectPays();
   filtrerParPays();
+  rocyLog('effacer_filtre', 'filtre', 'tous', {});
 }
 
-// FILTRE GLOBAL - Chaque carte doit avoir data-pays="Bénin" data-ville="Calavi" data-quartier="Ouèdo"
-// Compatibilité : on lit aussi data-localite si data-ville / data-quartier manquent
+// FILTRE GLOBAL
 function filtrerParPays(){
   const items = document.querySelectorAll('[data-pays]');
   if(!items.length) return;
@@ -129,8 +174,7 @@ function filtrerParPays(){
   }
 }
 
-// --- 4. ROLES - VISITEUR / CLIENT / PRESTATAIRE / ADMIN ---
-// Lecture seule, ne pas réécrire rocy-layout.js
+// --- 4. ROLES ---
 function getRoleUtilisateur(){
   return localStorage.getItem('rocy_role') || localStorage.getItem('rocy_user_type') || 'visiteur';
 }
@@ -139,9 +183,7 @@ function getUtilisateur(){
 }
 function estConnecte(){ return !!localStorage.getItem('rocy_user_id'); }
 
-// --- 5. COMPATIBILITÉ - Anciennes fonctions appelées par les pages ---
-// Les vieilles pages appellent convertirPrix / appliquerMonnaies / appliquerTraductions
-// On les redirige vers rocy-layout.js, on ne duplique pas la logique
+// --- 5. COMPATIBILITÉ ---
 function convertirPrix(prixFCFA){
   if(window.rocyFormatPrix) return window.rocyFormatPrix(prixFCFA);
   return Math.round(Number(prixFCFA)||0).toLocaleString('fr-FR') + ' FCFA';
@@ -152,11 +194,13 @@ function appliquerMonnaies(){
 function appliquerTraductions(){
   if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 }
-// Ancien injecterHeaderFooter : NE RIEN FAIRE, rocy-layout.js s'en occupe déjà
 function injecterHeaderFooter(){ return; }
 
 // --- 6. LANCEMENT ---
 document.addEventListener('DOMContentLoaded', ()=>{
   creerSelectPays();
   filtrerParPays();
+  rocyLogLoginSiBesoin();
+  // Log de visite de page, pour la PDP : qui a vu quoi et quand
+  rocyLog('page_view', 'page', window.location.pathname, {});
 });
