@@ -1,8 +1,9 @@
 // ============================================
-// ROCYINTER SERVICES - app.js V5 FINAL + LOGS PDP
+// ROCYINTER SERVICES - app.js V6 FINAL + LOGS PDP
 // NE FAIT PLUS header / footer / langue / devise
 // Ça c'est déjà dans rocy-layout.js - ne pas dupliquer
 // app.js = Filtre Pays > Ville > Quartier + LOGS PDP Bénin
+// + Carte Conversation partagée pour TOUS les dashboards
 // ============================================
 
 // --- 1. CONFIG SUPABASE - On réutilise celui de rocy-layout.js ---
@@ -11,15 +12,12 @@ function rocyGetSupabase(){
 }
 
 // --- 1-BIS. LOGS PDP BÉNIN - NE JAMAIS LOGGER LE MOT DE PASSE ---
-// Table : public.audit_logs
-// action : login, page_view, filtre_pays, filtre_ville, filtre_quartier, voir_piece, valider_quartier, etc.
 async function rocyLog(action, cible_type, cible_id, details = {}) {
   try {
     const sb = rocyGetSupabase();
     if (!sb) return;
     const userId = localStorage.getItem('rocy_user_id') || null;
     const userEmail = localStorage.getItem('rocy_user_email') || null;
-    // On ne logue pas si pas connecté ET que c'est un log sensible, mais on logue les pages vues en anonyme
     await sb.from('audit_logs').insert({
       user_id: userId || null,
       user_email: userEmail || 'visiteur',
@@ -36,15 +34,12 @@ async function rocyLog(action, cible_type, cible_id, details = {}) {
       navigateur: navigator.userAgent,
     });
   } catch(e) {
-    // On ne bloque JAMAIS le site à cause d'un log
     console.log('log erreur', e);
   }
 }
-// Pour appeler depuis les autres pages : logAction('voir_piece', 'piece', chemin)
 window.rocyLog = rocyLog;
 window.logAction = rocyLog;
 
-// Log de connexion : une seule fois par session
 function rocyLogLoginSiBesoin(){
   try {
     const userId = localStorage.getItem('rocy_user_id');
@@ -54,6 +49,69 @@ function rocyLogLoginSiBesoin(){
     rocyLog('login', 'auth', userId, { source: 'app.js' });
   } catch(e) {}
 }
+
+// --- 1-TER. CONVERSATIONS : POUR CHACUN, PAREIL PARTOUT ---
+// Utilisé par dashboard-client.html ET dashboard-prestataire.html
+// Comme Facebook : Nom + Dernier message + Heure + Gras si Nouveau
+
+function rocyEsc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function rocyEstNonLu(convId, dernierMsg, uid){
+  if(!dernierMsg) return false;
+  if(String(dernierMsg.sender_id)===String(uid)) return false;
+  const luA = Number(localStorage.getItem('rocy_lu_' + convId) || 0);
+  return new Date(dernierMsg.created_at).getTime() > luA;
+}
+
+function rocyMarquerLu(convId){
+  try{ if(convId) localStorage.setItem('rocy_lu_' + convId, Date.now().toString()); }catch(e){}
+}
+window.rocyMarquerLu = rocyMarquerLu;
+window.rocyEstNonLu = rocyEstNonLu;
+
+// LA fonction partagée : une seule fois ici, les dashboards l'appellent
+window.rocyCarteConversation = function(cv, nom, titre, dernierMsg, uid, texteBouton, onClick){
+  const texte = dernierMsg ? dernierMsg.contenu : 'Aucun message pour l’instant';
+  const heure = dernierMsg ? new Date(dernierMsg.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) : '';
+  const date = new Date(cv.created_at).toLocaleDateString('fr-FR');
+  const isNonLu = rocyEstNonLu(cv.id, dernierMsg, uid);
+  const nomSafe = rocyEsc(nom || 'Utilisateur');
+  const titreSafe = rocyEsc(titre || 'Discussion');
+  const texteSafe = rocyEsc(String(texte).slice(0,80)) + (String(texte).length>80 ? '...' : '');
+  return `<div class="card" onclick="${onClick}" style="cursor:pointer;${isNonLu ? 'border:2px solid #0f172a;' : ''}">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <b style="${isNonLu ? 'font-weight:900;' : ''}">👤 ${nomSafe}</b>
+      <span style="font-size:11px;color:#64748b">${heure} • ${date}</span>
+    </div>
+    <p style="margin:6px 0 0;font-weight:${isNonLu ? '700' : '400'};color:${isNonLu ? '#111' : '#64748b'}">${texteSafe}</p>
+    <p style="font-size:12px;color:#64748b;margin:4px 0 0">📦 ${titreSafe}</p>
+    ${isNonLu ? `<span style="display:inline-block;margin-top:6px;background:#f59e0b;color:#fff;font-size:11px;font-weight:800;padding:4px 8px;border-radius:999px">● Nouveau</span>` : ''}
+    <button class="btn btn-dark" onclick="event.stopPropagation(); ${onClick}">${rocyEsc(texteBouton)}</button>
+  </div>`;
+};
+
+// Helper : charge noms + titres + derniers messages pour une liste de conversations
+// Retourne { noms, titres, dernierMsg }
+window.rocyChargerInfosConvs = async function(sb, convs, champAutre){
+  const noms = {}, titres = {}, dernierMsg = {};
+  if(!convs || !convs.length) return { noms, titres, dernierMsg };
+  const autreIds = [...new Set(convs.map(c=>c[champAutre]).filter(Boolean))];
+  if(autreIds.length){
+    const {data: profs} = await sb.from('profiles').select('id, nom, nom_entreprise').in('id', autreIds);
+    (profs||[]).forEach(p=> noms[p.id] = p.nom_entreprise || p.nom || 'Utilisateur');
+  }
+  const annonceIds = [...new Set(convs.map(c=>c.annonce_id).filter(Boolean))];
+  if(annonceIds.length){
+    const {data: anns} = await sb.from('annonces').select('id, titre').in('id', annonceIds);
+    (anns||[]).forEach(a=> titres[a.id]=a.titre);
+  }
+  const convIds = convs.map(c=>c.id);
+  if(convIds.length){
+    const {data: msgs} = await sb.from('messages').select('conversation_id, sender_id, contenu, created_at').in('conversation_id', convIds).order('created_at',{ascending:false});
+    (msgs||[]).forEach(m=>{ if(!dernierMsg[m.conversation_id]) dernierMsg[m.conversation_id]=m; });
+  }
+  return { noms, titres, dernierMsg };
+};
 
 // --- 2. ETAT GLOBAL - Filtre Pays / Ville / Quartier ---
 let PAYS = localStorage.getItem('rocy_pays') || '';
@@ -201,6 +259,5 @@ document.addEventListener('DOMContentLoaded', ()=>{
   creerSelectPays();
   filtrerParPays();
   rocyLogLoginSiBesoin();
-  // Log de visite de page, pour la PDP : qui a vu quoi et quand
   rocyLog('page_view', 'page', window.location.pathname, {});
 });
