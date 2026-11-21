@@ -137,11 +137,16 @@ async function verifierAbonnement(p){
 }
 function badgeCommande(s){
   if(s==='en_attente') return '<span class="badge attente">⏳ En attente</span>';
+  if(s==='accepte') return '<span class="badge cours">✅ Accepté</span>';
   if(s==='paye') return '<span class="badge paye">💳 Payé - Bloqué</span>';
   if(s==='en_cours') return '<span class="badge cours">🔧 En cours</span>';
   if(s==='valide') return '<span class="badge valide">✅ Validé</span>';
   if(s==='libere') return '<span class="badge valide">💰 Libéré</span>';
   if(s==='litige') return '<span class="badge litige">⚠️ Litige</span>';
+  if(s==='refuse') return '<span class="badge rejete">❌ Refusé</span>';
+  if(s==='en_route') return '<span class="badge cours">🛵 En route</span>';
+  if(s==='en_livraison') return '<span class="badge cours">📦 En livraison</span>';
+  if(s==='livre') return '<span class="badge valide">📦 Livré</span>';
   return `<span class="badge attente">${esc(s)}</span>`;
 }
 function texteCommission(c){
@@ -270,8 +275,23 @@ async function changerStatut(id, action){
   }
   charger();
 }
-// CORRIGE : on ne re-lit plus la conversation, on va direct au chat.
-// La re-lecture avec .single() bloquait avec "Conversation introuvable".
+// Pour chaque commande en attente : accepter / refuser direct depuis le dashboard
+async function accepterCommande(id, convId, clientId){
+  const {error} = await sb.from('commandes').update({status:'accepte'}).eq('id', id).eq('prestataire_id', uid);
+  if(error){ alert('Erreur : '+error.message); return; }
+  if(convId) await sb.from('messages').insert([{conversation_id: convId, sender_id: uid, contenu: `✅ Commande acceptée ! Tu peux payer en escrow sécurisé.`}]);
+  try{ await sb.rpc('creer_notification', {p_user_id: clientId, p_titre: 'Commande acceptée ✅', p_message: 'Le prestataire a accepté ta commande. Tu peux payer.', p_type: 'validation', p_lien: 'dashboard-client.html'}); }catch(e){}
+  alert('✅ Commande acceptée, le client peut payer.');
+  charger();
+}
+async function refuserCommande(id, convId, clientId){
+  if(!confirm('Refuser cette commande ?')) return;
+  const {error} = await sb.from('commandes').update({status:'refuse'}).eq('id', id).eq('prestataire_id', uid);
+  if(error){ alert('Erreur : '+error.message); return; }
+  if(convId) await sb.from('messages').insert([{conversation_id: convId, sender_id: uid, contenu: `❌ Désolé, je ne peux pas accepter cette commande.`}]);
+  try{ await sb.rpc('creer_notification', {p_user_id: clientId, p_titre: 'Commande refusée ❌', p_message: 'Le prestataire a refusé la commande.', p_type: 'info', p_lien: 'dashboard-client.html'}); }catch(e){}
+  charger();
+}
 async function voirConversation(convId, annonceId, clientId){
   if(!convId || convId==='null' || convId==='undefined' || convId===''){
     alert('Conversation introuvable. Recharge la page.');
@@ -383,19 +403,21 @@ async function charger(){
   else {
     const clientIds = [...new Set(cmds.map(c=>c.client_id).filter(Boolean))];
     let nomsClients = {};
-    if(clientIds.length){ const {data: profs} = await sb.from('profiles').select('id,nom').in('id', clientIds); (profs||[]).forEach(p=> nomsClients[p.id]=p.nom); }
+    if(clientIds.length){ const {data: profs} = await sb.from('profiles').select('id,nom,nom_entreprise').in('id', clientIds); (profs||[]).forEach(p=> nomsClients[p.id]=p.nom_entreprise || p.nom); }
     boxC.innerHTML = cmds.map(c=>{
       let action = '';
+      if(c.status==='en_attente') action = `<button class="btn btn-green" onclick="accepterCommande('${esc(c.id)}','${esc(c.conversation_id)}','${esc(c.client_id)}')">✅ Accepter la commande</button><button class="btn" style="background:#fee2e2;color:#991b1b" onclick="refuserCommande('${esc(c.id)}','${esc(c.conversation_id)}','${esc(c.client_id)}')">❌ Refuser</button>`;
       if(c.status==='paye') action = `<button class="btn btn-green" onclick="changerStatut('${esc(c.id)}','en_cours')">🔧 Commencer le service</button>`;
       if(c.status==='en_cours') action = `<button class="btn btn-green" onclick="changerStatut('${esc(c.id)}','en_cours_termine')">✅ Marquer comme terminé (client valide)</button><p style="color:#64748b">Le client doit valider pour libérer l'argent.</p>`;
       if(c.status==='litige') action = `<p style="color:#991b1b">⚠️ Litige : ${esc(c.litige_raison || 'En cours')} - Argent bloqué, Admin tranche.</p>`;
       if(c.status==='valide') action = `<p style="color:#166534">⏳ Validé par le client - Libération dans 48h / lundi.</p>`;
       if(c.status==='libere') action = `<p style="color:#166534">💰 Argent libéré - Vérifie ton Mobile Money / compte.</p>`;
-      return `<div class="card">${badgeCommande(c.status)}<h3 style="margin-top:8px">${esc(c.titre)}</h3><p>Client : ${esc(nomsClients[c.client_id] || 'Client')}<br>Total : ${fmt(c.montant_total)} • ${esc(texteCommission(c))} • Tu reçois : <b>${fmt(c.montant_prestataire)}</b><br>📍 ${esc(c.localite||'')} - ${esc(c.ville||'')}<br><span style="color:#16a34a">🔒 Escrow : argent bloqué chez Rocyinter jusqu'à validation client</span></p>${action}<button class="btn btn-dark" onclick="voirConversation('${esc(c.conversation_id)}','${esc(c.annonce_id)}','${esc(c.client_id)}')">Ouvrir le chat</button></div>`;
+      if(c.status==='accepte') action = `<p style="color:#166534">✅ Tu as accepté - En attente du paiement du client.</p>`;
+      return `<div class="card">${badgeCommande(c.status)}<h3 style="margin-top:8px">${esc(c.titre)}</h3><p>👤 Client : <b style="color:#111">${esc(nomsClients[c.client_id] || 'Client')}</b><br>Total : ${fmt(c.montant_total)} • ${esc(texteCommission(c))} • Tu reçois : <b>${fmt(c.montant_prestataire)}</b><br>📍 ${esc(c.localite||'')} - ${esc(c.ville||'')}<br><span style="color:#16a34a">🔒 Escrow : argent bloqué chez Rocyinter jusqu'à validation client</span></p>${action}<button class="btn btn-dark" onclick="voirConversation('${esc(c.conversation_id)}','${esc(c.annonce_id)}','${esc(c.client_id)}')">Ouvrir le chat</button></div>`;
     }).join('');
     if(universSet.has('livreur')){
       const dem = (cmds||[]).filter(c=>c.univers==='livreur' && c.status==='en_attente');
-      document.getElementById('listeDemandesLivreur').innerHTML = dem.length ? dem.map(c=>`<div class="card"><b>${esc(c.titre)}</b><p>📍 ${esc(c.localite||'')} - ${esc(c.ville||'')} • ${fmt(c.montant_total)}</p><button class="btn btn-green" onclick="voirConversation('${esc(c.conversation_id)}','${esc(c.annonce_id)}','${esc(c.client_id)}')">Voir / Accepter</button></div>`).join('') : `<div class="empty">Aucune demande de livraison en attente pour l'instant.</div>`;
+      document.getElementById('listeDemandesLivreur').innerHTML = dem.length ? dem.map(c=>`<div class="card"><b>${esc(c.titre)}</b><p>📍 ${esc(c.localite||'')} - ${esc(c.ville||'')} • ${fmt(c.montant_total)}</p><button class="btn btn-green" onclick="accepterCommande('${esc(c.id)}','${esc(c.conversation_id)}','${esc(c.client_id)}')">✅ Accepter</button><button class="btn btn-dark" onclick="voirConversation('${esc(c.conversation_id)}','${esc(c.annonce_id)}','${esc(c.client_id)}')">Voir / Discuter</button></div>`).join('') : `<div class="empty">Aucune demande de livraison en attente pour l'instant.</div>`;
     }
   }
   const {data: convsBrutes, error: errConvs} = await sb.from('conversations').select('id, client_id, prestataire_id, annonce_id, created_at').eq('prestataire_id', uid).order('created_at',{ascending:false});
@@ -406,7 +428,32 @@ async function charger(){
   else {
     let titres = {}; const annonceIds = [...new Set(convs.map(cv=>cv.annonce_id).filter(Boolean))];
     if(annonceIds.length){ const {data: anns} = await sb.from('annonces').select('id, titre').in('id', annonceIds); (anns||[]).forEach(a=> titres[a.id]=a.titre); }
-    boxV.innerHTML = convs.map(cv=>`<div class="card"><b>${esc(titres[cv.annonce_id] || 'Discussion')}</b><p>Conversation • ${esc(new Date(cv.created_at).toLocaleDateString('fr-FR'))}</p><button class="btn btn-green" onclick="voirConversation('${esc(cv.id)}','${esc(cv.annonce_id)}','${esc(cv.client_id)}')">Répondre</button></div>`).join('');
+    const clientIdsConv = [...new Set(convs.map(cv=>cv.client_id).filter(Boolean))];
+    let nomsConv = {};
+    if(clientIdsConv.length){ const {data: profs} = await sb.from('profiles').select('id, nom, nom_entreprise').in('id', clientIdsConv); (profs||[]).forEach(p=> nomsConv[p.id]=p.nom_entreprise || p.nom || 'Client'); }
+    const convIds = convs.map(c=>c.id);
+    let dernierMsg = {};
+    if(convIds.length){ const {data: msgs} = await sb.from('messages').select('conversation_id, sender_id, contenu, created_at').in('conversation_id', convIds).order('created_at',{ascending:false}); (msgs||[]).forEach(m=>{ if(!dernierMsg[m.conversation_id]) dernierMsg[m.conversation_id]=m; }); }
+    boxV.innerHTML = convs.map(cv=>{
+      const nom = nomsConv[cv.client_id] || 'Client';
+      const titre = titres[cv.annonce_id] || 'Discussion';
+      const last = dernierMsg[cv.id];
+      const texte = last ? last.contenu : 'Aucun message pour l’instant';
+      const heure = last ? new Date(last.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) : '';
+      const date = new Date(cv.created_at).toLocaleDateString('fr-FR');
+      const luA = Number(localStorage.getItem('rocy_lu_' + cv.id) || 0);
+      const isNonLu = last && String(last.sender_id)!==String(uid) && new Date(last.created_at).getTime() > luA;
+      return `<div class="card" onclick="voirConversation('${esc(cv.id)}','${esc(cv.annonce_id)}','${esc(cv.client_id)}')" style="cursor:pointer;${isNonLu ? 'border:2px solid #0f172a;' : ''}">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <b style="${isNonLu ? 'font-weight:900;' : ''}">👤 ${esc(nom)}</b>
+          <span style="font-size:11px;color:#64748b">${heure} • ${date}</span>
+        </div>
+        <p style="margin:6px 0 0;font-weight:${isNonLu ? '700' : '400'};color:${isNonLu ? '#111' : '#64748b'}">${esc(texte.slice(0,80))}${texte.length>80 ? '...' : ''}</p>
+        <p style="font-size:12px;color:#64748b;margin:4px 0 0">📦 ${esc(titre)}</p>
+        ${isNonLu ? `<span style="display:inline-block;margin-top:6px;background:#f59e0b;color:#fff;font-size:11px;font-weight:800;padding:4px 8px;border-radius:999px">● Nouveau</span>` : ''}
+        <button class="btn btn-green" onclick="event.stopPropagation(); voirConversation('${esc(cv.id)}','${esc(cv.annonce_id)}','${esc(cv.client_id)}')">Répondre</button>
+      </div>`;
+    }).join('');
   }
   if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 }
