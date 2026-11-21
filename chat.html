@@ -196,85 +196,99 @@ async function init(){
   monRole = String(profMoi?.type_compte || profMoi?.type_fournisseur || '').toLowerCase();
   if(monRole==='admin'){ alert('Admin : tu ne peux pas chatter, tu gères dans Admin.'); location.href='admin.html'; return; }
   if(conversationId){
-    const {data: conv} = await sb.from('conversations').select('*').eq('id', conversationId).maybeSingle();
-    if(conv && (String(conv.client_id)===String(moiId) || String(conv.prestataire_id)===String(moiId))){
-      clientIdFinal = conv.client_id;
-      prestataireId = conv.prestataire_id;
-      annonceId = conv.annonce_id;
-      localStorage.setItem('chat_prestataire', conv.prestataire_id);
-      if(conv.annonce_id) localStorage.setItem('chat_annonce', conv.annonce_id);
-      localStorage.setItem('chat_conversation_id', conv.id);
-      return await initAvecAnnonce(conv.annonce_id, conv.prestataire_id, conv);
+    const {data: conv, error: errConv} = await sb.from('conversations').select('*').eq('id', conversationId).maybeSingle();
+    if(errConv || !conv){
+      document.getElementById('messages').innerHTML = '<div class="msg sys">⚠️ Impossible de charger cette conversation : ' + (errConv?.message || 'introuvable') + '. Retourne au dashboard et re-clique sur Répondre.</div>';
+      return;
     }
-    // CORRIGE : lien invalide = on bloque, on ne retombe JAMAIS sur une autre conversation
-    bloquerChat("⚠️ Ce lien de conversation est invalide. Retourne sur ton dashboard et clique à nouveau sur Répondre sur la bonne conversation.");
-    return;
+    if(String(conv.client_id)!==String(moiId) && String(conv.prestataire_id)!==String(moiId)){
+      document.getElementById('messages').innerHTML = '<div class="msg sys">⚠️ Tu ne fais pas partie de cette conversation.</div>';
+      return;
+    }
+    clientIdFinal = conv.client_id;
+    prestataireId = conv.prestataire_id;
+    annonceId = conv.annonce_id;
+    localStorage.setItem('chat_prestataire', conv.prestataire_id);
+    if(conv.annonce_id) localStorage.setItem('chat_annonce', conv.annonce_id);
+    localStorage.setItem('chat_conversation_id', conv.id);
+    localStorage.setItem('chat_client', conv.client_id);
+    return await initAvecAnnonce(conv.annonce_id, conv.prestataire_id, conv);
   }
   if(!prestataireId || !annonceId){ location.href='index.html'; return; }
   return await initAvecAnnonce(annonceId, prestataireId, null);
 }
 async function initAvecAnnonce(annId, prestaId, convExistante){
-  const {data: ann} = await sb.from('annonces').select('id, titre, categorie, univers, prix_fixe, prix_indicatif, devise, localite, ville, pays, status, prestataire_id').eq('id', annId).maybeSingle();
-  if(!ann){ document.getElementById('annonceBar').textContent = 'Annonce introuvable.'; document.getElementById('inputMsg').disabled = true; return; }
-  const vraiPresta = ann.prestataire_id || '';
-  if(String(vraiPresta) !== String(prestaId)){ document.getElementById('annonceBar').textContent = 'Annonce / prestataire incohérent.'; document.getElementById('inputMsg').disabled = true; return; }
-  if(!estValideAnnonce(ann)){
-    document.getElementById('annonceBar').textContent = ann.titre + ' - Annonce en cours de vérification. Chat bloqué.';
-    bloquerChat("⏳ Cette annonce n'est pas encore validée. Tu ne peux pas chatter dessus.");
-    return;
-  }
-  annonceData = ann;
-  const {data: prof} = await sb.from('profiles').select('nom, nom_entreprise, quartier').eq('id', prestaId).maybeSingle();
-  let nomPresta = prof?.nom_entreprise || prof?.nom || 'Prestataire';
-  let badgeQ = prof?.quartier ? ` 📍 ${prof.quartier}` : '';
-  const bar = document.getElementById('annonceBar'); bar.innerHTML='';
-  const b = document.createElement('b'); b.textContent = ann.titre; bar.appendChild(b);
-  const s = document.createElement('small'); s.textContent = `📍 ${ann.localite||''} - ${ann.ville||''} • 👤 ${nomPresta}${badgeQ} • ${ann.prix_fixe ? fmt(ann.prix_indicatif||0) : 'Prix à discuter'} - ${texteCommission(ann.univers, ann)}`; bar.appendChild(s);
-  document.getElementById('nomAutre').textContent = nomPresta + badgeQ;
-  document.getElementById('infoAutre').textContent = `${ann.categorie||''} • ${ann.ville||''} - ${ann.localite||''}`;
-  document.getElementById('cmdTitre').value = ann.titre;
-  document.getElementById('cmdMontant').value = ann.prix_indicatif || '';
-  document.getElementById('texteCommission').textContent = texteCommission(ann.univers, ann);
-  const jeSuisPresta = (String(moiId)===String(prestaId));
-  const isFixe = prixFixeUnivers(ann.univers);
-  if(jeSuisPresta && !isFixe) document.getElementById('btnProp').style.display = 'block';
-  else document.getElementById('btnProp').style.display = 'none';
-  if(!jeSuisPresta) document.getElementById('btnCmd').style.display = 'block';
-  if(!jeSuisPresta && ann.univers==='immobilier') document.getElementById('btnVisit').style.display = 'block';
-  if(convExistante){ conversationId = convExistante.id; clientIdFinal = convExistante.client_id; }
-  else {
+  // CORRIGE PRINCIPAL : on fixe d'abord la conversation, puis on charge les messages.
+  // Plus AUCUN return sur l'annonce avant chargerMessages(), sinon écran blanc.
+  if(convExistante){
+    conversationId = convExistante.id;
+    clientIdFinal = convExistante.client_id;
+  } else if(String(moiId)!==String(prestaId)){
+    // Client sans conversation_id : on cherche ou on crée sa conversation
     const {data: convs} = await sb.from('conversations').select('*').eq('annonce_id', annId);
-    let cible = null;
-    if(jeSuisPresta){
-      const mesConvs = (convs||[]).filter(c => String(c.prestataire_id)===String(moiId) && String(c.client_id)!==String(moiId));
-      // CORRIGE : le lien a la priorité sur le localStorage qui peut être vieux
-      const clientVoulu = clientVouluUrl || localStorage.getItem('chat_client');
-      if(clientVoulu) cible = mesConvs.find(c => String(c.client_id)===String(clientVoulu));
-      if(!cible && mesConvs.length===1) cible = mesConvs[0];
-      // CORRIGE : SUPPRIME le fallback "dernière conversation qui a un message"
-      // Si on ne trouve pas, on bloque au lieu de montrer les anciens messages d'une autre conversation
-      if(!cible){
-        bloquerChat("⚠️ Conversation introuvable. Retourne sur ton dashboard et clique à nouveau sur Répondre sur la bonne conversation, ne passe pas par un vieux lien.");
-        return;
-      }
-    } else {
-      cible = (convs||[]).find(c => String(c.client_id)===String(moiId) && String(c.prestataire_id)===String(prestaId));
-    }
+    const cible = (convs||[]).find(c => String(c.client_id)===String(moiId) && String(c.prestataire_id)===String(prestaId));
     if(cible){ conversationId = cible.id; clientIdFinal = cible.client_id; }
-    else if(!jeSuisPresta){
+    else {
       clientIdFinal = moiId;
       const {data: nv, error} = await sb.from('conversations').insert([{client_id: moiId, prestataire_id: prestaId, annonce_id: annId}]).select().single();
       if(error){ alert('Erreur conversation : '+error.message); return; }
       if(nv) conversationId = nv.id;
-    } else { bloquerChat("⏳ En attente qu'un client te parle sur cette annonce."); document.getElementById('btnProp').style.display='none'; return; }
+    }
+  } else {
+    // Prestataire sans conversation_id : on ne devine pas, on bloque avec un message visible
+    bloquerChat("⚠️ Passe par ton dashboard et clique sur Répondre sur la bonne conversation.");
+    return;
   }
-  if(!jeSuisPresta) clientIdFinal = moiId;
-  if(conversationId) localStorage.setItem('chat_conversation_id', conversationId);
+  if(!conversationId){
+    bloquerChat("⚠️ Conversation introuvable. Retourne au dashboard et re-clique sur Répondre.");
+    return;
+  }
+  if(!String(moiId)===String(prestaId)) clientIdFinal = moiId;
+  if(String(moiId)!==String(prestaId)) clientIdFinal = moiId;
+  localStorage.setItem('chat_conversation_id', conversationId);
   debloquerChat();
-  afficherCommandeDepuisFiche();
+  // On charge les messages TOUT DE SUITE, avant même l'annonce
   await chargerMessages();
   if(timerMessages) clearInterval(timerMessages);
   timerMessages = setInterval(chargerMessages, 3000);
+  // Ensuite, on charge l'annonce en "au mieux", sans jamais bloquer les messages
+  try{
+    const {data: ann} = await sb.from('annonces').select('id, titre, categorie, univers, prix_fixe, prix_indicatif, devise, localite, ville, pays, status, prestataire_id').eq('id', annId).maybeSingle();
+    if(!ann){
+      document.getElementById('annonceBar').textContent = 'Annonce introuvable, mais tu peux quand même discuter.';
+      return;
+    }
+    // CORRIGE : si le prestataire ne correspond pas, on affiche un avertissement,
+    // on ne bloque PLUS les messages et on ne fait PLUS de return blanc.
+    if(String(ann.prestataire_id || '') !== String(prestaId)){
+      document.getElementById('annonceBar').textContent = ann.titre + ' - Avertissement : prestataire différent dans le lien.';
+    }
+    if(!estValideAnnonce(ann)){
+      document.getElementById('annonceBar').textContent = ann.titre + ' - Annonce en cours de vérification.';
+    }
+    annonceData = ann;
+    const {data: prof} = await sb.from('profiles').select('nom, nom_entreprise, quartier').eq('id', prestaId).maybeSingle();
+    let nomPresta = prof?.nom_entreprise || prof?.nom || 'Prestataire';
+    let badgeQ = prof?.quartier ? ` 📍 ${prof.quartier}` : '';
+    const bar = document.getElementById('annonceBar'); bar.innerHTML='';
+    const b = document.createElement('b'); b.textContent = ann.titre; bar.appendChild(b);
+    const s = document.createElement('small'); s.textContent = `📍 ${ann.localite||''} - ${ann.ville||''} • 👤 ${nomPresta}${badgeQ} • ${ann.prix_fixe ? fmt(ann.prix_indicatif||0) : 'Prix à discuter'} - ${texteCommission(ann.univers, ann)}`; bar.appendChild(s);
+    document.getElementById('nomAutre').textContent = nomPresta + badgeQ;
+    document.getElementById('infoAutre').textContent = `${ann.categorie||''} • ${ann.ville||''} - ${ann.localite||''}`;
+    document.getElementById('cmdTitre').value = ann.titre;
+    document.getElementById('cmdMontant').value = ann.prix_indicatif || '';
+    document.getElementById('texteCommission').textContent = texteCommission(ann.univers, ann);
+    const jeSuisPresta = (String(moiId)===String(prestaId));
+    const isFixe = prixFixeUnivers(ann.univers);
+    if(jeSuisPresta && !isFixe) document.getElementById('btnProp').style.display = 'block';
+    else document.getElementById('btnProp').style.display = 'none';
+    if(!jeSuisPresta) document.getElementById('btnCmd').style.display = 'block';
+    if(!jeSuisPresta && ann.univers==='immobilier') document.getElementById('btnVisit').style.display = 'block';
+    afficherCommandeDepuisFiche();
+  }catch(e){
+    console.log('Annonce non bloquante:', e);
+    document.getElementById('annonceBar').textContent = 'Discussion - annonce non chargée, mais tu peux discuter.';
+  }
 }
 function payerVisite(){
   if(!annonceData) return;
@@ -285,9 +299,16 @@ function payerVisite(){
   location.href='paiement.html';
 }
 async function chargerMessages(){
-  if(!conversationId) return;
+  if(!conversationId){
+    document.getElementById('messages').innerHTML = '<div class="msg sys">⚠️ Conversation introuvable. Retourne au dashboard.</div>';
+    return;
+  }
   const {data, error} = await sb.from('messages').select('*').eq('conversation_id', conversationId).order('created_at',{ascending:true});
-  if(error){ console.log('ROCY chat erreur chargement messages:', error); return; }
+  if(error){
+    console.log('ROCY chat erreur chargement messages:', error);
+    document.getElementById('messages').innerHTML = '<div class="msg sys">⚠️ Erreur chargement : ' + error.message + '</div>';
+    return;
+  }
   const box = document.getElementById('messages'); box.innerHTML='';
   if(!data || data.length===0){
     const d=document.createElement('div'); d.className='msg sys'; d.textContent = prixFixeUnivers(annonceData?.univers) ? '👋 Prix déjà affiché. Clique sur Créer la commande en bas, puis paie sur Rocyinter.' : '👋 Dis bonjour ! Demande le prix, la date, le lieu. Ne paie jamais en dehors de Rocyinter.'; box.appendChild(d); return;
