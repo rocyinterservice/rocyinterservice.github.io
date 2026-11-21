@@ -90,15 +90,18 @@ const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 window.supabaseClient = sb;
 let moiId = ''; let monRole = '';
-// VRAIE CORRECTION : on ne fait PLUS confiance à localStorage pour la conversation.
-// Seul le lien ?conversation_id=... compte. Sinon on cherche la vraie conversation de l'annonce.
+// CORRIGÉ : on lit TOUS les noms de paramètres, du lien ET du localStorage. Le lien a la priorité.
 const paramsUrl = new URLSearchParams(window.location.search);
-const convIdUrl = paramsUrl.get('conversation_id') || paramsUrl.get('id') || paramsUrl.get('conversation');
+const convIdUrl = paramsUrl.get('conversation_id') || paramsUrl.get('conversation') || paramsUrl.get('id') || paramsUrl.get('conv');
+const annonceUrl = paramsUrl.get('annonce_id') || paramsUrl.get('annonce');
+const prestaUrl = paramsUrl.get('prestataire_id') || paramsUrl.get('prestataire');
 const clientVouluUrl = paramsUrl.get('client_id') || paramsUrl.get('client');
 if(convIdUrl) localStorage.setItem('chat_conversation_id', convIdUrl);
+if(annonceUrl) localStorage.setItem('chat_annonce', annonceUrl);
+if(prestaUrl) localStorage.setItem('chat_prestataire', prestaUrl);
 if(clientVouluUrl) localStorage.setItem('chat_client', clientVouluUrl);
-const prestataireId = localStorage.getItem('chat_prestataire');
-const annonceId = localStorage.getItem('chat_annonce');
+let prestataireId = prestaUrl || localStorage.getItem('chat_prestataire');
+let annonceId = annonceUrl || localStorage.getItem('chat_annonce');
 const convIdDirect = convIdUrl || null;
 let conversationId = convIdDirect || null; let annonceData = null; let clientIdFinal = null;
 const fmt = n => window.rocyFormatPrix ? window.rocyFormatPrix(Number(n||0)) : Number(n||0).toLocaleString()+' FCFA';
@@ -191,11 +194,12 @@ async function init(){
   const {data:profMoi} = await sb.from('profiles').select('type_compte, type_fournisseur').eq('id', moiId).maybeSingle();
   monRole = String(profMoi?.type_compte || profMoi?.type_fournisseur || '').toLowerCase();
   if(monRole==='admin'){ alert('Admin : tu ne peux pas chatter, tu gères dans Admin.'); location.href='admin.html'; return; }
-  // Seulement si on vient d'une notification avec un ID dans le lien, on l'utilise direct
   if(conversationId){
     const {data: conv} = await sb.from('conversations').select('*').eq('id', conversationId).maybeSingle();
     if(conv && (String(conv.client_id)===String(moiId) || String(conv.prestataire_id)===String(moiId))){
       clientIdFinal = conv.client_id;
+      prestataireId = conv.prestataire_id;
+      annonceId = conv.annonce_id;
       localStorage.setItem('chat_prestataire', conv.prestataire_id);
       if(conv.annonce_id) localStorage.setItem('chat_annonce', conv.annonce_id);
       localStorage.setItem('chat_conversation_id', conv.id);
@@ -203,7 +207,6 @@ async function init(){
     }
     conversationId = null;
   }
-  // Sinon : on ouvre par annonce / dashboard, on cherche la vraie conversation dans initAvecAnnonce
   if(!prestataireId || !annonceId){ location.href='index.html'; return; }
   return await initAvecAnnonce(annonceId, prestataireId, null);
 }
@@ -246,7 +249,6 @@ async function initAvecAnnonce(annId, prestaId, convExistante){
       if(clientVoulu) cible = mesConvs.find(c => String(c.client_id)===String(clientVoulu));
       if(!cible && mesConvs.length===1) cible = mesConvs[0];
       if(!cible && mesConvs.length>1){
-        // On prend la conversation qui a le DERNIER message, pas la plus récente en création
         let derniere = null; let derniereDate = null;
         for(const c of mesConvs){
           const {data: m} = await sb.from('messages').select('created_at').eq('conversation_id', c.id).order('created_at',{ascending:false}).limit(1).maybeSingle();
@@ -391,7 +393,7 @@ async function creerCommande(){
   const commission = calculerCommission(univers, montant, annonceData);
   const montantPresta = montant - commission;
   if(montantPresta < 0){ alert('Erreur commission > montant.'); return; }
-  const {error} = await sb.from('commandes').insert([{client_id: clientIdFinal, prestataire_id: prestaActuel, annonce_id: annonceId || annonceData?.id, conversation_id: conversationId, univers: univers, titre, montant: montant, devise: 'FCFA', montant_total: montant, commission, montant_prestataire: montantPresta, status: 'en_attente', ville: annonceData?.ville, localite: annonceData?.localite}]).select().single();
+  const {error} = await sb.from('commandes').insert([{client_id: clientIdFinal, prestataire_id: prestaActuel, annonce_id: annonceData?.id || annonceId, conversation_id: conversationId, univers: univers, titre, montant: montant, devise: 'FCFA', montant_total: montant, commission, montant_prestataire: montantPresta, status: 'en_attente', ville: annonceData?.ville, localite: annonceData?.localite}]).select().single();
   if(error){ alert('Erreur : ' + error.message); return; }
   await notifier(prestaActuel, 'Nouvelle commande 🛒', `${titre} - ${fmt(montant)}. En attente de paiement.`, 'commande', 'dashboard-prestataire.html');
   await sb.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: `✅ COMMANDE CRÉÉE : ${titre} - ${fmt(montant)} (Commission ${fmt(commission)}). En attente de paiement sécurisé en escrow.`, type: 'texte'}]);
