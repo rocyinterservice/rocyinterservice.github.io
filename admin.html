@@ -120,6 +120,20 @@ function statutAnnonce(a){ return String(a.status || '').toLowerCase(); }
 function esc(v){
   return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
+// CORRIGÉ : Voir une pièce PRIVÉE avec lien signé 60 sec, seulement pour l'admin
+async function voirPiecePrivee(cheminOuUrl){
+  if(!cheminOuUrl){ alert('Aucune pièce'); return; }
+  // Ancien format : base64 ou URL http -> on ouvre direct
+  if(cheminOuUrl.startsWith('data:') || cheminOuUrl.startsWith('http')){
+    window.open(cheminOuUrl, '_blank');
+    return;
+  }
+  // Nouveau format : chemin dans verification-privee, ex: userId/piece-123.jpg
+  const chemin = cheminOuUrl.replace('verification-privee/', '').replace(/^\/+/, '');
+  const { data, error } = await sb.storage.from('verification-privee').createSignedUrl(chemin, 60);
+  if(error){ alert('Erreur pièce privée : ' + error.message + '\nVérifie que tu es bien connecté en Admin et que la règle "Admin voit les pieces" est lancée.'); return; }
+  window.open(data.signedUrl, '_blank');
+}
 function afficherLogin(refuse){
   document.getElementById('loginBox').style.display='grid';
   document.getElementById('main').style.display='none';
@@ -178,7 +192,7 @@ async function chargerTout(){
     const [annRes, cmdRes, usersRes] = await Promise.all([
       sb.from('annonces').select('id, titre, categorie, univers, quartier, localite, ville, pays, prix_indicatif, prix_fixe, devise, photo_url, status, prestataire_id, created_at, description'),
       sb.from('commandes').select('id, titre, client_id, prestataire_id, conversation_id, annonce_id, status, univers, commission, montant_total, montant_prestataire, localite, ville, litige_raison, created_at'),
-      sb.from('profiles').select('id,nom,nom_entreprise,whatsapp,type_compte,type_fournisseur,statut_validation,categorie_prestataire,description_profil,quartier,ville,pays')
+      sb.from('profiles').select('id,nom,nom_entreprise,whatsapp,type_compte,type_fournisseur,statut_validation,description_profil,quartier,ville,pays')
     ]);
     const ann = annRes.data || [];
     const cmd = cmdRes.data || [];
@@ -239,23 +253,23 @@ async function chargerTout(){
       box.innerHTML = html;
     }
     if(tabActuel==='prestataires'){
-      const {data} = await sb.from('profiles').select('id, nom, nom_entreprise, whatsapp, type_compte, type_fournisseur, statut_validation, categorie_prestataire, description_profil, quartier, ville, pays').in('type_compte',['prestataire','professionnel','entreprise','livreur','fournisseur','pro']).order('created_at',{ascending:false});
+      const {data} = await sb.from('profiles').select('id, nom, nom_entreprise, whatsapp, type_compte, type_fournisseur, statut_validation, description_profil, quartier, ville, pays').in('type_compte',['prestataire','professionnel','entreprise','livreur','fournisseur','pro']).order('created_at',{ascending:false});
       const enAttente = (data||[]).filter(u=> String(u.statut_validation||'en_attente').toLowerCase()==='en_attente');
       if(!enAttente.length){ box.innerHTML = `<div class="empty">✅ Aucun prestataire en attente.</div>`; return; }
       box.innerHTML = enAttente.map(u=>{
         const labelType = u.type_compte==='entreprise' ? '🏢 Entreprise' : u.type_compte==='professionnel' ? '👨‍🔧 Professionnel' : u.type_compte==='livreur' ? '🛵 Livreur' : '💼 Fournisseur';
-        return `<div class="card"><span class="badge attente">⏳ ${labelType} en attente</span><h3 style="margin-top:8px">${esc(u.nom_entreprise || u.nom)}</h3><p>Contact : ${esc(u.nom)} • WhatsApp : ${esc(u.whatsapp)} • 📍 ${esc(u.quartier)} - ${esc(u.ville)} - ${esc(u.pays)}<br>${esc(u.description_profil || '')}<br><b>Catégorie :</b> ${esc(u.categorie_prestataire || '-')} • <b>Type :</b> ${esc(u.type_compte)}</p><div class="actions"><button type="button" class="btn-val" onclick="validerPrestataire('${esc(u.id)}')">✅ Valider le compte</button><button type="button" class="btn-rej" onclick="rejeterPrestataire('${esc(u.id)}')">❌ Refuser</button></div></div>`;
+        return `<div class="card"><span class="badge attente">⏳ ${labelType} en attente</span><h3 style="margin-top:8px">${esc(u.nom_entreprise || u.nom)}</h3><p>Contact : ${esc(u.nom)} • WhatsApp : ${esc(u.whatsapp)} • 📍 ${esc(u.quartier)} - ${esc(u.ville)} - ${esc(u.pays)}<br>${esc(u.description_profil || '')}<br><b>Type :</b> ${esc(u.type_compte)}</p><div class="actions"><button type="button" class="btn-val" onclick="validerPrestataire('${esc(u.id)}')">✅ Valider le compte</button><button type="button" class="btn-rej" onclick="rejeterPrestataire('${esc(u.id)}')">❌ Refuser</button></div></div>`;
       }).join('');
     }
     if(tabActuel==='quartiers'){
-      const {data} = await sb.from('profiles').select('id, nom, nom_entreprise, whatsapp, type_compte, categorie_prestataire, description_profil, quartier, ville, pays, verification_quartier, quartier_verifie, photo_piece_url, photo_atelier_url').in('verification_quartier',['en_attente','demande_envoyee']).order('created_at',{ascending:false});
+      const {data} = await sb.from('profiles').select('id, nom, nom_entreprise, whatsapp, type_compte, description_profil, quartier, ville, pays, verification_quartier, quartier_verifie, photo_piece_url, photo_atelier_url').in('verification_quartier',['en_attente','demande_envoyee']).order('created_at',{ascending:false});
       if(!data || data.length===0){ box.innerHTML = `<div class="empty">✅ Aucune demande de vérification quartier.<br>Tout le monde est déjà vérifié ou personne n'a demandé.</div>`; return; }
       box.innerHTML = data.map(u=>{
         const quartier = u.quartier || '-';
         const photoPiece = u.photo_piece_url || '';
         const photoAtelier = u.photo_atelier_url || '';
         const labelType = u.type_compte==='entreprise' ? '🏢 Entreprise' : u.type_compte==='professionnel' ? '👨‍🔧 Professionnel' : u.type_compte==='livreur' ? '🛵 Livreur' : u.type_compte==='client' ? '🛒 Client' : '💼 Fournisseur';
-        return `<div class="card"><span class="badge attente">📍 Vérification quartier - ${esc(quartier)}</span><h3 style="margin-top:8px">${esc(u.nom_entreprise || u.nom)} - ${labelType} - ${esc(u.categorie_prestataire||'')}</h3><p>WhatsApp : ${esc(u.whatsapp)} • 📍 ${esc(u.quartier)} - ${esc(u.ville)} - ${esc(u.pays)}<br><b>Quartier déclaré :</b> ${esc(quartier)}<br>${esc(u.description_profil || '')}</p><div class="photos"><div>${photoPiece ? `<img src="${photoPiece}" onclick="window.open('${photoPiece}','_blank')"><small>🪪 Pièce d'identité - Clique pour agrandir</small>` : '<small>Aucune photo pièce</small>'}</div><div>${photoAtelier ? `<img src="${photoAtelier}" onclick="window.open('${photoAtelier}','_blank')"><small>🏪 Photo atelier - Clique pour agrandir</small>` : '<small>Aucune photo atelier</small>'}</div></div><div class="actions"><button type="button" class="btn-val" onclick="validerQuartier('${esc(u.id)}','${esc(quartier)}')">✅ Valider quartier - Donner badge</button><button type="button" class="btn-rej" onclick="rejeterQuartier('${esc(u.id)}')">❌ Refuser - Photos pas bonnes</button></div></div>`;
+        return `<div class="card"><span class="badge attente">📍 Vérification quartier - ${esc(quartier)}</span><h3 style="margin-top:8px">${esc(u.nom_entreprise || u.nom)} - ${labelType}</h3><p>WhatsApp : ${esc(u.whatsapp)} • 📍 ${esc(u.quartier)} - ${esc(u.ville)} - ${esc(u.pays)}<br><b>Quartier déclaré :</b> ${esc(quartier)}<br>${esc(u.description_profil || '')}</p><div class="photos"><div>${photoPiece ? `<div style="background:#fef3c7;border-radius:10px;padding:20px;text-align:center"><div style="font-size:30px">🪪</div><b>Pièce d'identité - PRIVÉ</b><br><small>Seul l'admin peut voir</small><br><button type="button" class="btn-orange" style="margin-top:8px;padding:10px;border:none;border-radius:8px;font-weight:800;cursor:pointer" onclick="voirPiecePrivee('${esc(photoPiece)}')">👁️ Voir la pièce</button></div><small>🪪 Pièce d'identité - Lien temporaire 60 sec</small>` : '<small>Aucune photo pièce</small>'}</div><div>${photoAtelier ? `<img src="${photoAtelier}" onclick="window.open('${photoAtelier}','_blank')"><small>🏪 Photo atelier - Clique pour agrandir</small>` : '<small>Aucune photo atelier</small>'}</div></div><div class="actions"><button type="button" class="btn-val" onclick="validerQuartier('${esc(u.id)}','${esc(quartier)}')">✅ Valider quartier - Donner badge</button><button type="button" class="btn-rej" onclick="rejeterQuartier('${esc(u.id)}')">❌ Refuser - Photos pas bonnes</button></div></div>`;
       }).join('');
     }
     if(tabActuel==='commandes'){
@@ -275,9 +289,9 @@ async function chargerTout(){
       box.innerHTML = data.map(c=>`<div class="card"><span class="badge litige">⚠️ Litige - Argent bloqué</span><h3 style="margin-top:8px">${esc(c.titre)}</h3><p>Total : ${fmt(c.montant_total||0)} • Prestataire devait recevoir : ${fmt(c.montant_prestataire||0)}<br><b>Raison :</b> ${esc(c.litige_raison || 'Non précisée')}<br>📍 ${esc(c.localite)} - ${esc(c.ville)}</p><div class="actions"><button type="button" class="btn-val" onclick="trancherLitige('${esc(c.id)}','libere')">✅ Donner raison au prestataire - Libérer</button><button type="button" class="btn-rej" onclick="trancherLitige('${esc(c.id)}','rembourse')">💰 Donner raison au client - Rembourser</button><button type="button" class="btn-chat" onclick="voirChatLitige('${esc(c.conversation_id)}','${esc(c.id)}')">💬 Voir le chat (lecture seule)</button></div><div id="chat-${esc(c.id)}" style="display:none"></div></div>`).join('');
     }
     if(tabActuel==='users'){
-      const {data} = await sb.from('profiles').select('id, nom, nom_entreprise, whatsapp, type_compte, type_fournisseur, statut_validation, categorie_prestataire, description_profil, quartier, ville, pays, quartier_verifie').order('created_at',{ascending:false}).limit(100);
+      const {data} = await sb.from('profiles').select('id, nom, nom_entreprise, whatsapp, type_compte, type_fournisseur, statut_validation, description_profil, quartier, ville, pays, quartier_verifie').order('created_at',{ascending:false}).limit(100);
       if(!data || data.length===0){ box.innerHTML = `<div class="empty">Aucun utilisateur.</div>`; return; }
-      box.innerHTML = data.map(u=>`<div class="card"><b>${esc(u.nom_entreprise || u.nom)}</b> • ${esc(u.type_compte)} ${['prestataire','professionnel','entreprise','livreur'].includes(String(u.type_compte||'').toLowerCase()) ? '• ' + esc(u.categorie_prestataire||'') + ' • Statut : ' + esc(u.statut_validation||'en_attente') : ''}<p>WhatsApp : ${esc(u.whatsapp)} • 📍 ${esc(u.quartier)} - ${esc(u.ville)} - ${esc(u.pays)} • Quartier : ${esc(u.quartier||'-')} ${u.quartier_verifie ? '✅ Vérifié' : ''}<br>${esc(u.description_profil || '')}</p></div>`).join('');
+      box.innerHTML = data.map(u=>`<div class="card"><b>${esc(u.nom_entreprise || u.nom)}</b> • ${esc(u.type_compte)} ${['prestataire','professionnel','entreprise','livreur'].includes(String(u.type_compte||'').toLowerCase()) ? '• Statut : ' + esc(u.statut_validation||'en_attente') : ''}<p>WhatsApp : ${esc(u.whatsapp)} • 📍 ${esc(u.quartier)} - ${esc(u.ville)} - ${esc(u.pays)} • Quartier : ${esc(u.quartier||'-')} ${u.quartier_verifie ? '✅ Vérifié' : ''}<br>${esc(u.description_profil || '')}</p></div>`).join('');
     }
     if(tabActuel==='avis'){
       const {data, error: errAvis} = await sb.from('avis').select('id, note, commentaire, created_at').order('created_at',{ascending:false}).limit(50);
