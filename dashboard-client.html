@@ -103,6 +103,7 @@ function badgeStatus(s){
   if(s==='en_route') return '<span class="badge cours">🛵 En route</span>';
   if(s==='en_livraison') return '<span class="badge cours">📦 En livraison</span>';
   if(s==='livre') return '<span class="badge valide">📦 Livré</span>';
+  if(s==='refuse') return '<span class="badge litige">❌ Refusé</span>';
   return `<span class="badge attente">${esc(s)}</span>`;
 }
 function stepsHtml(c){
@@ -173,21 +174,31 @@ async function charger(){
   document.getElementById('profilNom').textContent = profil.nom || 'Mon Profil';
   document.getElementById('profilQuartier').textContent = '📍 Quartier : ' + (quartier || 'Non rempli');
   document.getElementById('profilBadge').textContent = quartier ? '📍 ' + quartier : '📍 Quartier non rempli';
+
+  // --- COMMANDES : pour chacune, nom du prestataire ---
   const {data: cmds, error: errCmds} = await sb.from('commandes').select('id, titre, prestataire_id, conversation_id, annonce_id, status, univers, commission, montant_total, montant_prestataire, localite, ville, created_at').eq('client_id', uid).order('created_at',{ascending:false});
   const box = document.getElementById('listeCommandes');
   if(errCmds){ box.innerHTML = `<div class="empty">Erreur commandes : ${esc(errCmds.message)}</div>`; }
   else if(!cmds || cmds.length===0){ box.innerHTML = `<div class="empty">Aucune commande pour l'instant.<br>Trouvez un service, discutez, créez une commande.</div>`; }
   else {
+    // Noms des prestataires pour chaque commande
+    const prestaIdsCmd = [...new Set(cmds.map(c=>c.prestataire_id).filter(Boolean))];
+    let nomsPresta = {};
+    if(prestaIdsCmd.length){
+      const {data: profs} = await sb.from('profiles').select('id, nom, nom_entreprise').in('id', prestaIdsCmd);
+      (profs||[]).forEach(p=> nomsPresta[p.id] = p.nom_entreprise || p.nom || 'Prestataire');
+    }
     box.innerHTML = cmds.map(c=>`
     <div class="card">
       ${badgeStatus(c.status)}
       <h3 style="margin-top:8px">${esc(c.titre)}</h3>
+      <p style="color:#0f172a;font-weight:700">👤 ${esc(nomsPresta[c.prestataire_id] || 'Prestataire')}</p>
       <p>📍 ${esc(c.localite || '')} - ${esc(c.ville || '')}<br>
       Total : <b>${fmt(c.montant_total)}</b><br>
       Prestataire reçoit : ${fmt(c.montant_prestataire)} (${esc(texteCommission(c))})<br>
       <span style="color:#16a34a;font-weight:700">🔒 Escrow : argent bloqué chez Rocyinter jusqu'à validation</span></p>
       ${stepsHtml(c)}
-      ${c.status==='en_attente' ? `<button class="btn btn-green" onclick="payer('${esc(c.id)}')">💳 Payer en escrow sécurisé</button>` : ''}
+      ${['en_attente','accepte'].includes(c.status) ? `<button class="btn btn-green" onclick="payer('${esc(c.id)}')">💳 Payer en escrow sécurisé</button>` : ''}
       ${c.status==='paye' ? `<button class="btn btn-dark" onclick="demarrer('${esc(c.id)}')">🔧 Confirmer le début du service</button>` : ''}
       ${c.status==='en_cours' || c.status==='en_livraison' ? `<button class="btn btn-green" onclick="valider('${esc(c.id)}')">✅ Valider le service terminé</button>` : ''}
       ${c.status==='livre' ? `<button class="btn btn-green" onclick="validerLivraison('${esc(c.id)}')">✅ Confirmer la livraison reçue</button>` : ''}
@@ -196,6 +207,8 @@ async function charger(){
       <button class="btn btn-dark" onclick="voirConversation('${esc(c.conversation_id)}','${esc(c.annonce_id)}','${esc(c.prestataire_id)}')">Ouvrir le chat</button>
     </div>`).join('');
   }
+
+  // --- CONVERSATIONS : pour chacune, nom + dernier message + lu / non lu comme Facebook ---
   const {data: convsBrutes, error: errConvs} = await sb.from('conversations').select('id, client_id, prestataire_id, annonce_id, created_at').eq('client_id', uid).order('created_at',{ascending:false});
   const convs = (convsBrutes||[]).filter(cv => String(cv.client_id)!==String(cv.prestataire_id));
   const boxV = document.getElementById('listeConvs');
@@ -208,7 +221,40 @@ async function charger(){
       const {data: anns} = await sb.from('annonces').select('id, titre').in('id', annonceIds);
       (anns||[]).forEach(a=> titres[a.id]=a.titre);
     }
-    boxV.innerHTML = convs.map(cv=>`<div class="card"><b>${esc(titres[cv.annonce_id] || 'Discussion')}</b><p>${esc(new Date(cv.created_at).toLocaleDateString('fr-FR'))}</p><button class="btn btn-dark" onclick="voirConversation('${esc(cv.id)}','${esc(cv.annonce_id)}','${esc(cv.prestataire_id)}')">Ouvrir le chat</button></div>`).join('');
+    // Noms des prestataires pour chaque conversation
+    const prestaIdsConv = [...new Set(convs.map(cv=>cv.prestataire_id).filter(Boolean))];
+    let nomsConv = {};
+    if(prestaIdsConv.length){
+      const {data: profs} = await sb.from('profiles').select('id, nom, nom_entreprise').in('id', prestaIdsConv);
+      (profs||[]).forEach(p=> nomsConv[p.id] = p.nom_entreprise || p.nom || 'Prestataire');
+    }
+    // Dernier message pour chaque conversation
+    const convIds = convs.map(c=>c.id);
+    let dernierMsg = {};
+    if(convIds.length){
+      const {data: msgs} = await sb.from('messages').select('conversation_id, sender_id, contenu, created_at').in('conversation_id', convIds).order('created_at',{ascending:false});
+      (msgs||[]).forEach(m=>{ if(!dernierMsg[m.conversation_id]) dernierMsg[m.conversation_id] = m; });
+    }
+    boxV.innerHTML = convs.map(cv=>{
+      const nom = nomsConv[cv.prestataire_id] || 'Prestataire';
+      const titre = titres[cv.annonce_id] || 'Discussion';
+      const last = dernierMsg[cv.id];
+      const texte = last ? last.contenu : 'Aucun message pour l’instant';
+      const heure = last ? new Date(last.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) : '';
+      const date = new Date(cv.created_at).toLocaleDateString('fr-FR');
+      const luA = Number(localStorage.getItem('rocy_lu_' + cv.id) || 0);
+      const isNonLu = last && String(last.sender_id)!==String(uid) && new Date(last.created_at).getTime() > luA;
+      return `<div class="card" onclick="voirConversation('${esc(cv.id)}','${esc(cv.annonce_id)}','${esc(cv.prestataire_id)}')" style="cursor:pointer;${isNonLu ? 'border:2px solid #0f172a;' : ''}">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <b style="${isNonLu ? 'font-weight:900;' : ''}">👤 ${esc(nom)}</b>
+          <span style="font-size:11px;color:#64748b">${heure} • ${date}</span>
+        </div>
+        <p style="margin:6px 0 0;font-weight:${isNonLu ? '700' : '400'};color:${isNonLu ? '#111' : '#64748b'}">${esc(texte.slice(0,80))}${texte.length>80 ? '...' : ''}</p>
+        <p style="font-size:12px;color:#64748b;margin:4px 0 0">📦 ${esc(titre)}</p>
+        ${isNonLu ? `<span style="display:inline-block;margin-top:6px;background:#f59e0b;color:#fff;font-size:11px;font-weight:800;padding:4px 8px;border-radius:999px">● Nouveau</span>` : ''}
+        <button class="btn btn-dark" onclick="event.stopPropagation(); voirConversation('${esc(cv.id)}','${esc(cv.annonce_id)}','${esc(cv.prestataire_id)}')">Ouvrir le chat</button>
+      </div>`;
+    }).join('');
   }
   if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 }
@@ -266,8 +312,6 @@ async function noter(cmdId, prestaId){
   alert('⭐ Merci pour ton avis !');
   charger();
 }
-// CORRIGE : on ne re-lit plus la conversation, on va direct au chat.
-// La re-lecture avec .single() bloquait avec "Conversation introuvable".
 async function voirConversation(convId, annonceId, prestaId){
   if(!convId || convId==='null' || convId==='undefined' || convId===''){
     alert('Conversation introuvable. Recharge la page.');
