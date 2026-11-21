@@ -37,6 +37,8 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
 .tabs button.active{border-color:#f59e0b;background:#fffbeb}
 .link-mdp{text-align:right;font-size:13px}
 .link-mdp a{color:#0f172a;font-weight:700}
+.apdp{font-size:11px;color:#94a3b8;text-align:center;line-height:1.6}
+.apdp a{color:#0f172a;font-weight:700}
 </style>
 </head>
 <body>
@@ -77,6 +79,7 @@ small{color:#94a3b8;font-size:12px;text-align:center;display:block;margin-top:10
   <button class="btn" id="btnCo" type="button" onclick="connecter()" data-i18n="seConnecter">Se connecter →</button>
   <div class="info">💡 <b data-i18n="pasCompte">Pas encore de compte ?</b><br><span data-i18n="pasCompteSous">Créez un compte en 1 minute. Votre WhatsApp + mot de passe = votre identité.</span></div>
   <small><span data-i18n="pasCompte2">Pas de compte ?</span> <a href="inscription.html" data-i18n="creezIci">Créez-en un ici</a></small>
+  <p class="apdp">En te connectant, tu acceptes notre <a href="confidentialite.html">Politique de Confidentialité APDP</a>.<br>Connexions enregistrées pour la sécurité (APDP Bénin).</p>
 </div>
 </div>
 <script>
@@ -88,8 +91,25 @@ if(!sb && window.supabase && window.supabase.createClient){
     window.supabaseClient = sb;
   }catch(e){ console.log('Supabase pas encore chargé', e); }
 }
+// LOG APDP : on ne logue JAMAIS le mot de passe, seulement l'identifiant masqué
+function masquerIdentifiant(id){
+  if(!id) return '-';
+  if(id.includes('@')){ const parts = id.split('@'); return parts[0].substring(0,2) + '***@' + parts[1]; }
+  return '***' + String(id).slice(-4);
+}
+async function logConnexionAPDP(action, userId, emailMasque, details){
+  try{
+    const client = window.supabaseClient || sb;
+    if(!client) return;
+    // rocyLog de app.js si dispo, sinon insert direct
+    if(window.rocyLog){
+      await window.rocyLog(action, 'auth', userId || emailMasque, { ...details, apdp: 'connexion' });
+    } else {
+      await client.from('audit_logs').insert({ user_id: userId || null, user_email: emailMasque, action, cible_type: 'auth', cible_id: String(userId || emailMasque), details: { ...details, apdp: 'connexion' }, navigateur: navigator.userAgent });
+    }
+  }catch(e){ console.log('log APDP connexion', e); }
+}
 let modeConnexion='whatsapp';
-// SÉCURITÉ PRO : 5 essais ratés = blocage 15 min pour cet identifiant
 const MAX_ESSAIS = 5, DUREE_BLOCAGE_MS = 15 * 60 * 1000;
 function cleBlocage(identifiant){ return 'rocy_lock_' + String(identifiant||'').toLowerCase().replace(/[^a-z0-9@.]/g,'_'); }
 function lireBlocage(identifiant){
@@ -223,7 +243,6 @@ async function connecter(){
     if(!emailCherche || !password){ showMsg('Remplis Email + Mot de passe', false); return; }
     if(!emailCherche.includes('@')){ showMsg('Email invalide', false); return; }
   }
-  // Blocage anti brute-force : on vérifie AVANT d'essayer
   const minBloque = estBloque(identifiantBlocage);
   if(minBloque > 0){
     showMsg(`⛔ Trop d'essais ratés. Réessaie dans ${minBloque} min, ou clique sur Mot de passe oublié.`, false);
@@ -233,9 +252,10 @@ async function connecter(){
   try{
     const {data: login, error: errLogin} = await sb.auth.signInWithPassword({email: emailCherche, password});
     if(errLogin || !login?.user){
-      // Message GÉNÉRIQUE : on ne dit jamais si c'est l'email ou le mot de passe qui est faux
       const d = enregistrerEchec(identifiantBlocage);
       const restants = Math.max(0, MAX_ESSAIS - d.essais);
+      // LOG APDP : échec, sans mot de passe
+      await logConnexionAPDP('login_echec', null, masquerIdentifiant(emailCherche), { mode: modeConnexion, essais: d.essais });
       if(d.bloqueJusqua && Date.now() < d.bloqueJusqua){
         showMsg('⛔ Trop d\'essais ratés. Compte bloqué 15 min. Clique sur Mot de passe oublié.', false);
       } else {
@@ -243,7 +263,6 @@ async function connecter(){
       }
       btn.disabled = false; btn.textContent = 'Se connecter →'; return;
     }
-    // Succès : on remet le compteur à zéro
     resetBlocage(identifiantBlocage);
     const {data: prof, error: perr} = await sb.from('profiles').select('id,nom,email,whatsapp,phone,type_compte,type_fournisseur,pays,ville,quartier').eq('id', login.user.id).single();
     if(perr || !prof){ console.log('Erreur profil:', perr); showMsg('Profil introuvable. Réinscris-toi.', false); btn.disabled = false; btn.textContent = 'Se connecter →'; return; }
@@ -271,6 +290,8 @@ async function connecter(){
     localStorage.setItem('rocy_user_ville', prof.ville || '');
     localStorage.setItem('rocy_user_localite', prof.quartier || '');
     if(langueAvant) localStorage.setItem('rocy_langue', langueAvant);
+    // LOG APDP : succès
+    await logConnexionAPDP(typeFinal==='admin' ? 'login_admin' : 'login', prof.id, emailFinal, { mode: modeConnexion, type_compte: typeFinal });
     showMsg('✅ Bienvenue ' + nomFinal + ' ! Redirection...', true);
     setTimeout(()=>{
       if(typeFinal==='admin') location.href='admin.html';
