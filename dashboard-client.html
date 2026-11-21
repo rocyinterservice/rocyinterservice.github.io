@@ -174,14 +174,11 @@ async function charger(){
   document.getElementById('profilNom').textContent = profil.nom || 'Mon Profil';
   document.getElementById('profilQuartier').textContent = '📍 Quartier : ' + (quartier || 'Non rempli');
   document.getElementById('profilBadge').textContent = quartier ? '📍 ' + quartier : '📍 Quartier non rempli';
-
-  // --- COMMANDES : pour chacune, nom du prestataire ---
   const {data: cmds, error: errCmds} = await sb.from('commandes').select('id, titre, prestataire_id, conversation_id, annonce_id, status, univers, commission, montant_total, montant_prestataire, localite, ville, created_at').eq('client_id', uid).order('created_at',{ascending:false});
   const box = document.getElementById('listeCommandes');
   if(errCmds){ box.innerHTML = `<div class="empty">Erreur commandes : ${esc(errCmds.message)}</div>`; }
   else if(!cmds || cmds.length===0){ box.innerHTML = `<div class="empty">Aucune commande pour l'instant.<br>Trouvez un service, discutez, créez une commande.</div>`; }
   else {
-    // Noms des prestataires pour chaque commande
     const prestaIdsCmd = [...new Set(cmds.map(c=>c.prestataire_id).filter(Boolean))];
     let nomsPresta = {};
     if(prestaIdsCmd.length){
@@ -207,54 +204,17 @@ async function charger(){
       <button class="btn btn-dark" onclick="voirConversation('${esc(c.conversation_id)}','${esc(c.annonce_id)}','${esc(c.prestataire_id)}')">Ouvrir le chat</button>
     </div>`).join('');
   }
-
-  // --- CONVERSATIONS : pour chacune, nom + dernier message + lu / non lu comme Facebook ---
+  // --- CONVERSATIONS : POUR CHACUN, PAREIL, VIA app.js ---
   const {data: convsBrutes, error: errConvs} = await sb.from('conversations').select('id, client_id, prestataire_id, annonce_id, created_at').eq('client_id', uid).order('created_at',{ascending:false});
   const convs = (convsBrutes||[]).filter(cv => String(cv.client_id)!==String(cv.prestataire_id));
   const boxV = document.getElementById('listeConvs');
   if(errConvs){ boxV.innerHTML = `<div class="empty">Erreur conversations : ${esc(errConvs.message)}</div>`; }
   else if(!convs || convs.length===0){ boxV.innerHTML = `<div class="empty">Aucune conversation pour l'instant.</div>`; }
-  else {
-    let titres = {};
-    const annonceIds = [...new Set(convs.map(cv=>cv.annonce_id).filter(Boolean))];
-    if(annonceIds.length){
-      const {data: anns} = await sb.from('annonces').select('id, titre').in('id', annonceIds);
-      (anns||[]).forEach(a=> titres[a.id]=a.titre);
-    }
-    // Noms des prestataires pour chaque conversation
-    const prestaIdsConv = [...new Set(convs.map(cv=>cv.prestataire_id).filter(Boolean))];
-    let nomsConv = {};
-    if(prestaIdsConv.length){
-      const {data: profs} = await sb.from('profiles').select('id, nom, nom_entreprise').in('id', prestaIdsConv);
-      (profs||[]).forEach(p=> nomsConv[p.id] = p.nom_entreprise || p.nom || 'Prestataire');
-    }
-    // Dernier message pour chaque conversation
-    const convIds = convs.map(c=>c.id);
-    let dernierMsg = {};
-    if(convIds.length){
-      const {data: msgs} = await sb.from('messages').select('conversation_id, sender_id, contenu, created_at').in('conversation_id', convIds).order('created_at',{ascending:false});
-      (msgs||[]).forEach(m=>{ if(!dernierMsg[m.conversation_id]) dernierMsg[m.conversation_id] = m; });
-    }
-    boxV.innerHTML = convs.map(cv=>{
-      const nom = nomsConv[cv.prestataire_id] || 'Prestataire';
-      const titre = titres[cv.annonce_id] || 'Discussion';
-      const last = dernierMsg[cv.id];
-      const texte = last ? last.contenu : 'Aucun message pour l’instant';
-      const heure = last ? new Date(last.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) : '';
-      const date = new Date(cv.created_at).toLocaleDateString('fr-FR');
-      const luA = Number(localStorage.getItem('rocy_lu_' + cv.id) || 0);
-      const isNonLu = last && String(last.sender_id)!==String(uid) && new Date(last.created_at).getTime() > luA;
-      return `<div class="card" onclick="voirConversation('${esc(cv.id)}','${esc(cv.annonce_id)}','${esc(cv.prestataire_id)}')" style="cursor:pointer;${isNonLu ? 'border:2px solid #0f172a;' : ''}">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <b style="${isNonLu ? 'font-weight:900;' : ''}">👤 ${esc(nom)}</b>
-          <span style="font-size:11px;color:#64748b">${heure} • ${date}</span>
-        </div>
-        <p style="margin:6px 0 0;font-weight:${isNonLu ? '700' : '400'};color:${isNonLu ? '#111' : '#64748b'}">${esc(texte.slice(0,80))}${texte.length>80 ? '...' : ''}</p>
-        <p style="font-size:12px;color:#64748b;margin:4px 0 0">📦 ${esc(titre)}</p>
-        ${isNonLu ? `<span style="display:inline-block;margin-top:6px;background:#f59e0b;color:#fff;font-size:11px;font-weight:800;padding:4px 8px;border-radius:999px">● Nouveau</span>` : ''}
-        <button class="btn btn-dark" onclick="event.stopPropagation(); voirConversation('${esc(cv.id)}','${esc(cv.annonce_id)}','${esc(cv.prestataire_id)}')">Ouvrir le chat</button>
-      </div>`;
-    }).join('');
+  else if(window.rocyChargerInfosConvs && window.rocyCarteConversation){
+    const {noms, titres, dernierMsg} = await window.rocyChargerInfosConvs(sb, convs, 'prestataire_id');
+    boxV.innerHTML = convs.map(cv => window.rocyCarteConversation(cv, noms[cv.prestataire_id] || 'Prestataire', titres[cv.annonce_id] || 'Discussion', dernierMsg[cv.id], uid, 'Ouvrir le chat', `voirConversation('${esc(cv.id)}','${esc(cv.annonce_id)}','${esc(cv.prestataire_id)}')`)).join('');
+  } else {
+    boxV.innerHTML = `<div class="empty">Mets à jour app.js (V6) pour voir les conversations avec nom + dernier message.</div>`;
   }
   if(window.rocyAppliquerTraduction) window.rocyAppliquerTraduction();
 }
