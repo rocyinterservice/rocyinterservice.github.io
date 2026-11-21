@@ -136,13 +136,14 @@ async function charger(){
     document.getElementById('blocPaiement').style.display='none'; return;
   }
   commande = data;
-  if(data.status !== 'en_attente'){
+  // CORRIGE : on autorise en_attente ET accepte, sinon après acceptation on ne peut plus payer
+  if(!['en_attente','accepte'].includes(data.status)){
     document.getElementById('resume').innerHTML = `<b>${esc(data.titre)}</b><p>Cette commande est déjà : <b>${esc(data.status)}</b>. Pas besoin de payer 2 fois.</p><button class="btn btn-dark" onclick="location.href='dashboard-client.html'">Voir mes commandes</button>`;
     document.getElementById('blocPaiement').style.display='none'; return;
   }
   const supplement = data.univers === 'manger' ? 500 : 0;
   const total = Number(data.montant_total) + supplement;
-  document.getElementById('resume').innerHTML = `<h3>${esc(data.titre)}</h3><div class="row"><span>📍 Lieu</span><b>${esc(data.localite)} - ${esc(data.ville)}</b></div><div class="row"><span>Montant convenu</span><b>${fmt(data.montant_total)}</b></div>${supplement ? `<div class="row"><span>Supplément espèces livraison</span><b>${fmt(500)}</b></div>` : ''}<div class="row"><span>${esc(texteCommission(data))} (prélevée à la libération)</span><b>${fmt(data.commission)}</b></div><div class="row"><span>Prestataire recevra</span><b>${fmt(data.montant_prestataire)}</b></div><div class="row total"><span>Tu paies maintenant</span><b>${fmt(total)}</b></div>`;
+  document.getElementById('resume').innerHTML = `<h3>${esc(data.titre)}</h3><div class="row"><span>📍 Lieu</span><b>${esc(data.localite)} - ${esc(data.ville)}</b></div><div class="row"><span>Statut</span><b>${data.status==='accepte' ? '✅ Acceptée par le prestataire - Tu peux payer' : '⏳ En attente'}</b></div><div class="row"><span>Montant convenu</span><b>${fmt(data.montant_total)}</b></div>${supplement ? `<div class="row"><span>Supplément espèces livraison</span><b>${fmt(500)}</b></div>` : ''}<div class="row"><span>${esc(texteCommission(data))} (prélevée à la libération)</span><b>${fmt(data.commission)}</b></div><div class="row"><span>Prestataire recevra</span><b>${fmt(data.montant_prestataire)}</b></div><div class="row total"><span>Tu paies maintenant</span><b>${fmt(total)}</b></div>`;
   if(data.univers === 'manger') document.getElementById('zoneEspeces').style.display = 'block';
   if(data.univers === 'evenement'){
     document.getElementById('sousTitre').innerHTML = '🎉 Évènement : tu paies le montant convenu. Rocyinter bloque l\'argent. Le prestataire prépare ton évènement. Tu valides après l\'évènement, on libère.';
@@ -181,9 +182,10 @@ async function confirmerPaiement(mode){
     return;
   }
   if(!commande) return;
+  // CORRIGE : on vérifie en_attente OU accepte, pas seulement en_attente
   const {data: frais} = await sb.from('commandes').select('status').eq('id', commande.id).single();
-  if(!frais || frais.status !== 'en_attente'){ showMsg('Cette commande a déjà été payée.', false); setTimeout(()=>location.href='dashboard-client.html', 1000); return; }
-  const {error} = await sb.from('commandes').update({status: 'paye', mode_paiement: mode}).eq('id', commande.id).eq('client_id', uid).eq('status', 'en_attente');
+  if(!frais || !['en_attente','accepte'].includes(frais.status)){ showMsg('Cette commande a déjà été payée. Statut : ' + (frais?.status || 'inconnu'), false); setTimeout(()=>location.href='dashboard-client.html', 1000); return; }
+  const {error} = await sb.from('commandes').update({status: 'paye', mode_paiement: mode}).eq('id', commande.id).eq('client_id', uid).in('status', ['en_attente','accepte']);
   if(error){ showMsg('Erreur : ' + error.message, false); return; }
   if(commande.conversation_id){
     await sb.from('messages').insert([{conversation_id: commande.conversation_id, sender_id: uid, contenu: `💳 Paiement reçu (${mode}) - ${fmt(commande.montant_total)} bloqué en escrow. Tu peux commencer le service.`, type: 'texte'}]);
