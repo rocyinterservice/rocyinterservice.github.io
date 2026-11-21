@@ -90,9 +90,13 @@ const SUPABASE_KEY = "sb_publishable_toAIjzrpbo2mNqPqLKlI9Q_sqzcR6dF";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 window.supabaseClient = sb;
 let moiId = ''; let monRole = '';
+// CORRIGÉ 1 : on lit ?conversation_id=... dans le lien de la notification, avant localStorage
+const paramsUrl = new URLSearchParams(window.location.search);
+const convIdUrl = paramsUrl.get('conversation_id') || paramsUrl.get('id') || paramsUrl.get('conversation');
+if(convIdUrl) localStorage.setItem('chat_conversation_id', convIdUrl);
 const prestataireId = localStorage.getItem('chat_prestataire');
 const annonceId = localStorage.getItem('chat_annonce');
-const convIdDirect = localStorage.getItem('chat_conversation_id');
+const convIdDirect = convIdUrl || localStorage.getItem('chat_conversation_id');
 let conversationId = convIdDirect || null; let annonceData = null; let clientIdFinal = null;
 const fmt = n => window.rocyFormatPrix ? window.rocyFormatPrix(Number(n||0)) : Number(n||0).toLocaleString()+' FCFA';
 function prixFixeUnivers(u){ return ['manger','sejour','immobilier'].includes(String(u||'').toLowerCase()); }
@@ -188,6 +192,12 @@ async function init(){
     const {data: conv, error: errConv} = await sb.from('conversations').select('*').eq('id', conversationId).maybeSingle();
     console.log('ROCY chat conv directe:', conv, errConv);
     if(conv){
+      // Sécurité : cette conversation est bien à moi ?
+      if(String(conv.client_id)!==String(moiId) && String(conv.prestataire_id)!==String(moiId)){
+        document.getElementById('annonceBar').textContent = 'Cette conversation ne t\'appartient pas.';
+        bloquerChat('⛔ Cette conversation ne t\'appartient pas.');
+        return;
+      }
       clientIdFinal = conv.client_id;
       const {data: ann2} = await sb.from('annonces').select('id, titre, categorie, univers, prix_fixe, prix_indicatif, devise, localite, ville, pays, status, prestataire_id').eq('id', conv.annonce_id).maybeSingle();
       if(ann2){ annonceData = ann2; }
@@ -197,6 +207,7 @@ async function init(){
     } else {
       console.log('ROCY chat : conv directe introuvable, on repart sur annonce');
       conversationId = null;
+      localStorage.removeItem('chat_conversation_id');
     }
   }
   if(!prestataireId || !annonceId){ location.href='index.html'; return; }
@@ -234,7 +245,8 @@ async function initAvecAnnonce(annId, prestaId, convExistante){
   else {
     const {data: convs, error: errConvs} = await sb.from('conversations').select('*').eq('annonce_id', annId);
     console.log('ROCY chat convs existantes:', convs, errConvs);
-    const bonne = (convs||[]).find(c => (String(c.client_id)===String(moiId) && String(c.prestataire_id)===String(prestaId)) || (String(c.prestataire_id)===String(moiId) && String(c.client_id)===String(prestaId)));
+    // CORRIGÉ 3 : pour le prestataire, on cherche une conversation où il est prestataire et où le client n'est pas lui-même
+    const bonne = (convs||[]).find(c => (String(c.client_id)===String(moiId) && String(c.prestataire_id)===String(prestaId)) || (String(c.prestataire_id)===String(moiId) && String(c.client_id)!==String(moiId)));
     let cible = bonne;
     if(!cible && jeSuisPresta){
       const mesConvs = (convs||[]).filter(c => String(c.prestataire_id)===String(moiId) && c.client_id && String(c.client_id)!==String(c.prestataire_id));
@@ -251,6 +263,7 @@ async function initAvecAnnonce(annId, prestaId, convExistante){
     } else { bloquerChat("⏳ En attente qu'un client te parle sur cette annonce."); document.getElementById('btnProp').style.display='none'; return; }
   }
   if(!jeSuisPresta) clientIdFinal = moiId;
+  if(conversationId) localStorage.setItem('chat_conversation_id', conversationId);
   debloquerChat();
   afficherCommandeDepuisFiche();
   chargerMessages();
@@ -281,7 +294,8 @@ async function chargerMessages(){
       const titre = document.createElement('b'); titre.textContent = `💰 Proposition de prix : ${fmt(m.proposition_prix||0)}`; div.appendChild(titre);
       const c = document.createElement('div'); c.textContent = m.contenu||''; div.appendChild(c);
       const sm = document.createElement('small'); sm.textContent = heure; div.appendChild(sm);
-      const jeSuisClient = (String(moiId)!==String(prestataireId || annonceData?.prestataire_id));
+      const prestaActuel = annonceData?.prestataire_id || prestataireId;
+      const jeSuisClient = (String(moiId)!==String(prestaActuel));
       if(statut==='en_attente' && jeSuisClient){
         const ok=document.createElement('button'); ok.style.cssText='background:#16a34a;color:#fff'; ok.textContent='✅ Accepter'; ok.onclick=()=>repondreProposition(m.id,'accepte'); div.appendChild(ok);
         const no=document.createElement('button'); no.style.cssText='background:#fee2e2'; no.textContent='❌ Refuser'; no.onclick=()=>repondreProposition(m.id,'refuse'); div.appendChild(no);
@@ -296,7 +310,6 @@ async function chargerMessages(){
   });
   box.scrollTop = box.scrollHeight;
 }
-// === CORRIGÉ : Envoyer ne quitte plus en silence ===
 async function envoyer(){
   const inp = document.getElementById('inputMsg');
   const btn = document.getElementById('btnEnvoyer');
@@ -306,7 +319,6 @@ async function envoyer(){
     alert('Écris un message d’abord.');
     return;
   }
-  // Si pas de conversation, on essaie de la recréer tout de suite
   if(!conversationId){
     console.log('ROCY envoyer : pas de conversation, tentative de recréation');
     if(!annonceData || !prestataireId || !annonceId){
@@ -340,12 +352,12 @@ async function envoyer(){
     alert('Erreur envoi : '+error.message + ' - Vérifie la RLS messages dans Supabase.');
     return;
   }
-  // Succès : on vide seulement maintenant
   inp.value = '';
   if(window.rocyLog) window.rocyLog('envoyer_message', 'messages', conversationId, { annonce_id: annonceId });
   const prestaActuel = localStorage.getItem('chat_prestataire') || prestataireId;
   const autreId = String(moiId)===String(prestaActuel) ? clientIdFinal : prestaActuel;
-  await notifier(autreId, 'Nouveau message', txt, 'message', 'chat.html');
+  // CORRIGÉ 2 : la notification porte l'ID de la conversation
+  await notifier(autreId, 'Nouveau message', txt, 'message', `chat.html?conversation_id=${conversationId}`);
   chargerMessages();
 }
 function ouvrirProposition(){
@@ -365,7 +377,7 @@ async function envoyerProposition(){
   if(!conversationId){ alert('Conversation introuvable. Recharge la page.'); return; }
   const {error} = await sb.from('messages').insert([{conversation_id: conversationId, sender_id: moiId, contenu: detail || 'Proposition de prix pour ce service.', type: 'proposition', proposition_prix: montant, proposition_statut: 'en_attente'}]);
   if(error){ alert('Erreur : '+error.message); return; }
-  await notifier(clientIdFinal, 'Nouvelle proposition de prix', `Proposition : ${fmt(montant)} - ${detail}`, 'paiement', 'chat.html');
+  await notifier(clientIdFinal, 'Nouvelle proposition de prix', `Proposition : ${fmt(montant)} - ${detail}`, 'paiement', `chat.html?conversation_id=${conversationId}`);
   fermerProposition(); document.getElementById('propMontant').value = ''; chargerMessages();
 }
 async function repondreProposition(msgId, rep){
@@ -373,7 +385,7 @@ async function repondreProposition(msgId, rep){
   if(String(moiId)===String(prestaActuel)){ alert('Seul le client accepte / refuse.'); return; }
   const {error} = await sb.from('messages').update({proposition_statut: rep}).eq('id', msgId).eq('conversation_id', conversationId);
   if(error){ alert('Erreur : '+error.message); return; }
-  await notifier(prestaActuel, rep==='accepte' ? 'Proposition acceptée ✅' : 'Proposition refusée ❌', rep==='accepte' ? 'Le client a accepté ta proposition. Il peut créer la commande.' : 'Le client a refusé ta proposition.', rep==='accepte' ? 'validation' : 'info', 'chat.html');
+  await notifier(prestaActuel, rep==='accepte' ? 'Proposition acceptée ✅' : 'Proposition refusée ❌', rep==='accepte' ? 'Le client a accepté ta proposition. Il peut créer la commande.' : 'Le client a refusé ta proposition.', rep==='accepte' ? 'validation' : 'info', `chat.html?conversation_id=${conversationId}`);
   if(rep==='accepte'){
     const {data: msg} = await sb.from('messages').select('*').eq('id', msgId).single();
     if(msg){
